@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write
+      id-token: write  # Required for npm OIDC trusted publishing
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -48,8 +48,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'npm'
+          node-version: '20'
           registry-url: 'https://registry.npmjs.org'
 
       - name: Install dependencies
@@ -58,10 +57,14 @@ jobs:
       - name: Build
         run: npm run build
 
+      # OIDC Trusted Publishing - no NPM_TOKEN needed
+      # Provenance is generated automatically with trusted publishing
+      # Configure trusted publisher at: https://www.npmjs.com/package/@scell/sdk/access
+      #   - Organization/user: QrCommunication
+      #   - Repository: scell-sdk-js
+      #   - Workflow filename: release.yml
       - name: Publish to npm
-        run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
 
   github-release:
     name: Create GitHub Release
@@ -77,12 +80,24 @@ jobs:
         id: version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
+      - name: Extract release notes from CHANGELOG
+        id: changelog
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          # Extract section for this version from CHANGELOG.md
+          NOTES=$(awk "/^## \[${VERSION}\]/{flag=1; next} /^## \[/{flag=0} flag" CHANGELOG.md)
+          if [ -z "$NOTES" ]; then
+            NOTES="Release ${VERSION}"
+          fi
+          # Write to file for multiline support
+          echo "$NOTES" > release_notes.md
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:
-          name: Release ${{ steps.version.outputs.VERSION }}
-          generate_release_notes: true
+          name: v${{ steps.version.outputs.VERSION }}
+          body_path: release_notes.md
           draft: false
-          prerelease: false
+          prerelease: ${{ contains(steps.version.outputs.VERSION, '-') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
