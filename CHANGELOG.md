@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-01-24
+
+### Added
+
+- **Incoming Invoices Support**: Full support for supplier invoices (direction: incoming)
+  - `invoices.incoming()` - List incoming invoices with filtering by status, seller, date range, and amount
+  - `invoices.accept()` - Accept an incoming invoice with optional payment date and note
+  - `invoices.reject()` - Reject an incoming invoice with reason and standardized rejection code
+  - `invoices.dispute()` - Open a dispute on an incoming invoice for resolution
+
+- **New Types for Incoming Invoices**:
+  - `IncomingInvoiceParams` - Filter options for listing incoming invoices
+  - `AcceptInvoiceInput` - Input for accepting an invoice
+  - `RejectInvoiceInput` - Input for rejecting an invoice with reason code
+  - `DisputeInvoiceInput` - Input for disputing an invoice
+  - `RejectionCode` - Standardized rejection codes (`incorrect_amount`, `duplicate`, `unknown_order`, `incorrect_vat`, `other`)
+  - `DisputeType` - Dispute type categories (`amount_dispute`, `quality_dispute`, `delivery_dispute`, `other`)
+
+- **New Webhook Events for Incoming Invoices**:
+  - `invoice.incoming.received` - New incoming invoice received
+  - `invoice.incoming.validated` - Incoming invoice validated
+  - `invoice.incoming.accepted` - Incoming invoice accepted
+  - `invoice.incoming.rejected` - Incoming invoice rejected
+  - `invoice.incoming.disputed` - Incoming invoice disputed
+
 ## [1.0.0] - 2026-01-24
 
 ### Added
@@ -50,4 +75,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - ScellRateLimitError with retry-after info
   - ScellInsufficientBalanceError for balance issues
 
+[1.1.0]: https://github.com/QrCommunication/scell-sdk-js/releases/tag/v1.1.0
 [1.0.0]: https://github.com/QrCommunication/scell-sdk-js/releases/tag/v1.0.0

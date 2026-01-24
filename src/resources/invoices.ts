@@ -11,13 +11,17 @@ import type {
   SingleResponse,
 } from '../types/common.js';
 import type {
+  AcceptInvoiceInput,
   AuditTrailResponse,
   ConvertInvoiceInput,
   CreateInvoiceInput,
+  DisputeInvoiceInput,
+  IncomingInvoiceParams,
   Invoice,
   InvoiceDownloadResponse,
   InvoiceDownloadType,
   InvoiceListOptions,
+  RejectInvoiceInput,
 } from '../types/invoices.js';
 
 /**
@@ -242,5 +246,135 @@ export class InvoicesResource {
       invoice_id: string;
       target_format: string;
     }>('/invoices/convert', input, requestOptions);
+  }
+
+  /**
+   * List incoming invoices (from suppliers)
+   *
+   * Returns invoices where your company is the buyer.
+   *
+   * @param params - Filter and pagination options
+   * @param requestOptions - Request options
+   * @returns Paginated list of incoming invoices
+   *
+   * @example
+   * ```typescript
+   * // List all incoming invoices
+   * const { data, meta } = await client.invoices.incoming({
+   *   status: 'pending',
+   *   per_page: 50
+   * });
+   * console.log(`Found ${meta.total} incoming invoices`);
+   *
+   * // Filter by seller
+   * const fromSupplier = await client.invoices.incoming({
+   *   seller_siret: '12345678901234'
+   * });
+   * ```
+   */
+  async incoming(
+    params: IncomingInvoiceParams = {},
+    requestOptions?: RequestOptions
+  ): Promise<PaginatedResponse<Invoice>> {
+    return this.http.get<PaginatedResponse<Invoice>>(
+      '/invoices/incoming',
+      params as Record<string, string | number | boolean | undefined>,
+      requestOptions
+    );
+  }
+
+  /**
+   * Accept an incoming invoice
+   *
+   * Mark an incoming invoice as accepted, optionally specifying a payment date.
+   *
+   * @param id - Invoice UUID
+   * @param data - Optional acceptance data
+   * @param requestOptions - Request options
+   * @returns Updated invoice
+   *
+   * @example
+   * ```typescript
+   * // Accept with payment date
+   * const { data: invoice } = await client.invoices.accept('invoice-uuid', {
+   *   payment_date: '2024-02-15',
+   *   note: 'Approved by accounting'
+   * });
+   *
+   * // Simple acceptance
+   * await client.invoices.accept('invoice-uuid');
+   * ```
+   */
+  async accept(
+    id: string,
+    data?: AcceptInvoiceInput,
+    requestOptions?: RequestOptions
+  ): Promise<SingleResponse<Invoice>> {
+    return this.http.post<SingleResponse<Invoice>>(
+      `/invoices/${id}/accept`,
+      data,
+      requestOptions
+    );
+  }
+
+  /**
+   * Reject an incoming invoice
+   *
+   * Mark an incoming invoice as rejected with a reason.
+   *
+   * @param id - Invoice UUID
+   * @param data - Rejection details
+   * @param requestOptions - Request options
+   * @returns Updated invoice
+   *
+   * @example
+   * ```typescript
+   * const { data: invoice } = await client.invoices.reject('invoice-uuid', {
+   *   reason: 'Invoice amount does not match purchase order',
+   *   reason_code: 'incorrect_amount'
+   * });
+   * ```
+   */
+  async reject(
+    id: string,
+    data: RejectInvoiceInput,
+    requestOptions?: RequestOptions
+  ): Promise<SingleResponse<Invoice>> {
+    return this.http.post<SingleResponse<Invoice>>(
+      `/invoices/${id}/reject`,
+      data,
+      requestOptions
+    );
+  }
+
+  /**
+   * Dispute an incoming invoice
+   *
+   * Open a dispute on an incoming invoice for resolution.
+   *
+   * @param id - Invoice UUID
+   * @param data - Dispute details
+   * @param requestOptions - Request options
+   * @returns Updated invoice
+   *
+   * @example
+   * ```typescript
+   * const { data: invoice } = await client.invoices.dispute('invoice-uuid', {
+   *   reason: 'Billed amount exceeds agreed price',
+   *   dispute_type: 'amount_dispute',
+   *   expected_amount: 950.00
+   * });
+   * ```
+   */
+  async dispute(
+    id: string,
+    data: DisputeInvoiceInput,
+    requestOptions?: RequestOptions
+  ): Promise<SingleResponse<Invoice>> {
+    return this.http.post<SingleResponse<Invoice>>(
+      `/invoices/${id}/dispute`,
+      data,
+      requestOptions
+    );
   }
 }

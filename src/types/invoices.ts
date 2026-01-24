@@ -189,3 +189,68 @@ export interface AuditTrailResponse {
   data: AuditTrailEntry[];
   integrity_valid: boolean;
 }
+
+/**
+ * Incoming invoice list filter options
+ */
+export interface IncomingInvoiceParams {
+  status?: InvoiceStatus | undefined;
+  seller_siret?: Siret | undefined;
+  from?: DateString | undefined;
+  to?: DateString | undefined;
+  min_amount?: number | undefined;
+  max_amount?: number | undefined;
+  page?: number | undefined;
+  per_page?: number | undefined;
+}
+
+/**
+ * Rejection reason code for incoming invoices
+ */
+export type RejectionCode =
+  | 'incorrect_amount'
+  | 'duplicate'
+  | 'unknown_order'
+  | 'incorrect_vat'
+  | 'other';
+
+/**
+ * Dispute type for incoming invoices
+ */
+export type DisputeType =
+  | 'amount_dispute'
+  | 'quality_dispute'
+  | 'delivery_dispute'
+  | 'other';
+
+/**
+ * Input for accepting an incoming invoice
+ */
+export interface AcceptInvoiceInput {
+  /** Expected payment date (YYYY-MM-DD) */
+  payment_date?: DateString | undefined;
+  /** Optional note about the acceptance */
+  note?: string | undefined;
+}
+
+/**
+ * Input for rejecting an incoming invoice
+ */
+export interface RejectInvoiceInput {
+  /** Reason for rejection */
+  reason: string;
+  /** Standardized rejection code */
+  reason_code: RejectionCode;
+}
+
+/**
+ * Input for disputing an incoming invoice
+ */
+export interface DisputeInvoiceInput {
+  /** Reason for the dispute */
+  reason: string;
+  /** Type of dispute */
+  dispute_type: DisputeType;
+  /** Expected correct amount (if amount dispute) */
+  expected_amount?: number | undefined;
+}

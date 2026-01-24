@@ -4,13 +4,19 @@ import type { DateTimeString, Environment, UUID } from './common.js';
  * Available webhook events
  */
 export type WebhookEvent =
-  // Invoice events
+  // Invoice events (outgoing)
   | 'invoice.created'
   | 'invoice.validated'
   | 'invoice.transmitted'
   | 'invoice.accepted'
   | 'invoice.rejected'
   | 'invoice.error'
+  // Invoice events (incoming)
+  | 'invoice.incoming.received'
+  | 'invoice.incoming.validated'
+  | 'invoice.incoming.accepted'
+  | 'invoice.incoming.rejected'
+  | 'invoice.incoming.disputed'
   // Signature events
   | 'signature.created'
   | 'signature.waiting'

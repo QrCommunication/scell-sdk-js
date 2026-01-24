@@ -259,6 +259,40 @@ const { data: trail, integrity_valid } = await apiClient.invoices.auditTrail(inv
 await apiClient.invoices.convert({ invoice_id: invoiceId, target_format: 'ubl' });
 ```
 
+### Incoming Invoices (Supplier Invoices)
+
+```typescript
+// List incoming invoices
+const { data: incoming, meta } = await apiClient.invoices.incoming({
+  status: 'pending',
+  seller_siret: '12345678901234',
+  from: '2024-01-01',
+  min_amount: 100,
+  per_page: 50,
+});
+
+console.log(`Found ${meta.total} incoming invoices`);
+
+// Accept an incoming invoice
+const { data: accepted } = await apiClient.invoices.accept(invoiceId, {
+  payment_date: '2024-02-15',
+  note: 'Approved by accounting department',
+});
+
+// Reject an incoming invoice
+const { data: rejected } = await apiClient.invoices.reject(invoiceId, {
+  reason: 'Invoice amount does not match purchase order #PO-2024-001',
+  reason_code: 'incorrect_amount',
+});
+
+// Dispute an incoming invoice
+const { data: disputed } = await apiClient.invoices.dispute(invoiceId, {
+  reason: 'Billed amount exceeds agreed price by 50 EUR',
+  dispute_type: 'amount_dispute',
+  expected_amount: 950.00,
+});
+```
+
 ### Signatures
 
 ```typescript
@@ -412,6 +446,11 @@ const result = await withRetry(
 | `invoice.accepted` | Invoice accepted |
 | `invoice.rejected` | Invoice rejected |
 | `invoice.error` | Invoice processing error |
+| `invoice.incoming.received` | Incoming invoice received from supplier |
+| `invoice.incoming.validated` | Incoming invoice validated |
+| `invoice.incoming.accepted` | Incoming invoice accepted |
+| `invoice.incoming.rejected` | Incoming invoice rejected |
+| `invoice.incoming.disputed` | Incoming invoice disputed |
 | `signature.created` | Signature request created |
 | `signature.waiting` | Waiting for signers |
 | `signature.signed` | A signer has signed |
@@ -432,10 +471,19 @@ import type {
   InvoiceStatus,
   InvoiceDirection,
   CreateInvoiceInput,
+  // Incoming invoices
+  IncomingInvoiceParams,
+  AcceptInvoiceInput,
+  RejectInvoiceInput,
+  DisputeInvoiceInput,
+  RejectionCode,
+  DisputeType,
+  // Signatures
   Signature,
   SignatureStatus,
   CreateSignatureInput,
   Signer,
+  // Other
   Company,
   Balance,
   Transaction,

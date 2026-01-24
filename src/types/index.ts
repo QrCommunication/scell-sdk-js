@@ -26,10 +26,14 @@ export type {
 
 // Invoice types
 export type {
+  AcceptInvoiceInput,
   AuditTrailEntry,
   AuditTrailResponse,
   ConvertInvoiceInput,
   CreateInvoiceInput,
+  DisputeInvoiceInput,
+  DisputeType,
+  IncomingInvoiceParams,
   Invoice,
   InvoiceDirection,
   InvoiceDownloadResponse,
@@ -40,6 +44,8 @@ export type {
   InvoiceListOptions,
   InvoiceParty,
   InvoiceStatus,
+  RejectInvoiceInput,
+  RejectionCode,
 } from './invoices.js';
 
 // Signature types
