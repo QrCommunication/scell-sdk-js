@@ -17,6 +17,7 @@ export type WebhookEvent =
   | 'invoice.incoming.accepted'
   | 'invoice.incoming.rejected'
   | 'invoice.incoming.disputed'
+  | 'invoice.incoming.paid'
   // Signature events
   | 'signature.created'
   | 'signature.waiting'
@@ -149,4 +150,26 @@ export interface BalanceWebhookData {
   amount: number;
   currency: string;
   threshold: number;
+}
+
+/**
+ * Invoice incoming paid webhook payload data
+ */
+export interface InvoiceIncomingPaidPayload {
+  /** Invoice UUID */
+  invoice_id: string;
+  /** Invoice number */
+  invoice_number: string;
+  /** Seller company name */
+  seller_name: string;
+  /** Seller SIRET (14 digits) */
+  seller_siret: string;
+  /** Total amount including tax */
+  total_amount: number;
+  /** Currency code (ISO 4217) */
+  currency: string;
+  /** Date when the invoice was marked as paid (ISO 8601) */
+  paid_at: string;
+  /** Payment reference (if provided) */
+  payment_reference?: string | undefined;
 }

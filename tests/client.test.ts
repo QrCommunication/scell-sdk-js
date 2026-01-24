@@ -338,6 +338,140 @@ describe('ScellWebhooks', () => {
   });
 });
 
+describe('invoices.markPaid', () => {
+  beforeEach(() => {
+    mockFetch.mockReset();
+  });
+
+  it('should mark invoice as paid with payment details', async () => {
+    const mockResponse = {
+      data: {
+        id: 'invoice-uuid',
+        invoice_number: 'FACT-2024-001',
+        status: 'paid',
+        paid_at: '2026-01-24T10:30:00Z',
+        payment_reference: 'VIR-2026-0124',
+        payment_note: 'Payment received via bank transfer',
+      },
+    };
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      headers: new Headers({ 'Content-Type': 'application/json' }),
+      json: () => Promise.resolve(mockResponse),
+    });
+
+    const client = new ScellApiClient('api-key');
+    const result = await client.invoices.markPaid('invoice-uuid', {
+      payment_reference: 'VIR-2026-0124',
+      paid_at: '2026-01-24T10:30:00Z',
+      note: 'Payment received via bank transfer',
+    });
+
+    expect(result.data.status).toBe('paid');
+    expect(result.data.paid_at).toBe('2026-01-24T10:30:00Z');
+    expect(result.data.payment_reference).toBe('VIR-2026-0124');
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining('/invoices/invoice-uuid/mark-paid'),
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          'X-API-Key': 'api-key',
+        }),
+      })
+    );
+  });
+
+  it('should mark invoice as paid without payment details', async () => {
+    const mockResponse = {
+      data: {
+        id: 'invoice-uuid',
+        invoice_number: 'FACT-2024-001',
+        status: 'paid',
+        paid_at: '2026-01-24T12:00:00Z',
+        payment_reference: null,
+        payment_note: null,
+      },
+    };
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      headers: new Headers({ 'Content-Type': 'application/json' }),
+      json: () => Promise.resolve(mockResponse),
+    });
+
+    const client = new ScellApiClient('api-key');
+    const result = await client.invoices.markPaid('invoice-uuid');
+
+    expect(result.data.status).toBe('paid');
+    expect(result.data.paid_at).toBeDefined();
+  });
+});
+
+describe('invoices.downloadFile', () => {
+  beforeEach(() => {
+    mockFetch.mockReset();
+  });
+
+  it('should download PDF by default', async () => {
+    const mockPdfContent = new ArrayBuffer(1024);
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      headers: new Headers({ 'Content-Type': 'application/pdf' }),
+      arrayBuffer: () => Promise.resolve(mockPdfContent),
+    });
+
+    const client = new ScellApiClient('api-key');
+    const result = await client.invoices.downloadFile('invoice-uuid');
+
+    expect(result).toBeInstanceOf(ArrayBuffer);
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining('/invoices/invoice-uuid/download?format=pdf'),
+      expect.objectContaining({
+        method: 'GET',
+        headers: expect.objectContaining({
+          'X-API-Key': 'api-key',
+        }),
+      })
+    );
+  });
+
+  it('should download XML when specified', async () => {
+    const mockXmlContent = new ArrayBuffer(512);
+
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      headers: new Headers({ 'Content-Type': 'application/xml' }),
+      arrayBuffer: () => Promise.resolve(mockXmlContent),
+    });
+
+    const client = new ScellApiClient('api-key');
+    const result = await client.invoices.downloadFile('invoice-uuid', 'xml');
+
+    expect(result).toBeInstanceOf(ArrayBuffer);
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining('/invoices/invoice-uuid/download?format=xml'),
+      expect.any(Object)
+    );
+  });
+
+  it('should handle download errors', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 404,
+      headers: new Headers({ 'Content-Type': 'application/json' }),
+      json: () => Promise.resolve({ message: 'Invoice not found' }),
+    });
+
+    const client = new ScellApiClient('api-key');
+
+    await expect(
+      client.invoices.downloadFile('non-existent-uuid')
+    ).rejects.toThrow();
+  });
+});
+
 describe('withRetry', () => {
   beforeEach(() => {
     mockFetch.mockReset();

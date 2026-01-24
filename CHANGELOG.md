@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-01-24
+
+### Added
+
+- **Mark Paid Support**: Mark incoming invoices as paid (mandatory status in French e-invoicing lifecycle)
+  - `invoices.markPaid(id, data?)` - Mark invoice as paid with optional payment reference, date, and note
+
+- **Download Invoice Files**: Download original invoice files as binary content
+  - `invoices.downloadFile(id)` - Download PDF (Factur-X with embedded XML)
+  - `invoices.downloadFile(id, 'xml')` - Download standalone XML (UBL/CII)
+  - Returns `ArrayBuffer` for direct file manipulation in Node.js or browser
+
+- **HTTP Client Enhancement**:
+  - `HttpClient.getRaw()` - New method for downloading binary content
+
+- **New Types**:
+  - `MarkPaidInput` - Input type for marking invoices as paid
+  - `InvoiceFileFormat` - Type for download format ('pdf' | 'xml')
+  - `InvoiceIncomingPaidPayload` - Webhook payload for paid invoices
+  - Added `paid_at`, `payment_reference`, `payment_note` fields to `Invoice` type
+  - Added `'paid'`, `'disputed'`, `'cancelled'` to `InvoiceStatus` type
+
+- **New Webhook Event**:
+  - `invoice.incoming.paid` - Triggered when an incoming invoice is marked as paid
+
 ## [1.1.0] - 2026-01-24
 
 ### Added
@@ -75,5 +100,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - ScellRateLimitError with retry-after info
   - ScellInsufficientBalanceError for balance issues
 
+[1.2.0]: https://github.com/QrCommunication/scell-sdk-js/releases/tag/v1.2.0
 [1.1.0]: https://github.com/QrCommunication/scell-sdk-js/releases/tag/v1.1.0
 [1.0.0]: https://github.com/QrCommunication/scell-sdk-js/releases/tag/v1.0.0

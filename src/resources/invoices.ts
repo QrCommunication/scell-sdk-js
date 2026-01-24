@@ -20,7 +20,9 @@ import type {
   Invoice,
   InvoiceDownloadResponse,
   InvoiceDownloadType,
+  InvoiceFileFormat,
   InvoiceListOptions,
+  MarkPaidInput,
   RejectInvoiceInput,
 } from '../types/invoices.js';
 
@@ -374,6 +376,87 @@ export class InvoicesResource {
     return this.http.post<SingleResponse<Invoice>>(
       `/invoices/${id}/dispute`,
       data,
+      requestOptions
+    );
+  }
+
+  /**
+   * Mark an incoming invoice as paid
+   *
+   * This is a mandatory step in the French e-invoicing lifecycle for incoming invoices.
+   * Once marked as paid, the invoice status changes to 'paid' and payment details are recorded.
+   *
+   * @param id - Invoice UUID
+   * @param data - Optional payment details (reference, date, note)
+   * @param requestOptions - Request options
+   * @returns Updated invoice with payment information
+   *
+   * @example
+   * ```typescript
+   * // Mark as paid with payment details
+   * const { data: invoice } = await client.invoices.markPaid('invoice-uuid', {
+   *   payment_reference: 'VIR-2026-0124',
+   *   paid_at: '2026-01-24T10:30:00Z',
+   *   note: 'Payment received via bank transfer'
+   * });
+   *
+   * // Simple mark as paid (uses current date/time)
+   * await client.invoices.markPaid('invoice-uuid');
+   * ```
+   */
+  async markPaid(
+    id: string,
+    data?: MarkPaidInput,
+    requestOptions?: RequestOptions
+  ): Promise<SingleResponse<Invoice>> {
+    return this.http.post<SingleResponse<Invoice>>(
+      `/invoices/${id}/mark-paid`,
+      data,
+      requestOptions
+    );
+  }
+
+  /**
+   * Download invoice source file as binary content
+   *
+   * Downloads the original invoice file (PDF with embedded XML for Factur-X,
+   * or standalone XML for UBL/CII formats).
+   *
+   * @param id - Invoice UUID
+   * @param format - File format to download: 'pdf' (default) or 'xml'
+   * @param requestOptions - Request options
+   * @returns ArrayBuffer containing the file content
+   *
+   * @example
+   * ```typescript
+   * // Download invoice as PDF (Factur-X)
+   * const pdfBuffer = await client.invoices.downloadFile('invoice-uuid');
+   *
+   * // In Node.js, save to file:
+   * import { writeFileSync } from 'fs';
+   * writeFileSync('invoice.pdf', Buffer.from(pdfBuffer));
+   *
+   * // Download XML version (UBL/CII)
+   * const xmlBuffer = await client.invoices.downloadFile('invoice-uuid', 'xml');
+   * writeFileSync('invoice.xml', Buffer.from(xmlBuffer));
+   *
+   * // In browser, trigger download:
+   * const blob = new Blob([pdfBuffer], { type: 'application/pdf' });
+   * const url = URL.createObjectURL(blob);
+   * const a = document.createElement('a');
+   * a.href = url;
+   * a.download = 'invoice.pdf';
+   * a.click();
+   * ```
+   */
+  async downloadFile(
+    id: string,
+    format: InvoiceFileFormat = 'pdf',
+    requestOptions?: RequestOptions
+  ): Promise<ArrayBuffer> {
+    return this.http.getRaw(
+      `/invoices/${id}/download`,
+      { format },
       requestOptions
     );
   }

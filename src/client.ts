@@ -294,4 +294,80 @@ export class HttpClient {
       ...options,
     });
   }
+
+  /**
+   * GET request that returns raw binary data as ArrayBuffer
+   *
+   * Use this for downloading files (PDF, XML, etc.)
+   *
+   * @param path - API endpoint path
+   * @param query - Query parameters
+   * @param options - Request options
+   * @returns ArrayBuffer containing the file content
+   */
+  async getRaw(
+    path: string,
+    query?: Record<string, string | number | boolean | undefined>,
+    options?: RequestOptions
+  ): Promise<ArrayBuffer> {
+    const url = this.buildUrl(path, query);
+    const requestHeaders = this.buildHeaders(options?.headers);
+    const requestTimeout = options?.timeout ?? this.timeout;
+
+    // Remove JSON content-type for raw requests
+    delete requestHeaders['Content-Type'];
+    requestHeaders['Accept'] = '*/*';
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), requestTimeout);
+
+    if (options?.signal) {
+      options.signal.addEventListener('abort', () => controller.abort());
+    }
+
+    try {
+      const response = await this.fetchFn(url, {
+        method: 'GET',
+        headers: requestHeaders,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        // Try to parse error as JSON
+        const contentType = response.headers.get('Content-Type') ?? '';
+        let responseBody: unknown;
+
+        if (contentType.includes('application/json')) {
+          responseBody = await response.json();
+        } else {
+          responseBody = await response.text();
+        }
+
+        parseApiError(response.status, responseBody, response.headers);
+      }
+
+      return response.arrayBuffer();
+    } catch (error) {
+      clearTimeout(timeoutId);
+
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          throw new ScellTimeoutError(
+            `Request timed out after ${requestTimeout}ms`
+          );
+        }
+
+        if (
+          error.name === 'TypeError' &&
+          error.message.includes('fetch')
+        ) {
+          throw new ScellNetworkError('Network request failed', error);
+        }
+      }
+
+      throw error;
+    }
+  }
 }

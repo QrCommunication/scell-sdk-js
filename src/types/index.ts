@@ -38,12 +38,14 @@ export type {
   InvoiceDirection,
   InvoiceDownloadResponse,
   InvoiceDownloadType,
+  InvoiceFileFormat,
   InvoiceFormat,
   InvoiceLine,
   InvoiceLineInput,
   InvoiceListOptions,
   InvoiceParty,
   InvoiceStatus,
+  MarkPaidInput,
   RejectInvoiceInput,
   RejectionCode,
 } from './invoices.js';
@@ -91,6 +93,7 @@ export type {
 export type {
   BalanceWebhookData,
   CreateWebhookInput,
+  InvoiceIncomingPaidPayload,
   InvoiceWebhookData,
   SignatureWebhookData,
   UpdateWebhookInput,

@@ -29,6 +29,9 @@ export type InvoiceStatus =
   | 'transmitted'
   | 'accepted'
   | 'rejected'
+  | 'paid'
+  | 'disputed'
+  | 'cancelled'
   | 'error';
 
 /**
@@ -86,6 +89,12 @@ export interface Invoice {
   validated_at: DateTimeString | null;
   transmitted_at: DateTimeString | null;
   completed_at: DateTimeString | null;
+  /** Date when the invoice was marked as paid (ISO 8601) */
+  paid_at: DateTimeString | null;
+  /** Payment reference (bank transfer ID, check number, etc.) */
+  payment_reference: string | null;
+  /** Optional note about the payment */
+  payment_note: string | null;
 }
 
 /**
@@ -254,3 +263,20 @@ export interface DisputeInvoiceInput {
   /** Expected correct amount (if amount dispute) */
   expected_amount?: number | undefined;
 }
+
+/**
+ * Input for marking an incoming invoice as paid
+ */
+export interface MarkPaidInput {
+  /** Payment reference (bank transfer ID, check number, etc.) */
+  payment_reference?: string | undefined;
+  /** Payment date (ISO 8601) - defaults to current date/time if not provided */
+  paid_at?: DateTimeString | undefined;
+  /** Optional note about the payment */
+  note?: string | undefined;
+}
+
+/**
+ * Invoice file download format
+ */
+export type InvoiceFileFormat = 'pdf' | 'xml';

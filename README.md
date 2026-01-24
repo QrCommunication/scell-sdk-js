@@ -291,6 +291,23 @@ const { data: disputed } = await apiClient.invoices.dispute(invoiceId, {
   dispute_type: 'amount_dispute',
   expected_amount: 950.00,
 });
+
+// Mark an invoice as paid (mandatory in French e-invoicing lifecycle)
+const { data: paidInvoice } = await apiClient.invoices.markPaid(invoiceId, {
+  payment_reference: 'VIR-2026-0124',
+  paid_at: '2026-01-24T10:30:00Z',
+  note: 'Payment received via bank transfer',
+});
+
+// Download invoice file as PDF (Factur-X with embedded XML)
+const pdfBuffer = await apiClient.invoices.downloadFile(invoiceId);
+// In Node.js:
+import { writeFileSync } from 'fs';
+writeFileSync('invoice.pdf', Buffer.from(pdfBuffer));
+
+// Download XML version (UBL/CII standalone)
+const xmlBuffer = await apiClient.invoices.downloadFile(invoiceId, 'xml');
+writeFileSync('invoice.xml', Buffer.from(xmlBuffer));
 ```
 
 ### Signatures
@@ -451,6 +468,7 @@ const result = await withRetry(
 | `invoice.incoming.accepted` | Incoming invoice accepted |
 | `invoice.incoming.rejected` | Incoming invoice rejected |
 | `invoice.incoming.disputed` | Incoming invoice disputed |
+| `invoice.incoming.paid` | Incoming invoice marked as paid |
 | `signature.created` | Signature request created |
 | `signature.waiting` | Waiting for signers |
 | `signature.signed` | A signer has signed |
@@ -470,12 +488,14 @@ import type {
   Invoice,
   InvoiceStatus,
   InvoiceDirection,
+  InvoiceFileFormat,
   CreateInvoiceInput,
   // Incoming invoices
   IncomingInvoiceParams,
   AcceptInvoiceInput,
   RejectInvoiceInput,
   DisputeInvoiceInput,
+  MarkPaidInput,
   RejectionCode,
   DisputeType,
   // Signatures
@@ -483,13 +503,15 @@ import type {
   SignatureStatus,
   CreateSignatureInput,
   Signer,
+  // Webhooks
+  Webhook,
+  WebhookEvent,
+  WebhookPayload,
+  InvoiceIncomingPaidPayload,
   // Other
   Company,
   Balance,
   Transaction,
-  Webhook,
-  WebhookEvent,
-  WebhookPayload,
 } from '@scell/sdk';
 ```
 
