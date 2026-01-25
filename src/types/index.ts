@@ -122,3 +122,16 @@ export type {
   ResetPasswordInput,
   User,
 } from './auth.js';
+
+// Tenant Credit Notes types
+export type {
+  CreateTenantCreditNoteInput,
+  RemainingCreditable,
+  RemainingCreditableLine,
+  TenantCreditNote,
+  TenantCreditNoteItem,
+  TenantCreditNoteItemInput,
+  TenantCreditNoteListOptions,
+  TenantCreditNoteStatus,
+  TenantCreditNoteType,
+} from './tenant-credit-notes.js';
