@@ -202,8 +202,9 @@ const apiClient = new ScellApiClient(apiKey, {
 });
 
 // Resources
-apiClient.invoices    // Create, download, convert invoices
-apiClient.signatures  // Create, download, remind, cancel signatures
+apiClient.invoices          // Create, download, convert invoices
+apiClient.signatures        // Create, download, remind, cancel signatures
+apiClient.tenantCreditNotes // Create, send, download tenant credit notes
 ```
 
 ### Companies
@@ -334,6 +335,58 @@ const { signers_reminded } = await apiClient.signatures.remind(signatureId);
 
 // Cancel
 await apiClient.signatures.cancel(signatureId);
+```
+
+### Tenant Credit Notes
+
+```typescript
+// List credit notes for a sub-tenant
+const { data, meta } = await apiClient.tenantCreditNotes.list('sub-tenant-uuid', {
+  status: 'sent',
+  date_from: '2024-01-01',
+  per_page: 50,
+});
+console.log(`Found ${meta.total} credit notes`);
+
+// Check remaining creditable amount for an invoice
+const remaining = await apiClient.tenantCreditNotes.remainingCreditable('invoice-uuid');
+console.log('Remaining to credit:', remaining.remaining_total);
+remaining.lines.forEach(line => {
+  console.log(`${line.description}: ${line.remaining_quantity} items remaining`);
+});
+
+// Create a partial credit note
+const { data: creditNote } = await apiClient.tenantCreditNotes.create('sub-tenant-uuid', {
+  invoice_id: 'invoice-uuid',
+  reason: 'Product returned - damaged item',
+  type: 'partial',
+  items: [
+    { invoice_line_id: 'line-uuid-1', quantity: 2 }
+  ]
+});
+
+// Create a total credit note
+const { data: totalCreditNote } = await apiClient.tenantCreditNotes.create('sub-tenant-uuid', {
+  invoice_id: 'invoice-uuid',
+  reason: 'Order cancelled',
+  type: 'total'
+});
+
+// Get credit note details
+const { data: details } = await apiClient.tenantCreditNotes.get('credit-note-uuid');
+console.log('Credit note number:', details.credit_note_number);
+
+// Send a credit note (changes status from draft to sent)
+const { data: sent } = await apiClient.tenantCreditNotes.send('credit-note-uuid');
+
+// Download credit note as PDF
+const pdfBuffer = await apiClient.tenantCreditNotes.download('credit-note-uuid');
+// In Node.js:
+import { writeFileSync } from 'fs';
+writeFileSync('credit-note.pdf', Buffer.from(pdfBuffer));
+
+// Delete a draft credit note
+await apiClient.tenantCreditNotes.delete('credit-note-uuid');
 ```
 
 ### Balance
@@ -503,6 +556,12 @@ import type {
   SignatureStatus,
   CreateSignatureInput,
   Signer,
+  // Tenant Credit Notes
+  TenantCreditNote,
+  TenantCreditNoteStatus,
+  TenantCreditNoteType,
+  CreateTenantCreditNoteInput,
+  RemainingCreditable,
   // Webhooks
   Webhook,
   WebhookEvent,

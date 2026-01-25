@@ -32,6 +32,7 @@ import { BalanceResource } from './resources/balance.js';
 import { CompaniesResource } from './resources/companies.js';
 import { InvoicesResource } from './resources/invoices.js';
 import { SignaturesResource } from './resources/signatures.js';
+import { TenantCreditNotesResource } from './resources/tenant-credit-notes.js';
 import { WebhooksResource } from './resources/webhooks.js';
 
 // Utilities
@@ -143,6 +144,8 @@ export class ScellApiClient {
   public readonly invoices: InvoicesResource;
   /** Signature operations (create, download, remind, cancel) */
   public readonly signatures: SignaturesResource;
+  /** Tenant credit notes operations (create, send, download) */
+  public readonly tenantCreditNotes: TenantCreditNotesResource;
 
   /**
    * Create a new Scell API Client
@@ -166,6 +169,7 @@ export class ScellApiClient {
 
     this.invoices = new InvoicesResource(this.http);
     this.signatures = new SignaturesResource(this.http);
+    this.tenantCreditNotes = new TenantCreditNotesResource(this.http);
   }
 }
 
