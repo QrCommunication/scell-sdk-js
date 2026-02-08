@@ -5,7 +5,7 @@
  *
  * @example
  * ```typescript
- * import { ScellClient, ScellApiClient, ScellAuth, ScellWebhooks } from '@scell/sdk';
+ * import { ScellClient, ScellApiClient, ScellTenantClient, ScellAuth, ScellWebhooks } from '@scell/sdk';
  *
  * // Dashboard client (Bearer token)
  * const auth = await ScellAuth.login({ email, password });
@@ -14,8 +14,14 @@
  * // API client (X-API-Key)
  * const apiClient = new ScellApiClient('your-api-key');
  *
+ * // Tenant client (X-Tenant-Key) - for multi-tenant operations
+ * const tenantClient = new ScellTenantClient('your-tenant-key');
+ *
  * // Create invoice
  * const invoice = await apiClient.invoices.create({...});
+ *
+ * // Create direct invoice (tenant)
+ * const directInvoice = await tenantClient.directInvoices.create({...});
  *
  * // Verify webhook
  * const isValid = await ScellWebhooks.verifySignature(payload, signature, secret);
@@ -24,6 +30,9 @@
 
 // Client
 import { HttpClient, type ClientConfig } from './client.js';
+
+// Tenant Client
+import { ScellTenantClient } from './tenant-client.js';
 
 // Resources
 import { ApiKeysResource } from './resources/api-keys.js';
@@ -175,6 +184,9 @@ export class ScellApiClient {
 
 // Re-export utilities
 export { ScellAuth, ScellWebhooks, withRetry, createRetryWrapper };
+
+// Re-export tenant client
+export { ScellTenantClient };
 
 // Re-export types
 export type { ClientConfig } from './client.js';

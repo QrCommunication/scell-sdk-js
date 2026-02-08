@@ -134,4 +134,94 @@ export type {
   TenantCreditNoteListOptions,
   TenantCreditNoteStatus,
   TenantCreditNoteType,
+  UpdateTenantCreditNoteInput,
 } from './tenant-credit-notes.js';
+
+// Tenant Invoices types (multi-tenant)
+export type {
+  CreateIncomingInvoiceParams,
+  CreateTenantDirectCreditNoteParams,
+  CreateTenantDirectInvoiceParams,
+  TenantCreditNoteFilters,
+  TenantInvoice,
+  TenantInvoiceBuyer,
+  TenantInvoiceDirection,
+  TenantInvoiceFilters,
+  TenantInvoiceSeller,
+  UpdateTenantCreditNoteParams,
+  UpdateTenantInvoiceParams,
+} from './tenant-invoices.js';
+
+// Fiscal types
+export type {
+  FiscalAnchor,
+  FiscalAnchorsOptions,
+  FiscalAttestation,
+  FiscalAttestationStatus,
+  FiscalClosing,
+  FiscalClosingsOptions,
+  FiscalComplianceData,
+  FiscalComplianceStatus,
+  FiscalCreateRuleInput,
+  FiscalDailyClosingInput,
+  FiscalEntriesOptions,
+  FiscalEntry,
+  FiscalExportRulesOptions,
+  FiscalFecExportOptions,
+  FiscalFecExportResult,
+  FiscalForensicExportOptions,
+  FiscalForensicExportType,
+  FiscalIncident,
+  FiscalIntegrityCheck,
+  FiscalIntegrityHistoryOptions,
+  FiscalIntegrityOptions,
+  FiscalIntegrityReport,
+  FiscalKillSwitch,
+  FiscalKillSwitchActivateInput,
+  FiscalKillSwitchStatus,
+  FiscalReplayRulesInput,
+  FiscalRule,
+  FiscalRuleCategory,
+  FiscalRulesOptions,
+  FiscalUpdateRuleInput,
+} from './fiscal.js';
+
+// Billing types
+export type {
+  BillingInvoice,
+  BillingInvoiceLine,
+  BillingInvoiceListOptions,
+  BillingTopUpConfirmInput,
+  BillingTopUpInput,
+  BillingTransaction,
+  BillingTransactionListOptions,
+  BillingUsage,
+  BillingUsageOptions,
+} from './billing.js';
+
+// Stats types
+export type {
+  StatsMonthly,
+  StatsMonthlyOptions,
+  StatsOverview,
+  StatsOverviewOptions,
+} from './stats.js';
+
+// Sub-Tenant types
+export type {
+  CreateSubTenantInput,
+  SubTenant,
+  SubTenantAddress,
+  SubTenantListOptions,
+  UpdateSubTenantInput,
+} from './sub-tenants.js';
+
+// Tenant Profile types
+export type {
+  RegenerateKeyResult,
+  TenantBalance,
+  TenantProfile,
+  TenantAddress,
+  TenantQuickStats,
+  UpdateTenantProfileInput,
+} from './tenant-profile.js';

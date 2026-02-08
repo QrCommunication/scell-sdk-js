@@ -15,6 +15,7 @@ import type {
   RemainingCreditable,
   TenantCreditNote,
   TenantCreditNoteListOptions,
+  UpdateTenantCreditNoteInput,
 } from '../types/tenant-credit-notes.js';
 
 /**
@@ -138,6 +139,42 @@ export class TenantCreditNotesResource {
     return this.http.get<SingleResponse<TenantCreditNote>>(
       `/tenant/credit-notes/${creditNoteId}`,
       undefined,
+      requestOptions
+    );
+  }
+
+  /**
+   * Update a credit note
+   *
+   * Only credit notes in 'draft' status can be updated.
+   *
+   * @param creditNoteId - Credit note UUID
+   * @param input - Update data
+   * @param requestOptions - Request options
+   * @returns Updated credit note
+   *
+   * @example
+   * ```typescript
+   * const { data: creditNote } = await client.tenantCreditNotes.update(
+   *   'credit-note-uuid',
+   *   {
+   *     reason: 'Updated reason: Customer complaint resolved',
+   *     items: [
+   *       { invoice_line_id: 'line-uuid', quantity: 3 }
+   *     ]
+   *   }
+   * );
+   * console.log('Credit note updated:', creditNote.reason);
+   * ```
+   */
+  async update(
+    creditNoteId: string,
+    input: UpdateTenantCreditNoteInput,
+    requestOptions?: RequestOptions
+  ): Promise<SingleResponse<TenantCreditNote>> {
+    return this.http.patch<SingleResponse<TenantCreditNote>>(
+      `/tenant/credit-notes/${creditNoteId}`,
+      input,
       requestOptions
     );
   }

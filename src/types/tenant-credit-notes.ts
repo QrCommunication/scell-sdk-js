@@ -112,3 +112,17 @@ export interface TenantCreditNoteListOptions extends PaginationOptions {
   date_from?: DateString | undefined;
   date_to?: DateString | undefined;
 }
+
+/**
+ * Input for updating a tenant credit note
+ *
+ * Only credit notes in 'draft' status can be updated.
+ */
+export interface UpdateTenantCreditNoteInput {
+  /** Updated reason for the credit note */
+  reason?: string | undefined;
+  /** Updated items (for partial credit notes) */
+  items?: TenantCreditNoteItemInput[] | undefined;
+  /** Updated metadata */
+  metadata?: Record<string, unknown> | undefined;
+}

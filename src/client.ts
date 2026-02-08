@@ -14,7 +14,7 @@ import { withRetry, type RetryOptions } from './utils/retry.js';
 /**
  * Authentication mode
  */
-export type AuthMode = 'bearer' | 'api-key';
+export type AuthMode = 'bearer' | 'api-key' | 'tenant-key';
 
 /**
  * Client configuration options
@@ -116,6 +116,8 @@ export class HttpClient {
 
     if (this.authMode === 'bearer') {
       headers['Authorization'] = `Bearer ${this.authToken}`;
+    } else if (this.authMode === 'tenant-key') {
+      headers['X-Tenant-Key'] = this.authToken;
     } else {
       headers['X-API-Key'] = this.authToken;
     }
