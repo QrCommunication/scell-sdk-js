@@ -165,10 +165,10 @@ export class ScellApiClient {
    * @example
    * ```typescript
    * // Production client
-   * const client = new ScellApiClient('sk_live_xxx');
+   * const client = new ScellApiClient('tk_live_xxx');
    *
    * // Sandbox client
-   * const sandboxClient = new ScellApiClient('sk_test_xxx', {
+   * const sandboxClient = new ScellApiClient('tk_test_xxx', {
    *   baseUrl: 'https://api.scell.io/api/v1/sandbox'
    * });
    * ```
