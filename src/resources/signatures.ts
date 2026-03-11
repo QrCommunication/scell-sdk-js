@@ -11,6 +11,7 @@ import type {
   PaginatedResponse,
   SingleResponse,
 } from '../types/common.js';
+import type { AuditTrailResponse } from '../types/invoices.js';
 import type {
   CreateSignatureInput,
   Signature,
@@ -238,6 +239,38 @@ export class SignaturesResource {
   ): Promise<MessageResponse> {
     return this.http.post<MessageResponse>(
       `/signatures/${id}/cancel`,
+      undefined,
+      requestOptions
+    );
+  }
+
+  /**
+   * Get signature audit trail (JSON)
+   *
+   * Returns the complete history of actions on the signature:
+   * creation, delivery, opening, signing, refusal, etc.
+   *
+   * @param id - Signature UUID
+   * @param requestOptions - Request options
+   * @returns Audit trail entries with integrity validation
+   *
+   * @example
+   * ```typescript
+   * const { data: entries, integrity_valid } = await client.signatures.auditTrail(
+   *   'signature-uuid'
+   * );
+   *
+   * if (integrity_valid) {
+   *   entries.forEach(e => console.log(e.action, e.created_at));
+   * }
+   * ```
+   */
+  async auditTrail(
+    id: string,
+    requestOptions?: RequestOptions
+  ): Promise<AuditTrailResponse> {
+    return this.http.get<AuditTrailResponse>(
+      `/signatures/${id}/audit-trail`,
       undefined,
       requestOptions
     );

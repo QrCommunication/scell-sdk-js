@@ -38,10 +38,16 @@ import { ScellTenantClient } from './tenant-client.js';
 import { ApiKeysResource } from './resources/api-keys.js';
 import { AuthResource, ScellAuth } from './resources/auth.js';
 import { BalanceResource } from './resources/balance.js';
+import { BillingResource } from './resources/billing.js';
 import { CompaniesResource } from './resources/companies.js';
+import { FiscalResource } from './resources/fiscal.js';
 import { InvoicesResource } from './resources/invoices.js';
 import { SignaturesResource } from './resources/signatures.js';
+import { StatsResource } from './resources/stats.js';
+import { SubTenantsResource } from './resources/sub-tenants.js';
 import { TenantCreditNotesResource } from './resources/tenant-credit-notes.js';
+import { TenantDirectInvoicesResource } from './resources/tenant-direct-invoices.js';
+import { TenantIncomingInvoicesResource } from './resources/tenant-incoming-invoices.js';
 import { WebhooksResource } from './resources/webhooks.js';
 
 // Utilities
@@ -153,22 +159,34 @@ export class ScellApiClient {
   public readonly invoices: InvoicesResource;
   /** Signature operations (create, download, remind, cancel) */
   public readonly signatures: SignaturesResource;
-  /** Tenant credit notes operations (create, send, download) */
-  public readonly tenantCreditNotes: TenantCreditNotesResource;
+  /** Sub-tenant management (provision, update, list) */
+  public readonly subTenants: SubTenantsResource;
+  /** NF525 fiscal compliance (closings, FEC, attestation) */
+  public readonly fiscal: FiscalResource;
+  /** Platform statistics */
+  public readonly stats: StatsResource;
+  /** Platform billing (usage, top-up, transactions) */
+  public readonly billing: BillingResource;
+  /** Credit notes operations (create, send, download) */
+  public readonly creditNotes: TenantCreditNotesResource;
+  /** Tenant invoice operations (create, submit, update, delete) */
+  public readonly tenantInvoices: TenantDirectInvoicesResource;
+  /** Incoming invoice operations (list, accept, reject) */
+  public readonly incomingInvoices: TenantIncomingInvoicesResource;
 
   /**
    * Create a new Scell API Client
    *
-   * @param apiKey - Your API key (from dashboard)
+   * @param apiKey - Your API key (sk_live_xxx or sk_test_xxx)
    * @param config - Client configuration
    *
    * @example
    * ```typescript
    * // Production client
-   * const client = new ScellApiClient('tk_live_xxx');
+   * const client = new ScellApiClient('sk_live_xxx');
    *
    * // Sandbox client
-   * const sandboxClient = new ScellApiClient('tk_test_xxx', {
+   * const sandboxClient = new ScellApiClient('sk_test_xxx', {
    *   baseUrl: 'https://api.scell.io/api/v1/sandbox'
    * });
    * ```
@@ -178,7 +196,13 @@ export class ScellApiClient {
 
     this.invoices = new InvoicesResource(this.http);
     this.signatures = new SignaturesResource(this.http);
-    this.tenantCreditNotes = new TenantCreditNotesResource(this.http);
+    this.subTenants = new SubTenantsResource(this.http);
+    this.fiscal = new FiscalResource(this.http);
+    this.stats = new StatsResource(this.http);
+    this.billing = new BillingResource(this.http);
+    this.creditNotes = new TenantCreditNotesResource(this.http);
+    this.tenantInvoices = new TenantDirectInvoicesResource(this.http);
+    this.incomingInvoices = new TenantIncomingInvoicesResource(this.http);
   }
 }
 
