@@ -14,6 +14,8 @@ export interface Company {
   siret: Siret;
   siren: Siren | null;
   vat_number: string | null;
+  legal_id: string | null;
+  legal_id_scheme: string | null;
   legal_form: string | null;
   address_line1: string;
   address_line2: string | null;
@@ -35,7 +37,9 @@ export interface Company {
  */
 export interface CreateCompanyInput {
   name: string;
-  siret: Siret;
+  siret?: Siret;
+  legal_id?: string;
+  legal_id_scheme?: string;
   vat_number?: string | undefined;
   legal_form?: string | undefined;
   address_line1: string;

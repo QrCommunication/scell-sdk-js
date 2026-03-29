@@ -45,7 +45,7 @@ export interface Address {
   line2?: string | undefined;
   postal_code: string;
   city: string;
-  country?: string | undefined;
+  country: string;
 }
 
 /**

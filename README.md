@@ -87,6 +87,67 @@ const { data: invoice } = await apiClient.invoices.create({
 console.log('Invoice created:', invoice.id);
 ```
 
+### International Invoicing
+
+For non-French parties, SIRET is not required. Use VAT numbers for EU businesses and `legal_id` with a scheme code for non-EU businesses.
+
+#### Invoice with Belgian Buyer (EU)
+
+```typescript
+const { data: invoice } = await apiClient.invoices.create({
+  invoice_number: 'INV-2026-042',
+  issue_date: '2026-03-29',
+  due_date: '2026-04-28',
+  currency: 'EUR',
+  // French seller (SIRET required)
+  seller_siret: '12345678901234',
+  seller_name: 'Ma Société SAS',
+  seller_country: 'FR',
+  seller_vat_number: 'FR12345678901',
+  seller_address: { line1: '10 rue de Paris', postal_code: '75001', city: 'Paris', country: 'FR' },
+  // Belgian buyer (no SIRET, VAT number instead)
+  buyer_name: 'Entreprise Belge SPRL',
+  buyer_country: 'BE',
+  buyer_vat_number: 'BE0123456789',
+  buyer_address: { line1: '15 Avenue Louise', postal_code: '1050', city: 'Bruxelles', country: 'BE' },
+  lines: [
+    { description: 'Consulting services', quantity: 10, unit_price: 150.00, vat_rate: 0 },
+  ],
+  format: 'ubl',
+});
+```
+
+> **Note:** For intra-community B2B transactions (e.g. FR -> BE, FR -> DE), VAT rate is typically 0% under the reverse charge mechanism. The buyer accounts for VAT in their own country.
+
+#### Invoice with UK Buyer (Non-EU)
+
+For non-EU buyers, use `buyer_legal_id` and `buyer_legal_id_scheme` in addition to the VAT number:
+
+```typescript
+const { data: invoice } = await apiClient.invoices.create({
+  invoice_number: 'INV-2026-044',
+  issue_date: '2026-03-29',
+  due_date: '2026-04-28',
+  currency: 'GBP',
+  seller_siret: '12345678901234',
+  seller_name: 'Ma Société SAS',
+  seller_country: 'FR',
+  seller_vat_number: 'FR12345678901',
+  seller_address: { line1: '10 rue de Paris', postal_code: '75001', city: 'Paris', country: 'FR' },
+  // UK buyer — legal_id with scheme
+  buyer_name: 'British Ltd',
+  buyer_country: 'GB',
+  buyer_vat_number: 'GB123456789',
+  buyer_legal_id: '12345678',
+  buyer_legal_id_scheme: '0088',  // UK Company Number scheme
+  buyer_address: { line1: '20 Baker Street', postal_code: 'W1U 3BW', city: 'London', country: 'GB' },
+  lines: [
+    { description: 'Design services', quantity: 5, unit_price: 200.00, vat_rate: 0 },
+  ],
+  format: 'ubl',
+});
+```
+
 ### Create a Signature Request
 
 ```typescript

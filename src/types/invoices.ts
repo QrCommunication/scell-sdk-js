@@ -57,7 +57,11 @@ export interface InvoiceLine {
  * Invoice party (seller or buyer)
  */
 export interface InvoiceParty {
-  siret: Siret;
+  siret?: Siret;
+  vat_number?: string;
+  legal_id?: string;
+  legal_id_scheme?: string;
+  country: string;
   name: string;
   address: Address;
 }
@@ -135,13 +139,29 @@ export interface CreateInvoiceInput {
   /** Total including tax */
   total_ttc: number;
   /** Seller SIRET (14 digits) */
-  seller_siret: Siret;
+  seller_siret?: Siret;
+  /** Seller VAT number */
+  seller_vat_number?: string;
+  /** Seller country (ISO 3166-1 alpha-2) */
+  seller_country: string;
+  /** Seller legal identifier */
+  seller_legal_id?: string;
+  /** Seller legal identifier scheme */
+  seller_legal_id_scheme?: string;
   /** Seller company name */
   seller_name: string;
   /** Seller address */
   seller_address: Address;
   /** Buyer SIRET (14 digits) */
-  buyer_siret: Siret;
+  buyer_siret?: Siret;
+  /** Buyer VAT number */
+  buyer_vat_number?: string;
+  /** Buyer country (ISO 3166-1 alpha-2) */
+  buyer_country: string;
+  /** Buyer legal identifier */
+  buyer_legal_id?: string;
+  /** Buyer legal identifier scheme */
+  buyer_legal_id_scheme?: string;
   /** Buyer company name */
   buyer_name: string;
   /** Buyer address */
