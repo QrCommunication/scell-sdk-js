@@ -123,6 +123,14 @@ export type {
   User,
 } from './auth.js';
 
+// Credit Notes types (direct user)
+export type {
+  CreditNote,
+  CreditNoteItem,
+  CreateCreditNoteInput,
+  CreditNoteListOptions,
+} from './credit-notes.js';
+
 // Tenant Credit Notes types
 export type {
   CreateTenantCreditNoteInput,

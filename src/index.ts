@@ -40,6 +40,7 @@ import { AuthResource, ScellAuth } from './resources/auth.js';
 import { BalanceResource } from './resources/balance.js';
 import { BillingResource } from './resources/billing.js';
 import { CompaniesResource } from './resources/companies.js';
+import { CreditNotesResource } from './resources/credit-notes.js';
 import { FiscalResource } from './resources/fiscal.js';
 import { InvoicesResource } from './resources/invoices.js';
 import { SignaturesResource } from './resources/signatures.js';
@@ -94,6 +95,8 @@ export class ScellClient {
   public readonly invoices: InvoicesResource;
   /** Signature listing (read-only via dashboard) */
   public readonly signatures: SignaturesResource;
+  /** Credit notes management */
+  public readonly creditNotes: CreditNotesResource;
 
   /**
    * Create a new Scell Dashboard Client
@@ -120,6 +123,7 @@ export class ScellClient {
     this.webhooks = new WebhooksResource(this.http);
     this.invoices = new InvoicesResource(this.http);
     this.signatures = new SignaturesResource(this.http);
+    this.creditNotes = new CreditNotesResource(this.http);
   }
 }
 

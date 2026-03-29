@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] - 2025-03-29
+
+### Fixed
+
+- **Documentation**: Correct `tenantCreditNotes` property name to `creditNotes` on `ScellApiClient` throughout the README
+- **Fiscal**: `updateRule` now correctly uses `PUT` instead of `POST` to match the `PUT /tenant/fiscal/rules/{id}` backend endpoint
+
 ## [1.4.0] - 2026-02-08
 
 ### Added
@@ -16,6 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Tenant Profile**: `me()`, `updateProfile()`, `balance()`, `quickStats()`, `regenerateKey()` on `ScellTenantClient`
 - **Bulk Operations**: `bulkCreate()`, `bulkSubmit()`, `bulkStatus()` on `TenantDirectInvoicesResource`
 - New types: `FiscalComplianceData`, `FiscalIntegrityReport`, `FiscalClosing`, `FiscalEntry`, `FiscalKillSwitchStatus`, `FiscalRule`, `FiscalAnchor`, `FiscalAttestation`, `BillingInvoice`, `BillingUsage`, `BillingTransaction`, `StatsOverview`, `StatsMonthly`, `SubTenant`, `TenantProfile`, `TenantBalance`, and 30+ supporting types
+
+## [1.3.0] - 2026-01-25
+
+### Changed
+
+- Internal improvements and bug fixes
 
 ## [1.2.0] - 2026-01-24
 
@@ -112,7 +125,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - ScellRateLimitError with retry-after info
   - ScellInsufficientBalanceError for balance issues
 
+[1.5.0]: https://github.com/QrCommunication/scell-sdk-js/releases/tag/v1.5.0
 [1.4.0]: https://github.com/QrCommunication/scell-sdk-js/releases/tag/v1.4.0
+[1.3.0]: https://github.com/QrCommunication/scell-sdk-js/releases/tag/v1.3.0
 [1.2.0]: https://github.com/QrCommunication/scell-sdk-js/releases/tag/v1.2.0
 [1.1.0]: https://github.com/QrCommunication/scell-sdk-js/releases/tag/v1.1.0
 [1.0.0]: https://github.com/QrCommunication/scell-sdk-js/releases/tag/v1.0.0

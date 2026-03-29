@@ -111,7 +111,7 @@ export class FiscalResource {
   }
 
   async updateRule(id: string, input: FiscalUpdateRuleInput, requestOptions?: RequestOptions): Promise<SingleResponse<FiscalRule>> {
-    return this.http.post<SingleResponse<FiscalRule>>(`/tenant/fiscal/rules/${id}`, input, requestOptions);
+    return this.http.put<SingleResponse<FiscalRule>>(`/tenant/fiscal/rules/${id}`, input, requestOptions);
   }
 
   async exportRules(options: FiscalExportRulesOptions, requestOptions?: RequestOptions): Promise<SingleResponse<Record<string, unknown>>> {

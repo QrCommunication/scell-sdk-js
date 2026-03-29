@@ -204,8 +204,28 @@ const apiClient = new ScellApiClient(apiKey, {
 // Resources
 apiClient.invoices          // Create, download, convert invoices
 apiClient.signatures        // Create, download, remind, cancel signatures
-apiClient.tenantCreditNotes // Create, send, download tenant credit notes
+apiClient.creditNotes       // Create, send, download tenant credit notes
+apiClient.subTenants        // Sub-tenant management
+apiClient.fiscal            // NF525 fiscal compliance
+apiClient.stats             // Platform statistics
+apiClient.billing           // Usage, top-up, transactions
+apiClient.tenantInvoices    // Tenant invoice operations
+apiClient.incomingInvoices  // Incoming invoice operations
 ```
+
+#### ScellApiClient API Reference
+
+| Resource | Methods |
+|----------|---------|
+| `.invoices` | `create(params)`, `list(filters?)`, `get(id)`, `download(id, format?)`, `auditTrail(id)`, `convert(params)`, `incoming(filters?)`, `accept(id, input)`, `reject(id, input)`, `dispute(id, input)`, `markPaid(id, input)`, `downloadFile(id, format?)` |
+| `.signatures` | `create(params)`, `list(filters?)`, `get(id)`, `download(id, type)`, `remind(id)`, `cancel(id)` |
+| `.creditNotes` | `list(subTenantId, options?)`, `create(subTenantId, input)`, `get(id)`, `send(id)`, `download(id)`, `delete(id)`, `remainingCreditable(invoiceId)` |
+| `.subTenants` | `list()`, `create(input)`, `get(id)`, `update(id, input)`, `delete(id)`, `findByExternalId(externalId)` |
+| `.fiscal` | 23 methods (see ScellTenantClient reference) |
+| `.stats` | `overview(options?)`, `monthly(options?)`, `subTenantOverview(subTenantId, options?)` |
+| `.billing` | `invoices(options?)`, `showInvoice(id)`, `downloadInvoice(id)`, `usage(options?)`, `topUp(input)`, `confirmTopUp(input)`, `transactions(options?)` |
+| `.tenantInvoices` | `create(params)`, `list(filters?)`, `get(id)`, `update(id, params)`, `delete(id)`, `validate(id)`, `send(id)`, `download(id)`, `downloadXml(id)`, `bulkCreate(invoices)`, `bulkSubmit(ids)`, `bulkStatus(ids)` |
+| `.incomingInvoices` | `create(subTenantId, params)`, `listForSubTenant(subTenantId)`, `get(id)`, `accept(id)`, `reject(id, reason)`, `markPaid(id)`, `download(id)` |
 
 ### Companies
 
@@ -341,7 +361,7 @@ await apiClient.signatures.cancel(signatureId);
 
 ```typescript
 // List credit notes for a sub-tenant
-const { data, meta } = await apiClient.tenantCreditNotes.list('sub-tenant-uuid', {
+const { data, meta } = await apiClient.creditNotes.list('sub-tenant-uuid', {
   status: 'sent',
   date_from: '2024-01-01',
   per_page: 50,
@@ -349,14 +369,14 @@ const { data, meta } = await apiClient.tenantCreditNotes.list('sub-tenant-uuid',
 console.log(`Found ${meta.total} credit notes`);
 
 // Check remaining creditable amount for an invoice
-const remaining = await apiClient.tenantCreditNotes.remainingCreditable('invoice-uuid');
+const remaining = await apiClient.creditNotes.remainingCreditable('invoice-uuid');
 console.log('Remaining to credit:', remaining.remaining_total);
 remaining.lines.forEach(line => {
   console.log(`${line.description}: ${line.remaining_quantity} items remaining`);
 });
 
 // Create a partial credit note
-const { data: creditNote } = await apiClient.tenantCreditNotes.create('sub-tenant-uuid', {
+const { data: creditNote } = await apiClient.creditNotes.create('sub-tenant-uuid', {
   invoice_id: 'invoice-uuid',
   reason: 'Product returned - damaged item',
   type: 'partial',
@@ -366,27 +386,27 @@ const { data: creditNote } = await apiClient.tenantCreditNotes.create('sub-tenan
 });
 
 // Create a total credit note
-const { data: totalCreditNote } = await apiClient.tenantCreditNotes.create('sub-tenant-uuid', {
+const { data: totalCreditNote } = await apiClient.creditNotes.create('sub-tenant-uuid', {
   invoice_id: 'invoice-uuid',
   reason: 'Order cancelled',
   type: 'total'
 });
 
 // Get credit note details
-const { data: details } = await apiClient.tenantCreditNotes.get('credit-note-uuid');
+const { data: details } = await apiClient.creditNotes.get('credit-note-uuid');
 console.log('Credit note number:', details.credit_note_number);
 
 // Send a credit note (changes status from draft to sent)
-const { data: sent } = await apiClient.tenantCreditNotes.send('credit-note-uuid');
+const { data: sent } = await apiClient.creditNotes.send('credit-note-uuid');
 
 // Download credit note as PDF
-const pdfBuffer = await apiClient.tenantCreditNotes.download('credit-note-uuid');
+const pdfBuffer = await apiClient.creditNotes.download('credit-note-uuid');
 // In Node.js:
 import { writeFileSync } from 'fs';
 writeFileSync('credit-note.pdf', Buffer.from(pdfBuffer));
 
 // Delete a draft credit note
-await apiClient.tenantCreditNotes.delete('credit-note-uuid');
+await apiClient.creditNotes.delete('credit-note-uuid');
 ```
 
 ### Balance
@@ -446,6 +466,69 @@ const { data: logs } = await client.webhooks.logs(webhookId);
 // Delete webhook
 await client.webhooks.delete(webhookId);
 ```
+
+### ScellTenantClient (Multi-Tenant Partner)
+
+For multi-tenant operations with X-Tenant-Key authentication.
+
+```typescript
+import { ScellTenantClient } from '@scell/sdk';
+
+const tenant = new ScellTenantClient({
+  tenantKey: 'tk_live_...',
+  baseUrl: 'https://api.scell.io/api/v1', // optional
+});
+
+// Profile
+const profile = await tenant.me();
+await tenant.updateProfile({ company_name: 'New Name' });
+const balance = await tenant.balance();
+const stats = await tenant.quickStats();
+await tenant.regenerateKey();
+
+// Sub-Tenants
+const subTenants = await tenant.subTenants.list();
+const sub = await tenant.subTenants.create({ ... });
+
+// Direct Invoices (without sub-tenant)
+const invoices = await tenant.directInvoices.list();
+const invoice = await tenant.directInvoices.create({ ... });
+await tenant.directInvoices.bulkCreate([...]);
+await tenant.directInvoices.bulkSubmit([id1, id2]);
+
+// Direct Credit Notes
+const notes = await tenant.directCreditNotes.list();
+const note = await tenant.directCreditNotes.create({ ... });
+
+// Incoming Invoices
+const incoming = await tenant.incomingInvoices.listForSubTenant(subId);
+await tenant.incomingInvoices.accept(invoiceId);
+
+// Fiscal Compliance
+const compliance = await tenant.fiscal.compliance();
+const integrity = await tenant.fiscal.integrity();
+
+// Billing
+const billingInvoices = await tenant.billing.invoices();
+const usage = await tenant.billing.usage();
+
+// Stats
+const overview = await tenant.stats.overview();
+```
+
+#### ScellTenantClient API Reference
+
+| Resource | Methods |
+|----------|---------|
+| Direct methods | `me()`, `updateProfile(input)`, `balance()`, `quickStats()`, `regenerateKey()` |
+| `.subTenants` | `list()`, `create(input)`, `get(id)`, `update(id, input)`, `delete(id)`, `findByExternalId(externalId)` |
+| `.directInvoices` | `create(params)`, `list(filters?)`, `get(id)`, `update(id, params)`, `delete(id)`, `validate(id)`, `send(id)`, `download(id)`, `downloadXml(id)`, `bulkCreate(invoices)`, `bulkSubmit(ids)`, `bulkStatus(ids)` |
+| `.directCreditNotes` | `create(params)`, `list(filters?)`, `get(id)`, `update(id, params)`, `send(id)`, `download(id)`, `remainingCreditable(invoiceId)` |
+| `.subTenantCreditNotes` | `list(subTenantId, options?)`, `create(subTenantId, input)`, `get(id)`, `update(id, input)`, `send(id)`, `download(id)`, `remainingCreditable(invoiceId)` |
+| `.incomingInvoices` | `create(subTenantId, params)`, `listForSubTenant(subTenantId, filters?)`, `get(id)`, `accept(id, input?)`, `reject(id, reason, code?)`, `markPaid(id, input?)`, `download(id)` |
+| `.fiscal` | `compliance()`, `integrity()`, `integrityHistory()`, `integrityForDate(date)`, `closings()`, `performDailyClosing(input?)`, `fecExport(options)`, `fecDownload(options)`, `attestation(year)`, `attestationDownload(year)`, `entries()`, `killSwitchStatus()`, `killSwitchActivate(input)`, `killSwitchDeactivate()`, `anchors()`, `rules()`, `ruleDetail(key)`, `ruleHistory(key)`, `createRule(input)`, `updateRule(id, input)`, `exportRules(options)`, `replayRules(input)`, `forensicExport(options)` |
+| `.billing` | `invoices(options?)`, `showInvoice(id)`, `downloadInvoice(id)`, `usage(options?)`, `topUp(input)`, `confirmTopUp(input)`, `transactions(options?)` |
+| `.stats` | `overview(options?)`, `monthly(options?)`, `subTenantOverview(subTenantId, options?)` |
 
 ## Error Handling
 

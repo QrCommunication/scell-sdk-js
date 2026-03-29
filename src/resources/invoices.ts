@@ -6,6 +6,7 @@
 
 import type { HttpClient, RequestOptions } from '../client.js';
 import type {
+  MessageResponse,
   MessageWithDataResponse,
   PaginatedResponse,
   SingleResponse,
@@ -412,6 +413,29 @@ export class InvoicesResource {
     return this.http.post<SingleResponse<Invoice>>(
       `/invoices/${id}/mark-paid`,
       data,
+      requestOptions
+    );
+  }
+
+  /**
+   * Submit an invoice for processing
+   *
+   * @param id - Invoice UUID
+   * @param requestOptions - Request options
+   * @returns Success message
+   *
+   * @example
+   * ```typescript
+   * await client.invoices.submit('invoice-uuid');
+   * ```
+   */
+  async submit(
+    id: string,
+    requestOptions?: RequestOptions
+  ): Promise<MessageResponse> {
+    return this.http.post<MessageResponse>(
+      `/invoices/${id}/submit`,
+      undefined,
       requestOptions
     );
   }
