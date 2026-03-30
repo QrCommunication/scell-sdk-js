@@ -1,0 +1,1991 @@
+# @scell/sdk -- JavaScript/TypeScript SDK for Scell.io
+> Version: 1.8.0 | License: MIT | Node.js >= 18.0.0 | TypeScript >= 5.0.0
+
+## Overview
+
+Scell.io is a B2B micro-SaaS platform providing electronic invoicing (Factur-X/UBL/CII) and simple electronic signatures (eIDAS EU-SES) via API. This SDK provides full TypeScript support, zero external dependencies (uses native fetch), automatic retries with exponential backoff, webhook signature verification, and ESM/CommonJS dual module support. It works in Node.js 18+ and browsers.
+
+## Installation
+
+npm install @scell/sdk
+# or: yarn add @scell/sdk / pnpm add @scell/sdk
+
+## Authentication
+
+There are 3 authentication modes, each corresponding to a different client class:
+
+1. Bearer Token (ScellClient) -- For dashboard/user operations. Obtained via ScellAuth.login().
+   Header: Authorization: Bearer <token>
+
+2. API Key (ScellApiClient) -- For server-to-server operations (creating invoices, signatures).
+   Header: X-API-Key: <sk_live_xxx or sk_test_xxx>
+
+3. Tenant Key (ScellTenantClient) -- For multi-tenant partner operations.
+   Header: X-Tenant-Key: <tk_live_xxx>
+
+## Static Auth Methods (no authentication required)
+
+ScellAuth.login(credentials: LoginCredentials, baseUrl?: string): Promise<AuthResponse>
+  POST /auth/login
+
+ScellAuth.register(input: RegisterInput, baseUrl?: string): Promise<AuthResponse>
+  POST /auth/register
+
+ScellAuth.forgotPassword(input: ForgotPasswordInput, baseUrl?: string): Promise<MessageResponse>
+  POST /auth/forgot-password
+
+ScellAuth.resetPassword(input: ResetPasswordInput, baseUrl?: string): Promise<MessageResponse>
+  POST /auth/reset-password
+
+
+## Clients
+
+### ScellClient (Bearer Token -- Dashboard)
+
+Constructor: new ScellClient(token: string, config?: ClientConfig)
+
+Resources:
+  client.auth        -- AuthResource
+  client.companies   -- CompaniesResource
+  client.apiKeys     -- ApiKeysResource
+  client.balance     -- BalanceResource
+  client.webhooks    -- WebhooksResource
+  client.invoices    -- InvoicesResource
+  client.signatures  -- SignaturesResource
+  client.creditNotes -- CreditNotesResource
+
+
+### ScellApiClient (API Key -- Server-to-Server)
+
+Constructor: new ScellApiClient(apiKey: string, config?: ClientConfig)
+
+Resources:
+  apiClient.invoices          -- InvoicesResource
+  apiClient.signatures        -- SignaturesResource
+  apiClient.subTenants        -- SubTenantsResource
+  apiClient.fiscal            -- FiscalResource
+  apiClient.stats             -- StatsResource
+  apiClient.billing           -- BillingResource
+  apiClient.creditNotes       -- TenantCreditNotesResource
+  apiClient.tenantInvoices    -- TenantDirectInvoicesResource
+  apiClient.incomingInvoices  -- TenantIncomingInvoicesResource
+
+
+### ScellTenantClient (Tenant Key -- Multi-Tenant Partner)
+
+Constructor: new ScellTenantClient(tenantKey: string, config?: ClientConfig)
+
+Direct methods:
+  tenant.me(requestOptions?): Promise<SingleResponse<TenantProfile>>
+    GET /tenant/me
+
+  tenant.updateProfile(input: UpdateTenantProfileInput, requestOptions?): Promise<SingleResponse<TenantProfile>>
+    POST /tenant/me
+
+  tenant.balance(requestOptions?): Promise<SingleResponse<TenantBalance>>
+    GET /tenant/balance
+
+  tenant.quickStats(requestOptions?): Promise<SingleResponse<TenantQuickStats>>
+    GET /tenant/stats
+
+  tenant.regenerateKey(requestOptions?): Promise<SingleResponse<RegenerateKeyResult>>
+    POST /tenant/regenerate-key
+
+Resources:
+  tenant.directInvoices       -- TenantDirectInvoicesResource
+  tenant.directCreditNotes    -- TenantDirectCreditNotesResource
+  tenant.incomingInvoices     -- TenantIncomingInvoicesResource
+  tenant.subTenantCreditNotes -- TenantCreditNotesResource
+  tenant.fiscal               -- FiscalResource
+  tenant.billing              -- BillingResource
+  tenant.stats                -- StatsResource
+  tenant.subTenants           -- SubTenantsResource
+
+
+### ClientConfig
+
+interface ClientConfig {
+  baseUrl?: string;           // default: "https://api.scell.io/api/v1"
+  timeout?: number;           // default: 30000 (ms)
+  retry?: RetryOptions;       // retry configuration
+  enableRetry?: boolean;      // default: true
+  fetch?: typeof fetch;       // custom fetch implementation
+}
+
+
+## Resources -- Complete API Reference
+
+### Auth (AuthResource)
+
+client.auth.me(requestOptions?): Promise<SingleResponse<User>>
+  GET /auth/me
+
+client.auth.logout(requestOptions?): Promise<MessageResponse>
+  POST /auth/logout
+
+
+### Invoices (InvoicesResource)
+
+invoices.list(options?: InvoiceListOptions, requestOptions?): Promise<PaginatedResponse<Invoice>>
+  GET /invoices
+
+invoices.get(id: string, requestOptions?): Promise<SingleResponse<Invoice>>
+  GET /invoices/:id
+
+invoices.create(input: CreateInvoiceInput, requestOptions?): Promise<MessageWithDataResponse<Invoice>>
+  POST /invoices
+
+invoices.download(id: string, type: InvoiceDownloadType, requestOptions?): Promise<InvoiceDownloadResponse>
+  GET /invoices/:id/download/:type
+
+invoices.downloadFile(id: string, format?: InvoiceFileFormat, requestOptions?): Promise<ArrayBuffer>
+  GET /invoices/:id/download?format=pdf|xml
+
+invoices.auditTrail(id: string, requestOptions?): Promise<AuditTrailResponse>
+  GET /invoices/:id/audit-trail
+
+invoices.convert(input: ConvertInvoiceInput, requestOptions?): Promise<{ message: string; invoice_id: string; target_format: string }>
+  POST /invoices/convert
+
+invoices.incoming(params?: IncomingInvoiceParams, requestOptions?): Promise<PaginatedResponse<Invoice>>
+  GET /invoices/incoming
+
+invoices.accept(id: string, data?: AcceptInvoiceInput, requestOptions?): Promise<SingleResponse<Invoice>>
+  POST /invoices/:id/accept
+
+invoices.reject(id: string, data: RejectInvoiceInput, requestOptions?): Promise<SingleResponse<Invoice>>
+  POST /invoices/:id/reject
+
+invoices.dispute(id: string, data: DisputeInvoiceInput, requestOptions?): Promise<SingleResponse<Invoice>>
+  POST /invoices/:id/dispute
+
+invoices.markPaid(id: string, data?: MarkPaidInput, requestOptions?): Promise<SingleResponse<Invoice>>
+  POST /invoices/:id/mark-paid
+
+invoices.submit(id: string, requestOptions?): Promise<MessageResponse>
+  POST /invoices/:id/submit
+
+
+### Signatures (SignaturesResource)
+
+signatures.list(options?: SignatureListOptions, requestOptions?): Promise<PaginatedResponse<Signature>>
+  GET /signatures
+
+signatures.get(id: string, requestOptions?): Promise<SingleResponse<Signature>>
+  GET /signatures/:id
+
+signatures.create(input: CreateSignatureInput, requestOptions?): Promise<MessageWithDataResponse<Signature>>
+  POST /signatures
+
+signatures.download(id: string, type: SignatureDownloadType, requestOptions?): Promise<SignatureDownloadResponse>
+  GET /signatures/:id/download/:type
+
+signatures.remind(id: string, requestOptions?): Promise<SignatureRemindResponse>
+  POST /signatures/:id/remind
+
+signatures.cancel(id: string, requestOptions?): Promise<MessageResponse>
+  POST /signatures/:id/cancel
+
+signatures.auditTrail(id: string, requestOptions?): Promise<AuditTrailResponse>
+  GET /signatures/:id/audit-trail
+
+
+### Companies (CompaniesResource)
+
+companies.list(requestOptions?): Promise<{ data: Company[] }>
+  GET /companies
+
+companies.get(id: string, requestOptions?): Promise<SingleResponse<Company>>
+  GET /companies/:id
+
+companies.create(input: CreateCompanyInput, requestOptions?): Promise<MessageWithDataResponse<Company>>
+  POST /companies
+
+companies.update(id: string, input: UpdateCompanyInput, requestOptions?): Promise<MessageWithDataResponse<Company>>
+  PUT /companies/:id
+
+companies.delete(id: string, requestOptions?): Promise<MessageResponse>
+  DELETE /companies/:id
+
+companies.initiateKyc(id: string, requestOptions?): Promise<KycInitiateResponse>
+  POST /companies/:id/kyc
+
+companies.kycStatus(id: string, requestOptions?): Promise<KycStatusResponse>
+  GET /companies/:id/kyc/status
+
+
+### Balance (BalanceResource)
+
+balance.get(requestOptions?): Promise<SingleResponse<Balance>>
+  GET /balance
+
+balance.reload(input: ReloadBalanceInput, requestOptions?): Promise<ReloadBalanceResponse>
+  POST /balance/reload
+
+balance.updateSettings(input: UpdateBalanceSettingsInput, requestOptions?): Promise<MessageWithDataResponse<Partial<Balance>>>
+  PUT /balance/settings
+
+balance.transactions(options?: TransactionListOptions, requestOptions?): Promise<PaginatedResponse<Transaction>>
+  GET /balance/transactions
+
+
+### Webhooks (WebhooksResource)
+
+webhooks.list(options?: WebhookListOptions, requestOptions?): Promise<{ data: Webhook[] }>
+  GET /webhooks
+
+webhooks.create(input: CreateWebhookInput, requestOptions?): Promise<MessageWithDataResponse<WebhookWithSecret>>
+  POST /webhooks
+
+webhooks.update(id: string, input: UpdateWebhookInput, requestOptions?): Promise<MessageWithDataResponse<Webhook>>
+  PUT /webhooks/:id
+
+webhooks.delete(id: string, requestOptions?): Promise<MessageResponse>
+  DELETE /webhooks/:id
+
+webhooks.regenerateSecret(id: string, requestOptions?): Promise<MessageWithDataResponse<WebhookWithSecret>>
+  POST /webhooks/:id/regenerate-secret
+
+webhooks.test(id: string, requestOptions?): Promise<WebhookTestResponse>
+  POST /webhooks/:id/test
+
+webhooks.logs(id: string, options?: { per_page?: number }, requestOptions?): Promise<PaginatedResponse<WebhookLog>>
+  GET /webhooks/:id/logs
+
+
+### API Keys (ApiKeysResource)
+
+apiKeys.list(requestOptions?): Promise<{ data: ApiKey[] }>
+  GET /api-keys
+
+apiKeys.get(id: string, requestOptions?): Promise<SingleResponse<ApiKey>>
+  GET /api-keys/:id
+
+apiKeys.create(input: CreateApiKeyInput, requestOptions?): Promise<MessageWithDataResponse<ApiKeyWithSecret>>
+  POST /api-keys
+
+apiKeys.delete(id: string, requestOptions?): Promise<MessageResponse>
+  DELETE /api-keys/:id
+
+
+### Credit Notes -- Dashboard (CreditNotesResource)
+
+creditNotes.list(options?: CreditNoteListOptions, requestOptions?): Promise<PaginatedResponse<CreditNote>>
+  GET /credit-notes
+
+creditNotes.get(id: string, requestOptions?): Promise<SingleResponse<CreditNote>>
+  GET /credit-notes/:id
+
+creditNotes.create(input: CreateCreditNoteInput, requestOptions?): Promise<SingleResponse<CreditNote>>
+  POST /credit-notes
+
+creditNotes.send(id: string, requestOptions?): Promise<MessageResponse>
+  POST /credit-notes/:id/send
+
+creditNotes.download(id: string, requestOptions?): Promise<ArrayBuffer>
+  GET /credit-notes/:id/download
+
+creditNotes.remainingCreditable(invoiceId: string, requestOptions?): Promise<SingleResponse<Record<string, unknown>>>
+  GET /invoices/:invoiceId/remaining-creditable
+
+
+### Tenant Credit Notes (TenantCreditNotesResource)
+
+Used for sub-tenant credit notes (via apiClient.creditNotes or tenant.subTenantCreditNotes).
+
+creditNotes.list(subTenantId: string, options?: TenantCreditNoteListOptions, requestOptions?): Promise<PaginatedResponse<TenantCreditNote>>
+  GET /tenant/sub-tenants/:subTenantId/credit-notes
+
+creditNotes.create(subTenantId: string, input: CreateTenantCreditNoteInput, requestOptions?): Promise<SingleResponse<TenantCreditNote>>
+  POST /tenant/sub-tenants/:subTenantId/credit-notes
+
+creditNotes.get(creditNoteId: string, requestOptions?): Promise<SingleResponse<TenantCreditNote>>
+  GET /tenant/credit-notes/:creditNoteId
+
+creditNotes.update(creditNoteId: string, input: UpdateTenantCreditNoteInput, requestOptions?): Promise<SingleResponse<TenantCreditNote>>
+  PATCH /tenant/credit-notes/:creditNoteId
+
+creditNotes.send(creditNoteId: string, requestOptions?): Promise<SingleResponse<TenantCreditNote>>
+  POST /tenant/credit-notes/:creditNoteId/send
+
+creditNotes.delete(creditNoteId: string, requestOptions?): Promise<MessageResponse>
+  DELETE /tenant/credit-notes/:creditNoteId
+
+creditNotes.download(creditNoteId: string, requestOptions?): Promise<ArrayBuffer>
+  GET /tenant/credit-notes/:creditNoteId/download
+
+creditNotes.remainingCreditable(invoiceId: string, requestOptions?): Promise<RemainingCreditable>
+  GET /tenant/invoices/:invoiceId/remaining-creditable
+
+
+### Sub-Tenants (SubTenantsResource)
+
+subTenants.list(options?: SubTenantListOptions, requestOptions?): Promise<PaginatedResponse<SubTenant>>
+  GET /tenant/sub-tenants
+
+subTenants.create(input: CreateSubTenantInput, requestOptions?): Promise<SingleResponse<SubTenant>>
+  POST /tenant/sub-tenants
+
+subTenants.get(id: string, requestOptions?): Promise<SingleResponse<SubTenant>>
+  GET /tenant/sub-tenants/:id
+
+subTenants.update(id: string, input: UpdateSubTenantInput, requestOptions?): Promise<SingleResponse<SubTenant>>
+  PATCH /tenant/sub-tenants/:id
+
+subTenants.delete(id: string, requestOptions?): Promise<MessageResponse>
+  DELETE /tenant/sub-tenants/:id
+
+subTenants.findByExternalId(externalId: string, requestOptions?): Promise<SingleResponse<SubTenant>>
+  GET /tenant/sub-tenants/by-external-id/:externalId
+
+
+### Tenant Direct Invoices (TenantDirectInvoicesResource)
+
+directInvoices.create(params: CreateTenantDirectInvoiceParams, requestOptions?): Promise<SingleResponse<TenantInvoice>>
+  POST /tenant/invoices
+
+directInvoices.list(filters?: TenantInvoiceFilters, requestOptions?): Promise<PaginatedResponse<TenantInvoice>>
+  GET /tenant/invoices
+
+directInvoices.get(invoiceId: string, requestOptions?): Promise<SingleResponse<TenantInvoice>>
+  GET /tenant/invoices/:invoiceId
+
+directInvoices.update(invoiceId: string, params: UpdateTenantInvoiceParams, requestOptions?): Promise<SingleResponse<TenantInvoice>>
+  PATCH /tenant/invoices/:invoiceId
+
+directInvoices.delete(invoiceId: string, requestOptions?): Promise<MessageResponse>
+  DELETE /tenant/invoices/:invoiceId
+
+directInvoices.validate(invoiceId: string, requestOptions?): Promise<SingleResponse<TenantInvoice>>
+  POST /tenant/invoices/:invoiceId/validate
+
+directInvoices.send(invoiceId: string, requestOptions?): Promise<SingleResponse<TenantInvoice>>
+  POST /tenant/invoices/:invoiceId/send
+
+directInvoices.download(invoiceId: string, requestOptions?): Promise<ArrayBuffer>
+  GET /tenant/invoices/:invoiceId/download
+
+directInvoices.downloadXml(invoiceId: string, requestOptions?): Promise<ArrayBuffer>
+  GET /tenant/invoices/:invoiceId/download?format=xml
+
+directInvoices.bulkCreate(invoices: CreateTenantDirectInvoiceParams[], requestOptions?): Promise<MessageResponse>
+  POST /tenant/invoices/bulk
+
+directInvoices.bulkSubmit(invoiceIds: string[], requestOptions?): Promise<MessageResponse>
+  POST /tenant/invoices/bulk-submit
+
+directInvoices.bulkStatus(invoiceIds: string[], requestOptions?): Promise<SingleResponse<Record<string, unknown>[]>>
+  POST /tenant/invoices/bulk-status
+
+
+### Tenant Incoming Invoices (TenantIncomingInvoicesResource)
+
+incomingInvoices.create(subTenantId: string, params: CreateIncomingInvoiceParams, requestOptions?): Promise<SingleResponse<TenantInvoice>>
+  POST /tenant/sub-tenants/:subTenantId/incoming-invoices
+
+incomingInvoices.listForSubTenant(subTenantId: string, filters?: TenantInvoiceFilters, requestOptions?): Promise<PaginatedResponse<TenantInvoice>>
+  GET /tenant/sub-tenants/:subTenantId/incoming-invoices
+
+incomingInvoices.get(invoiceId: string, requestOptions?): Promise<SingleResponse<TenantInvoice>>
+  GET /tenant/incoming-invoices/:invoiceId
+
+incomingInvoices.accept(invoiceId: string, input?: AcceptIncomingInvoiceInput, requestOptions?): Promise<SingleResponse<TenantInvoice>>
+  POST /tenant/incoming-invoices/:invoiceId/accept
+
+incomingInvoices.reject(invoiceId: string, reason: string, code?: RejectionCode, requestOptions?): Promise<SingleResponse<TenantInvoice>>
+  POST /tenant/incoming-invoices/:invoiceId/reject
+
+incomingInvoices.markPaid(invoiceId: string, input?: MarkPaidIncomingInvoiceInput, requestOptions?): Promise<SingleResponse<TenantInvoice>>
+  POST /tenant/incoming-invoices/:invoiceId/mark-paid
+
+incomingInvoices.delete(invoiceId: string, requestOptions?): Promise<MessageResponse>
+  DELETE /tenant/incoming-invoices/:invoiceId
+
+incomingInvoices.download(invoiceId: string, requestOptions?): Promise<ArrayBuffer>
+  GET /tenant/incoming-invoices/:invoiceId/download
+
+
+### Tenant Direct Credit Notes (TenantDirectCreditNotesResource)
+
+directCreditNotes.create(params: CreateTenantDirectCreditNoteParams, requestOptions?): Promise<SingleResponse<TenantCreditNote>>
+  POST /tenant/credit-notes
+
+directCreditNotes.list(filters?: TenantCreditNoteFilters, requestOptions?): Promise<PaginatedResponse<TenantCreditNote>>
+  GET /tenant/credit-notes
+
+directCreditNotes.get(creditNoteId: string, requestOptions?): Promise<SingleResponse<TenantCreditNote>>
+  GET /tenant/credit-notes/:creditNoteId
+
+directCreditNotes.update(creditNoteId: string, params: UpdateTenantCreditNoteParams, requestOptions?): Promise<SingleResponse<TenantCreditNote>>
+  PATCH /tenant/credit-notes/:creditNoteId
+
+directCreditNotes.delete(creditNoteId: string, requestOptions?): Promise<MessageResponse>
+  DELETE /tenant/credit-notes/:creditNoteId
+
+directCreditNotes.send(creditNoteId: string, requestOptions?): Promise<SingleResponse<TenantCreditNote>>
+  POST /tenant/credit-notes/:creditNoteId/send
+
+directCreditNotes.download(creditNoteId: string, requestOptions?): Promise<ArrayBuffer>
+  GET /tenant/credit-notes/:creditNoteId/download
+
+directCreditNotes.remainingCreditable(invoiceId: string, requestOptions?): Promise<DirectInvoiceRemainingCreditable>
+  GET /tenant/invoices/:invoiceId/remaining-creditable
+
+
+### Fiscal Compliance (FiscalResource) -- 23 methods
+
+fiscal.compliance(requestOptions?): Promise<SingleResponse<FiscalComplianceData>>
+  GET /tenant/fiscal/compliance
+
+fiscal.integrity(options?: FiscalIntegrityOptions, requestOptions?): Promise<SingleResponse<FiscalIntegrityReport>>
+  GET /tenant/fiscal/integrity
+
+fiscal.integrityHistory(options?: FiscalIntegrityHistoryOptions, requestOptions?): Promise<PaginatedResponse<FiscalIntegrityReport>>
+  GET /tenant/fiscal/integrity/history
+
+fiscal.integrityForDate(date: string, requestOptions?): Promise<SingleResponse<FiscalIntegrityReport>>
+  GET /tenant/fiscal/integrity/:date
+
+fiscal.closings(options?: FiscalClosingsOptions, requestOptions?): Promise<PaginatedResponse<FiscalClosing>>
+  GET /tenant/fiscal/closings
+
+fiscal.performDailyClosing(input?: FiscalDailyClosingInput, requestOptions?): Promise<MessageResponse>
+  POST /tenant/fiscal/closings/daily
+
+fiscal.fecExport(options: FiscalFecExportOptions, requestOptions?): Promise<SingleResponse<FiscalFecExportResult>>
+  GET /tenant/fiscal/fec
+
+fiscal.fecDownload(options: FiscalFecExportOptions, requestOptions?): Promise<ArrayBuffer>
+  GET /tenant/fiscal/fec?download=true
+
+fiscal.attestation(year: number, requestOptions?): Promise<SingleResponse<FiscalAttestation>>
+  GET /tenant/fiscal/attestation/:year
+
+fiscal.attestationDownload(year: number, requestOptions?): Promise<ArrayBuffer>
+  GET /tenant/fiscal/attestation/:year/download
+
+fiscal.entries(options?: FiscalEntriesOptions, requestOptions?): Promise<PaginatedResponse<FiscalEntry>>
+  GET /tenant/fiscal/entries
+
+fiscal.killSwitchStatus(requestOptions?): Promise<SingleResponse<FiscalKillSwitchStatus>>
+  GET /tenant/fiscal/kill-switch/status
+
+fiscal.killSwitchActivate(input: FiscalKillSwitchActivateInput, requestOptions?): Promise<MessageResponse>
+  POST /tenant/fiscal/kill-switch/activate
+
+fiscal.killSwitchDeactivate(requestOptions?): Promise<MessageResponse>
+  POST /tenant/fiscal/kill-switch/deactivate
+
+fiscal.anchors(options?: FiscalAnchorsOptions, requestOptions?): Promise<PaginatedResponse<FiscalAnchor>>
+  GET /tenant/fiscal/anchors
+
+fiscal.rules(options?: FiscalRulesOptions, requestOptions?): Promise<PaginatedResponse<FiscalRule>>
+  GET /tenant/fiscal/rules
+
+fiscal.ruleDetail(key: string, requestOptions?): Promise<SingleResponse<FiscalRule>>
+  GET /tenant/fiscal/rules/:key
+
+fiscal.ruleHistory(key: string, requestOptions?): Promise<PaginatedResponse<FiscalRule>>
+  GET /tenant/fiscal/rules/:key/history
+
+fiscal.createRule(input: FiscalCreateRuleInput, requestOptions?): Promise<SingleResponse<FiscalRule>>
+  POST /tenant/fiscal/rules
+
+fiscal.updateRule(id: string, input: FiscalUpdateRuleInput, requestOptions?): Promise<SingleResponse<FiscalRule>>
+  PUT /tenant/fiscal/rules/:id
+
+fiscal.exportRules(options: FiscalExportRulesOptions, requestOptions?): Promise<SingleResponse<Record<string, unknown>>>
+  GET /tenant/fiscal/rules/export
+
+fiscal.replayRules(input: FiscalReplayRulesInput, requestOptions?): Promise<MessageResponse>
+  POST /tenant/fiscal/rules/replay
+
+fiscal.forensicExport(options: FiscalForensicExportOptions, requestOptions?): Promise<SingleResponse<Record<string, unknown>>>
+  GET /tenant/fiscal/forensic-export
+
+
+### Billing (BillingResource) -- 7 methods
+
+billing.invoices(options?: BillingInvoiceListOptions, requestOptions?): Promise<PaginatedResponse<BillingInvoice>>
+  GET /tenant/billing/invoices
+
+billing.showInvoice(invoiceId: string, requestOptions?): Promise<SingleResponse<BillingInvoice>>
+  GET /tenant/billing/invoices/:invoiceId
+
+billing.downloadInvoice(invoiceId: string, requestOptions?): Promise<ArrayBuffer>
+  GET /tenant/billing/invoices/:invoiceId/download
+
+billing.usage(options?: BillingUsageOptions, requestOptions?): Promise<SingleResponse<BillingUsage>>
+  GET /tenant/billing/usage
+
+billing.topUp(input: BillingTopUpInput, requestOptions?): Promise<MessageResponse>
+  POST /tenant/billing/top-up
+
+billing.confirmTopUp(input: BillingTopUpConfirmInput, requestOptions?): Promise<MessageResponse>
+  POST /tenant/billing/top-up/confirm
+
+billing.transactions(options?: BillingTransactionListOptions, requestOptions?): Promise<PaginatedResponse<BillingTransaction>>
+  GET /tenant/billing/transactions
+
+
+### Stats (StatsResource) -- 3 methods
+
+stats.overview(options?: StatsOverviewOptions, requestOptions?): Promise<SingleResponse<StatsOverview>>
+  GET /tenant/stats/overview
+
+stats.monthly(options?: StatsMonthlyOptions, requestOptions?): Promise<SingleResponse<StatsMonthly[]>>
+  GET /tenant/stats/monthly
+
+stats.subTenantOverview(subTenantId: string, options?: StatsOverviewOptions, requestOptions?): Promise<SingleResponse<StatsOverview>>
+  GET /tenant/sub-tenants/:subTenantId/stats/overview
+
+
+## TypeScript Types -- Complete Reference
+
+### Common Types
+
+type Environment = 'sandbox' | 'production'
+type DateString = string          // ISO 8601 date (YYYY-MM-DD)
+type DateTimeString = string      // ISO 8601 datetime
+type UUID = string
+type Siret = string               // French SIRET (14 digits)
+type Siren = string               // French SIREN (9 digits)
+type CurrencyCode = string        // ISO 4217
+
+interface Address {
+  line1: string
+  line2?: string
+  postal_code: string
+  city: string
+  country: string
+}
+
+interface PaginationMeta {
+  current_page: number
+  last_page: number
+  per_page: number
+  total: number
+}
+
+interface PaginatedResponse<T> {
+  data: T[]
+  meta: PaginationMeta
+}
+
+interface SingleResponse<T> {
+  data: T
+}
+
+interface MessageResponse {
+  message: string
+}
+
+interface MessageWithDataResponse<T> {
+  message: string
+  data: T
+}
+
+interface PaginationOptions {
+  page?: number
+  per_page?: number
+}
+
+interface DateRangeOptions {
+  from?: DateString
+  to?: DateString
+}
+
+interface ApiErrorResponse {
+  message: string
+  errors?: Record<string, string[]>
+  code?: string
+}
+
+
+### Invoice Types
+
+type InvoiceDirection = 'outgoing' | 'incoming'
+type InvoiceFormat = 'facturx' | 'ubl' | 'cii'
+type InvoiceStatus = 'draft' | 'pending' | 'validated' | 'converted' | 'transmitted' | 'accepted' | 'rejected' | 'paid' | 'disputed' | 'cancelled' | 'error'
+type InvoiceDownloadType = 'original' | 'converted' | 'pdf'
+type InvoiceFileFormat = 'pdf' | 'xml'
+type RejectionCode = 'incorrect_amount' | 'duplicate' | 'unknown_order' | 'incorrect_vat' | 'other'
+type DisputeType = 'amount_dispute' | 'quality_dispute' | 'delivery_dispute' | 'other'
+
+interface InvoiceLine {
+  line_number: number
+  description: string
+  quantity: number
+  unit_price: number
+  tax_rate: number
+  total_ht: number
+  total_tax: number
+  total_ttc: number
+}
+
+interface InvoiceParty {
+  siret?: Siret
+  vat_number?: string
+  legal_id?: string
+  legal_id_scheme?: string
+  country: string
+  name: string
+  address: Address
+}
+
+interface Invoice {
+  id: UUID
+  external_id: string | null
+  invoice_number: string
+  direction: InvoiceDirection
+  output_format: InvoiceFormat
+  issue_date: DateString
+  due_date: DateString | null
+  currency: CurrencyCode
+  total_ht: number
+  total_tax: number
+  total_ttc: number
+  seller: InvoiceParty
+  buyer: InvoiceParty
+  lines: InvoiceLine[] | null
+  status: InvoiceStatus
+  status_message: string | null
+  environment: Environment
+  archive_enabled: boolean
+  amount_charged: number | null
+  created_at: DateTimeString
+  validated_at: DateTimeString | null
+  transmitted_at: DateTimeString | null
+  completed_at: DateTimeString | null
+  paid_at: DateTimeString | null
+  payment_reference: string | null
+  payment_note: string | null
+}
+
+interface InvoiceLineInput {
+  description: string
+  quantity: number
+  unit_price: number
+  tax_rate: number
+  total_ht: number
+  total_tax: number
+  total_ttc: number
+}
+
+interface CreateInvoiceInput {
+  external_id?: string
+  invoice_number: string
+  direction: InvoiceDirection
+  output_format: InvoiceFormat
+  issue_date: DateString
+  due_date?: DateString
+  currency?: CurrencyCode
+  total_ht: number
+  total_tax: number
+  total_ttc: number
+  seller_siret?: Siret
+  seller_vat_number?: string
+  seller_country: string
+  seller_legal_id?: string
+  seller_legal_id_scheme?: string
+  seller_name: string
+  seller_address: Address
+  buyer_siret?: Siret
+  buyer_vat_number?: string
+  buyer_country: string
+  buyer_legal_id?: string
+  buyer_legal_id_scheme?: string
+  buyer_name: string
+  buyer_address: Address
+  lines: InvoiceLineInput[]
+  archive_enabled?: boolean
+}
+
+interface InvoiceListOptions {
+  company_id?: UUID
+  direction?: InvoiceDirection
+  status?: InvoiceStatus
+  environment?: Environment
+  from?: DateString
+  to?: DateString
+  per_page?: number
+}
+
+interface ConvertInvoiceInput {
+  invoice_id: UUID
+  target_format: InvoiceFormat
+}
+
+interface InvoiceDownloadResponse {
+  url: string
+  expires_at: DateTimeString
+}
+
+interface AuditTrailEntry {
+  action: string
+  details: string
+  actor_ip: string | null
+  created_at: DateTimeString
+}
+
+interface AuditTrailResponse {
+  data: AuditTrailEntry[]
+  integrity_valid: boolean
+}
+
+interface IncomingInvoiceParams {
+  status?: InvoiceStatus
+  seller_siret?: Siret
+  from?: DateString
+  to?: DateString
+  min_amount?: number
+  max_amount?: number
+  page?: number
+  per_page?: number
+}
+
+interface AcceptInvoiceInput {
+  payment_date?: DateString
+  note?: string
+}
+
+interface RejectInvoiceInput {
+  reason: string
+  reason_code: RejectionCode
+}
+
+interface DisputeInvoiceInput {
+  reason: string
+  dispute_type: DisputeType
+  expected_amount?: number
+}
+
+interface MarkPaidInput {
+  payment_reference?: string
+  paid_at?: DateTimeString
+  note?: string
+}
+
+
+### Signature Types
+
+type SignerAuthMethod = 'email' | 'sms' | 'both'
+type SignerStatus = 'pending' | 'signed' | 'refused'
+type SignatureStatus = 'pending' | 'waiting_signers' | 'partially_signed' | 'completed' | 'refused' | 'expired' | 'error'
+type SignatureDownloadType = 'original' | 'signed' | 'audit_trail'
+
+interface SignaturePosition {
+  page: number
+  x: number
+  y: number
+  width?: number
+  height?: number
+}
+
+interface SignatureUIConfig {
+  logo_url?: string
+  primary_color?: string
+  company_name?: string
+}
+
+interface Signer {
+  id: UUID
+  first_name: string
+  last_name: string
+  full_name: string
+  email: string | null
+  phone: string | null
+  auth_method: SignerAuthMethod
+  status: SignerStatus
+  signing_url: string | null
+  signed_at: DateTimeString | null
+  refused_at: DateTimeString | null
+}
+
+interface Signature {
+  id: UUID
+  external_id: string | null
+  title: string
+  description: string | null
+  document_name: string
+  document_size: number
+  signers: Signer[] | null
+  status: SignatureStatus
+  status_message: string | null
+  environment: Environment
+  archive_enabled: boolean
+  amount_charged: number | null
+  expires_at: DateTimeString | null
+  created_at: DateTimeString
+  completed_at: DateTimeString | null
+}
+
+interface SignerInput {
+  first_name: string
+  last_name: string
+  email?: string
+  phone?: string
+  auth_method: SignerAuthMethod
+}
+
+interface CreateSignatureInput {
+  external_id?: string
+  title: string
+  description?: string
+  document: string               // Base64-encoded document content
+  document_name: string
+  signers: SignerInput[]          // 1-10 signers
+  signature_positions?: SignaturePosition[]
+  ui_config?: SignatureUIConfig
+  redirect_complete_url?: string
+  redirect_cancel_url?: string
+  expires_at?: DateTimeString     // default: 30 days
+  archive_enabled?: boolean
+}
+
+interface SignatureListOptions {
+  company_id?: UUID
+  status?: SignatureStatus
+  environment?: Environment
+  per_page?: number
+}
+
+interface SignatureDownloadResponse {
+  url: string
+  expires_at: DateTimeString
+}
+
+interface SignatureRemindResponse {
+  message: string
+  signers_reminded: number
+}
+
+
+### Company Types
+
+type CompanyStatus = 'pending_kyc' | 'active' | 'suspended'
+
+interface Company {
+  id: UUID
+  name: string
+  siret: Siret
+  siren: Siren | null
+  vat_number: string | null
+  legal_id: string | null
+  legal_id_scheme: string | null
+  legal_form: string | null
+  address_line1: string
+  address_line2: string | null
+  postal_code: string
+  city: string
+  country: string
+  phone: string | null
+  email: string | null
+  website: string | null
+  logo_url: string | null
+  status: CompanyStatus
+  kyc_completed_at: DateTimeString | null
+  created_at: DateTimeString
+  updated_at: DateTimeString
+}
+
+interface CreateCompanyInput {
+  name: string
+  siret?: Siret
+  legal_id?: string
+  legal_id_scheme?: string
+  vat_number?: string
+  legal_form?: string
+  address_line1: string
+  address_line2?: string
+  postal_code: string
+  city: string
+  country?: string
+  phone?: string
+  email?: string
+  website?: string
+}
+
+interface UpdateCompanyInput {
+  name?: string
+  siret?: Siret
+  vat_number?: string
+  legal_form?: string
+  address_line1?: string
+  address_line2?: string
+  postal_code?: string
+  city?: string
+  country?: string
+  phone?: string
+  email?: string
+  website?: string
+}
+
+interface KycInitiateResponse {
+  message: string
+  kyc_reference: string
+  redirect_url: string
+}
+
+interface KycStatusResponse {
+  status: CompanyStatus
+  kyc_reference: string | null
+  kyc_completed_at: DateTimeString | null
+  message: string
+}
+
+
+### Balance Types
+
+type TransactionType = 'credit' | 'debit'
+type TransactionService = 'invoice' | 'signature' | 'manual' | 'admin'
+
+interface Balance {
+  amount: number
+  currency: CurrencyCode
+  auto_reload_enabled: boolean
+  auto_reload_threshold: number | null
+  auto_reload_amount: number | null
+  low_balance_alert_threshold: number
+  critical_balance_alert_threshold: number
+}
+
+interface Transaction {
+  id: UUID
+  type: TransactionType
+  service: TransactionService
+  amount: number
+  balance_before: number
+  balance_after: number
+  description: string
+  reference_type: string | null
+  reference_id: UUID | null
+  created_at: DateTimeString
+}
+
+interface ReloadBalanceInput {
+  amount: number                  // 10-10000 EUR
+}
+
+interface ReloadBalanceResponse {
+  message: string
+  transaction: {
+    id: UUID
+    amount: number
+    balance_after: number
+  }
+}
+
+interface UpdateBalanceSettingsInput {
+  auto_reload_enabled?: boolean
+  auto_reload_threshold?: number
+  auto_reload_amount?: number
+  low_balance_alert_threshold?: number
+  critical_balance_alert_threshold?: number
+}
+
+interface TransactionListOptions extends PaginationOptions, DateRangeOptions {
+  type?: TransactionType
+  service?: TransactionService
+}
+
+
+### Webhook Types
+
+type WebhookEvent =
+  | 'invoice.created' | 'invoice.validated' | 'invoice.transmitted'
+  | 'invoice.accepted' | 'invoice.rejected' | 'invoice.error'
+  | 'invoice.incoming.received' | 'invoice.incoming.validated'
+  | 'invoice.incoming.accepted' | 'invoice.incoming.rejected'
+  | 'invoice.incoming.disputed' | 'invoice.incoming.paid'
+  | 'signature.created' | 'signature.waiting' | 'signature.signed'
+  | 'signature.completed' | 'signature.refused' | 'signature.expired'
+  | 'signature.error'
+  | 'balance.low' | 'balance.critical'
+
+interface Webhook {
+  id: UUID
+  company_id: UUID | null
+  url: string
+  events: WebhookEvent[]
+  is_active: boolean
+  environment: Environment
+  retry_count: number
+  timeout_seconds: number
+  failure_count: number
+  last_triggered_at: DateTimeString | null
+  last_success_at: DateTimeString | null
+  last_failure_at: DateTimeString | null
+  created_at: DateTimeString
+}
+
+interface WebhookWithSecret extends Webhook {
+  secret: string
+}
+
+interface CreateWebhookInput {
+  url: string
+  events: WebhookEvent[]
+  environment: Environment
+  headers?: Record<string, string>
+  retry_count?: number
+  timeout_seconds?: number
+}
+
+interface UpdateWebhookInput {
+  url?: string
+  events?: WebhookEvent[]
+  is_active?: boolean
+  headers?: Record<string, string>
+  retry_count?: number
+  timeout_seconds?: number
+}
+
+interface WebhookListOptions {
+  company_id?: UUID
+}
+
+interface WebhookTestResponse {
+  success: boolean
+  status_code?: number
+  response_time_ms?: number
+  error?: string
+}
+
+interface WebhookLog {
+  id: UUID
+  event: string
+  payload: Record<string, unknown>
+  response_status: number | null
+  response_body: string | null
+  response_time_ms: number | null
+  success: boolean
+  error_message: string | null
+  created_at: DateTimeString
+}
+
+interface WebhookPayload<T = unknown> {
+  event: WebhookEvent
+  timestamp: DateTimeString
+  data: T
+}
+
+interface InvoiceWebhookData {
+  id: UUID
+  invoice_number: string
+  status: string
+  environment: Environment
+}
+
+interface SignatureWebhookData {
+  id: UUID
+  title: string
+  status: string
+  environment: Environment
+  signer_id?: UUID
+  signer_email?: string
+}
+
+interface BalanceWebhookData {
+  amount: number
+  currency: string
+  threshold: number
+}
+
+interface InvoiceIncomingPaidPayload {
+  invoice_id: string
+  invoice_number: string
+  seller_name: string
+  seller_siret: string
+  total_amount: number
+  currency: string
+  paid_at: string
+  payment_reference?: string
+}
+
+
+### API Key Types
+
+interface ApiKey {
+  id: UUID
+  name: string
+  company_id: UUID
+  key_prefix: string
+  environment: Environment
+  permissions: string[]
+  rate_limit: number
+  last_used_at: DateTimeString | null
+  expires_at: DateTimeString | null
+  created_at: DateTimeString
+}
+
+interface ApiKeyWithSecret extends ApiKey {
+  key: string
+}
+
+interface CreateApiKeyInput {
+  name: string
+  company_id: UUID
+  environment: Environment
+  permissions?: string[]
+  expires_at?: DateTimeString
+}
+
+
+### Auth Types
+
+interface User {
+  id: UUID
+  name: string
+  email: string
+  email_verified_at: DateTimeString | null
+  is_admin: boolean
+  created_at: DateTimeString
+  updated_at: DateTimeString
+}
+
+interface LoginCredentials {
+  email: string
+  password: string
+}
+
+interface RegisterInput {
+  name: string
+  email: string
+  password: string
+  password_confirmation: string
+}
+
+interface AuthResponse {
+  message: string
+  user: User
+  token: string
+}
+
+interface ForgotPasswordInput {
+  email: string
+}
+
+interface ResetPasswordInput {
+  email: string
+  token: string
+  password: string
+  password_confirmation: string
+}
+
+
+### Credit Note Types (Dashboard)
+
+interface CreditNoteItem {
+  description: string
+  quantity: number
+  unit_price: number
+  tax_rate: number
+  total: number
+}
+
+interface CreditNote {
+  id: UUID
+  invoice_id: UUID
+  number: string
+  status: string
+  total_amount: number
+  tax_amount: number
+  currency: CurrencyCode
+  reason: string
+  items: CreditNoteItem[]
+  created_at: DateTimeString
+  updated_at: DateTimeString
+}
+
+interface CreateCreditNoteInput {
+  invoice_id: UUID
+  reason: string
+  items: CreditNoteItem[]
+}
+
+interface CreditNoteListOptions extends PaginationOptions {
+  sort?: string
+  order?: 'asc' | 'desc'
+}
+
+
+### Tenant Credit Note Types
+
+type TenantCreditNoteStatus = 'draft' | 'sent' | 'cancelled'
+type TenantCreditNoteType = 'partial' | 'total'
+
+interface TenantCreditNoteItem {
+  id: UUID
+  invoice_line_id?: UUID
+  description: string
+  quantity: number
+  unit_price: number
+  tax_rate: number
+  total: number
+}
+
+interface TenantCreditNote {
+  id: UUID
+  credit_note_number: string
+  invoice_id: UUID
+  tenant_id: UUID
+  sub_tenant_id: UUID
+  status: TenantCreditNoteStatus
+  type: TenantCreditNoteType
+  reason: string
+  subtotal: number
+  tax_amount: number
+  total: number
+  currency: CurrencyCode
+  buyer_name?: string
+  buyer_siret?: Siret
+  seller_name?: string
+  seller_siret?: Siret
+  issue_date: DateString
+  created_at: DateTimeString
+  updated_at: DateTimeString
+  items?: TenantCreditNoteItem[]
+}
+
+interface TenantCreditNoteItemInput {
+  invoice_line_id: UUID
+  quantity?: number
+}
+
+interface CreateTenantCreditNoteInput {
+  invoice_id: UUID
+  reason: string
+  type: TenantCreditNoteType
+  items?: TenantCreditNoteItemInput[]
+  metadata?: Record<string, unknown>
+}
+
+interface UpdateTenantCreditNoteInput {
+  reason?: string
+  items?: TenantCreditNoteItemInput[]
+  metadata?: Record<string, unknown>
+}
+
+interface RemainingCreditableLine {
+  invoice_line_id: UUID
+  description: string
+  original_quantity: number
+  credited_quantity: number
+  remaining_quantity: number
+  unit_price: number
+}
+
+interface RemainingCreditable {
+  invoice_id: UUID
+  invoice_total: number
+  credited_total: number
+  remaining_total: number
+  lines: RemainingCreditableLine[]
+}
+
+interface TenantCreditNoteListOptions extends PaginationOptions {
+  status?: TenantCreditNoteStatus
+  date_from?: DateString
+  date_to?: DateString
+}
+
+
+### Tenant Invoice Types
+
+type TenantInvoiceDirection = 'outgoing' | 'incoming'
+
+interface TenantInvoiceBuyer {
+  company_name: string
+  siren?: Siren
+  siret?: Siret
+  vat_number?: string
+  address: Address
+  email: string
+}
+
+interface TenantInvoiceSeller {
+  company_name: string
+  siren: Siren                    // required, Luhn-validated
+  siret?: Siret
+  vat_number?: string
+  address: Address
+  email: string
+}
+
+interface CreateTenantDirectInvoiceParams {
+  company_id: UUID
+  buyer: TenantInvoiceBuyer
+  lines: InvoiceLineInput[]
+  issue_date?: DateString
+  due_date?: DateString
+  currency?: CurrencyCode
+  notes?: string
+  metadata?: Record<string, unknown>
+  output_format?: InvoiceFormat
+  external_id?: string
+}
+
+interface CreateTenantDirectCreditNoteParams {
+  invoice_id: UUID
+  reason: string
+  type: 'partial' | 'total'
+  items?: TenantCreditNoteItemInput[]
+  metadata?: Record<string, unknown>
+}
+
+interface CreateIncomingInvoiceParams {
+  invoice_number: string
+  company_id: UUID
+  seller: TenantInvoiceSeller
+  lines: InvoiceLineInput[]
+  issue_date: DateString
+  due_date?: DateString
+  total_ht: number
+  total_ttc: number
+  currency?: CurrencyCode
+  external_id?: string
+}
+
+interface UpdateTenantInvoiceParams {
+  buyer?: Partial<TenantInvoiceBuyer>
+  lines?: InvoiceLineInput[]
+  due_date?: DateString
+  notes?: string
+  metadata?: Record<string, unknown>
+}
+
+interface UpdateTenantCreditNoteParams {
+  reason?: string
+  items?: TenantCreditNoteItemInput[]
+  metadata?: Record<string, unknown>
+}
+
+interface TenantInvoiceFilters extends PaginationOptions {
+  search?: string
+  status?: InvoiceStatus | InvoiceStatus[]
+  direction?: TenantInvoiceDirection
+  date_from?: DateString
+  date_to?: DateString
+  buyer_siret?: Siret
+  seller_siret?: Siret
+  min_amount?: number
+  max_amount?: number
+  sort?: string
+  order?: 'asc' | 'desc'
+}
+
+interface TenantCreditNoteFilters extends PaginationOptions {
+  status?: 'draft' | 'sent' | 'cancelled'
+  date_from?: DateString
+  date_to?: DateString
+  sort?: string
+  order?: 'asc' | 'desc'
+}
+
+interface TenantInvoice {
+  id: UUID
+  external_id: string | null
+  invoice_number: string
+  direction: TenantInvoiceDirection
+  output_format: InvoiceFormat
+  issue_date: DateString
+  due_date: DateString | null
+  currency: CurrencyCode
+  total_ht: number
+  total_tax: number
+  total_ttc: number
+  seller: { siret: Siret | null; siren: Siren | null; name: string; address: Address; email?: string }
+  buyer: { siret: Siret | null; siren: Siren | null; name: string; address: Address; email?: string }
+  lines: InvoiceLine[] | null
+  status: InvoiceStatus
+  status_message: string | null
+  notes: string | null
+  metadata: Record<string, unknown> | null
+  tenant_id: UUID
+  sub_tenant_id: UUID | null
+  company_id: UUID
+  created_at: DateTimeString
+  updated_at: DateTimeString
+  validated_at: DateTimeString | null
+  paid_at: DateTimeString | null
+  payment_reference: string | null
+}
+
+
+### Fiscal Types
+
+type FiscalComplianceStatus = 'CONFORME' | 'ALERTE' | 'NON_CONFORME'
+type FiscalRuleCategory = 'vat' | 'invoicing' | 'credit_note' | 'closing' | 'export'
+type FiscalForensicExportType = 'chronology' | 'graph' | 'report'
+
+interface FiscalComplianceData {
+  closing_coverage_percent: number
+  chain_integrity_percent: number
+  open_incidents: FiscalIncident[]
+  open_incidents_count: number
+  overall_status: FiscalComplianceStatus
+  last_integrity_check_at: string | null
+  last_closing_at: string | null
+  last_closing_date: string | null
+  total_fiscal_entries: number
+  days_with_activity: number
+  days_closed: number
+  attestation_status: FiscalAttestationStatus
+}
+
+interface FiscalIncident {
+  type: string
+  severity: 'critical' | 'warning' | 'info'
+  message: string
+  since?: string
+  count?: number
+}
+
+interface FiscalAttestationStatus {
+  current: boolean
+  software_version: string
+  attestation_version: string | null
+  needs_renewal: boolean
+  reason: string | null
+}
+
+interface FiscalIntegrityReport {
+  is_valid: boolean
+  entries_checked: number
+  broken_links: number
+  details?: Record<string, unknown>
+}
+
+interface FiscalIntegrityCheck {
+  id: string
+  tenant_id: string
+  result: 'passed' | 'failed'
+  entries_checked: number
+  broken_links: number
+  details?: Record<string, unknown>
+  created_at: string
+}
+
+interface FiscalIntegrityOptions {
+  date_from?: string
+  date_to?: string
+}
+
+interface FiscalIntegrityHistoryOptions {
+  per_page?: number
+}
+
+interface FiscalClosing {
+  id: string
+  tenant_id: string
+  closing_date: string
+  closing_type: string
+  status: string
+  entries_count: number
+  total_debit: number
+  total_credit: number
+  chain_hash?: string
+  environment?: string
+  created_at?: string
+}
+
+interface FiscalClosingsOptions {
+  limit?: number
+}
+
+interface FiscalDailyClosingInput {
+  date?: string
+}
+
+interface FiscalFecExportOptions {
+  start_date: string
+  end_date: string
+  format?: 'pipe' | 'tab'
+  download?: boolean
+}
+
+interface FiscalFecExportResult {
+  period: { start_date: string; end_date: string }
+  format: string
+  file_path: string
+}
+
+interface FiscalAttestation {
+  year: number
+  tenant_name: string
+  software_version: string
+  compliance: Record<string, unknown>
+  generated_at?: string
+  certificate_hash?: string
+}
+
+interface FiscalEntry {
+  id: string
+  tenant_id: string
+  sequence_number: number
+  entry_type: string
+  fiscal_date: string
+  entity_type?: string | null
+  entity_id?: string | null
+  data_snapshot?: Record<string, unknown> | null
+  data_hash?: string
+  previous_hash?: string
+  chain_hash?: string
+  environment?: string
+  legal_status?: string
+  created_at?: string
+}
+
+interface FiscalEntriesOptions {
+  date_from?: string
+  date_to?: string
+  entry_type?: string
+  environment?: 'production' | 'sandbox'
+  per_page?: number
+}
+
+interface FiscalKillSwitchStatus {
+  is_active: boolean
+  kill_switch: FiscalKillSwitch | null
+}
+
+interface FiscalKillSwitch {
+  id: string
+  tenant_id: string
+  is_active: boolean
+  activated_at: string
+  reason: string
+  activated_by: string
+  deactivated_at?: string | null
+  deactivated_by?: string | null
+}
+
+interface FiscalKillSwitchActivateInput {
+  reason: string
+}
+
+interface FiscalAnchor {
+  id: string
+  tenant_id: string
+  anchor_type: string
+  source_hash: string
+  anchor_reference?: string | null
+  anchor_provider?: string | null
+  anchored_at?: string | null
+  created_at?: string
+}
+
+interface FiscalAnchorsOptions {
+  limit?: number
+}
+
+interface FiscalRule {
+  id: string
+  rule_key: string
+  name: string
+  category: FiscalRuleCategory
+  rule_definition: Record<string, unknown>
+  version: number
+  effective_from: string
+  effective_until?: string | null
+  legal_reference?: string | null
+  tenant_id?: string | null
+  description?: string | null
+  is_active: boolean
+  created_at?: string
+}
+
+interface FiscalRulesOptions {
+  date?: string
+  category?: FiscalRuleCategory
+}
+
+interface FiscalCreateRuleInput {
+  rule_key: string
+  name: string
+  category: FiscalRuleCategory
+  rule_definition: Record<string, unknown>
+  effective_from: string
+  effective_until?: string
+  legal_reference?: string
+}
+
+interface FiscalUpdateRuleInput {
+  rule_definition: Record<string, unknown>
+  effective_from?: string
+  effective_until?: string
+  legal_reference?: string
+}
+
+interface FiscalExportRulesOptions {
+  start_date: string
+  end_date: string
+}
+
+interface FiscalReplayRulesInput {
+  start_date: string
+  end_date: string
+}
+
+interface FiscalForensicExportOptions {
+  start_date: string
+  end_date: string
+  type?: FiscalForensicExportType
+}
+
+
+### Billing Types
+
+interface BillingInvoice {
+  id: string
+  invoice_number: string
+  period: string
+  total_ht: number
+  total_tax: number
+  total_ttc: number
+  status: string
+  currency: string
+  issued_at?: string | null
+  due_date?: string | null
+  paid_at?: string | null
+  lines?: BillingInvoiceLine[] | null
+}
+
+interface BillingInvoiceLine {
+  description: string
+  quantity: number
+  unit_price: number
+  total: number
+}
+
+interface BillingInvoiceListOptions {
+  per_page?: number
+  page?: number
+}
+
+interface BillingUsage {
+  period: string
+  invoices_count: number
+  credit_notes_count: number
+  signatures_count: number
+  total_cost: number
+  currency: string
+  breakdown?: Record<string, unknown> | null
+}
+
+interface BillingUsageOptions {
+  period?: string
+}
+
+interface BillingTopUpInput {
+  amount: number
+  payment_method?: string
+}
+
+interface BillingTopUpConfirmInput {
+  payment_intent_id: string
+}
+
+interface BillingTransaction {
+  id: string
+  type: string
+  amount: number
+  currency: string
+  description?: string | null
+  reference?: string | null
+  status?: string | null
+  created_at?: string | null
+}
+
+interface BillingTransactionListOptions {
+  per_page?: number
+  page?: number
+}
+
+
+### Stats Types
+
+interface StatsOverview {
+  total_invoices: number
+  total_credit_notes: number
+  total_revenue: number
+  total_expenses: number
+  active_sub_tenants: number
+  currency: string
+  status_breakdown?: Record<string, number> | null
+  period_comparison?: Record<string, unknown> | null
+}
+
+interface StatsMonthly {
+  month: string
+  invoices_count: number
+  credit_notes_count: number
+  revenue: number
+  expenses: number
+  daily_breakdown?: Record<string, unknown>[] | null
+}
+
+interface StatsOverviewOptions {
+  period?: string
+  currency?: string
+}
+
+interface StatsMonthlyOptions {
+  year?: number
+  month?: number
+}
+
+
+### Sub-Tenant Types
+
+interface SubTenant {
+  id: string
+  external_id?: string | null
+  name: string
+  siret?: string | null
+  siren?: string | null
+  email?: string | null
+  phone?: string | null
+  address?: SubTenantAddress | null
+  metadata?: Record<string, unknown> | null
+  created_at?: string
+  updated_at?: string
+}
+
+interface SubTenantAddress {
+  line1: string
+  line2?: string
+  postal_code: string
+  city: string
+  country?: string
+}
+
+interface SubTenantListOptions {
+  per_page?: number
+  page?: number
+  search?: string
+}
+
+interface CreateSubTenantInput {
+  external_id?: string
+  name: string
+  siret?: string
+  siren?: string
+  email?: string
+  phone?: string
+  address?: SubTenantAddress
+  metadata?: Record<string, unknown>
+}
+
+interface UpdateSubTenantInput {
+  external_id?: string
+  name?: string
+  siret?: string
+  siren?: string
+  email?: string
+  phone?: string
+  address?: SubTenantAddress
+  metadata?: Record<string, unknown>
+}
+
+
+### Tenant Profile Types
+
+interface TenantProfile {
+  id: string
+  name: string
+  email?: string
+  phone?: string
+  siret?: string
+  siren?: string
+  address?: TenantAddress | null
+  kyb_status?: string
+  environment?: string
+  created_at?: string
+  updated_at?: string
+}
+
+interface TenantAddress {
+  line1: string
+  line2?: string
+  postal_code: string
+  city: string
+  country?: string
+}
+
+interface UpdateTenantProfileInput {
+  name?: string
+  email?: string
+  phone?: string
+  address?: TenantAddress
+}
+
+interface TenantBalance {
+  credits: number
+  currency: string
+}
+
+interface TenantQuickStats {
+  invoices_this_month: number
+  credit_notes_this_month: number
+  signatures_this_month: number
+}
+
+interface RegenerateKeyResult {
+  tenant_key: string
+}
+
+
+## Error Handling
+
+All errors extend the base ScellError class.
+
+class ScellError extends Error {
+  status: number                  // HTTP status code
+  code: string | undefined        // Error code from API
+  body: unknown                   // Original response body
+}
+
+class ScellAuthenticationError extends ScellError      // 401 - Invalid/expired token or API key
+class ScellAuthorizationError extends ScellError       // 403 - Insufficient permissions
+class ScellNotFoundError extends ScellError            // 404 - Resource not found
+class ScellInsufficientBalanceError extends ScellError // 402 - Balance too low for operation
+class ScellServerError extends ScellError              // 5xx - Server error
+class ScellNetworkError extends ScellError             // 0 - Network failure (has originalError: Error)
+class ScellTimeoutError extends ScellError             // 0 - Request timeout
+
+class ScellValidationError extends ScellError {        // 422 - Validation failed
+  errors: Record<string, string[]>                     // Field-level validation errors
+  getAllMessages(): string[]                            // Flat array of all error messages
+  getFieldErrors(field: string): string[]              // Errors for a specific field
+  hasFieldError(field: string): boolean                // Check if field has errors
+}
+
+class ScellRateLimitError extends ScellError {         // 429 - Rate limited
+  retryAfter: number | undefined                       // Seconds to wait before retrying
+}
+
+Error mapping by HTTP status:
+  401 -> ScellAuthenticationError
+  402 -> ScellInsufficientBalanceError
+  403 -> ScellAuthorizationError
+  404 -> ScellNotFoundError
+  422 -> ScellValidationError
+  429 -> ScellRateLimitError
+  5xx -> ScellServerError
+
+
+## Webhook Verification
+
+ScellWebhooks is a static utility object for verifying and parsing webhook payloads.
+
+Header format: X-Scell-Signature: t=<unix_timestamp>,v1=<hmac_sha256_hex>
+Signed payload: "<timestamp>.<raw_body>"
+
+ScellWebhooks.verifySignature(payload: string, signature: string, secret: string, options?: VerifySignatureOptions): Promise<boolean>
+  Async verification using Web Crypto API (works in Node.js 18+ and browsers).
+  Uses constant-time comparison to prevent timing attacks.
+
+ScellWebhooks.verifySignatureSync(payload: string, signature: string, secret: string, options?: VerifySignatureOptions): boolean
+  Synchronous verification using Node.js crypto module (Node.js only).
+  Uses crypto.timingSafeEqual for comparison.
+
+ScellWebhooks.parsePayload<T = unknown>(payload: string): WebhookPayload<T>
+  Parse raw JSON payload string into typed WebhookPayload object.
+
+ScellWebhooks.constructTestEvent<T>(event: string, data: T, secret: string): Promise<{ payload: string; headers: Record<string, string> }>
+  Create a test webhook event with proper signature for local testing.
+  Returns payload string and headers including X-Scell-Signature, X-Scell-Event, X-Scell-Delivery.
+
+interface VerifySignatureOptions {
+  tolerance?: number              // Seconds for timestamp tolerance (default: 300 = 5 minutes)
+}
+
+Example usage:
+  const isValid = await ScellWebhooks.verifySignature(rawBody, req.headers['x-scell-signature'], 'whsec_...');
+  const event = ScellWebhooks.parsePayload<InvoiceWebhookData>(rawBody);
+
+
+## Retry Mechanism
+
+The SDK automatically retries failed requests for rate limits (429) and server errors (5xx) using exponential backoff with jitter.
+
+interface RetryOptions {
+  maxRetries?: number             // default: 3
+  baseDelay?: number              // default: 1000 (ms)
+  maxDelay?: number               // default: 30000 (ms)
+  jitterFactor?: number           // default: 0.1 (0-1)
+  isRetryable?: (error: unknown) => boolean  // custom retryable check
+}
+
+withRetry<T>(fn: () => Promise<T>, options?: RetryOptions): Promise<T>
+  Execute a function with retry logic. Automatically retries on ScellRateLimitError, ScellServerError, and ScellNetworkError.
+  Respects Retry-After header from 429 responses.
+  Delay formula: min(baseDelay * 2^attempt, maxDelay) +/- jitter
+
+createRetryWrapper(defaultOptions?: RetryOptions): <T>(fn: () => Promise<T>, options?: RetryOptions) => Promise<T>
+  Create a reusable retry wrapper with pre-configured defaults.
+
+Retry can be disabled per-request:
+  client.invoices.list({ skipRetry: true })
+
+Or globally:
+  new ScellClient(token, { enableRetry: false })
+
+
+## International Invoicing
+
+SIRET is only required for French companies. For international invoicing:
+
+French seller/buyer (country = 'FR'):
+  - seller_siret / buyer_siret is required (14 digits)
+  - seller_vat_number / buyer_vat_number recommended for B2B
+
+EU seller/buyer (country != 'FR', within EU):
+  - No SIRET required
+  - Use seller_vat_number / buyer_vat_number (e.g., 'BE0123456789', 'DE123456789')
+  - For intra-community B2B: VAT rate typically 0% (reverse charge mechanism)
+
+Non-EU seller/buyer (e.g., GB, US, CH):
+  - No SIRET required
+  - Use buyer_vat_number if available
+  - Use buyer_legal_id + buyer_legal_id_scheme for company identification
+  - Scheme codes: '0088' (UK Company Number), etc.
+
+Fields available on CreateInvoiceInput:
+  seller_siret?, seller_vat_number?, seller_country, seller_legal_id?, seller_legal_id_scheme?
+  buyer_siret?, buyer_vat_number?, buyer_country, buyer_legal_id?, buyer_legal_id_scheme?
+
+
+## Environment Variables
+
+SCELL_API_URL=https://api.scell.io/api/v1
+SCELL_API_KEY=sk_live_xxx             # or sk_test_xxx for sandbox
+SCELL_WEBHOOK_SECRET=whsec_xxx
+
+
+## Webhook Events Reference
+
+Invoice (outgoing):
+  invoice.created, invoice.validated, invoice.transmitted, invoice.accepted, invoice.rejected, invoice.error
+
+Invoice (incoming):
+  invoice.incoming.received, invoice.incoming.validated, invoice.incoming.accepted, invoice.incoming.rejected, invoice.incoming.disputed, invoice.incoming.paid
+
+Signature:
+  signature.created, signature.waiting, signature.signed, signature.completed, signature.refused, signature.expired, signature.error
+
+Balance:
+  balance.low, balance.critical
+
+
+## Changelog
+
+v1.8.0 (current) - Latest stable release
+v1.5.0 - Fixed: creditNotes property name on ScellApiClient, fiscal updateRule uses PUT
+v1.4.0 - Added: FiscalResource (23 methods), BillingResource, StatsResource, SubTenantsResource, TenantProfile methods, Bulk operations
+v1.3.0 - Internal improvements
+v1.2.0 - Added: markPaid support, downloadFile (binary), HttpClient.getRaw, MarkPaidInput type, InvoiceFileFormat type, invoice.incoming.paid webhook event
+v1.1.0 - Added: Incoming invoices support (incoming, accept, reject, dispute), IncomingInvoiceParams, RejectionCode, DisputeType, 5 new webhook events
+v1.0.0 - Initial release: Factur-X/UBL/CII invoicing, eIDAS signatures, webhook verification, retry with backoff, dual auth (Bearer + API Key), typed errors
