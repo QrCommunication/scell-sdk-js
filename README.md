@@ -266,7 +266,7 @@ apiClient.invoices          // Create, download, convert invoices
 apiClient.signatures        // Create, download, remind, cancel signatures
 apiClient.creditNotes       // Create, send, download tenant credit notes
 apiClient.subTenants        // Sub-tenant management
-apiClient.fiscal            // NF525 fiscal compliance
+apiClient.fiscal            // ISCA fiscal compliance
 apiClient.stats             // Platform statistics
 apiClient.billing           // Usage, top-up, transactions
 apiClient.tenantInvoices    // Tenant invoice operations
@@ -567,6 +567,21 @@ await tenant.incomingInvoices.accept(invoiceId);
 // Fiscal Compliance
 const compliance = await tenant.fiscal.compliance();
 const integrity = await tenant.fiscal.integrity();
+
+### ISCA Compliance Documents
+
+Download the three mandatory ISCA compliance documents as PDF:
+
+```typescript
+// Measures register (registre des mesures)
+const registerPdf = await client.fiscal.downloadMeasuresRegister();
+
+// Technical dossier (dossier technique)
+const dossierPdf = await client.fiscal.downloadTechnicalDossier();
+
+// Self-attestation (auto-attestation ISCA)
+const attestationPdf = await client.fiscal.downloadSelfAttestation();
+```
 
 // Billing
 const billingInvoices = await tenant.billing.invoices();

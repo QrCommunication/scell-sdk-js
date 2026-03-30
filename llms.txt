@@ -18,7 +18,7 @@ Where SLUG5 = first 5 characters of tenant slug (uppercase). Sequences reset mon
 
 The number is assigned:
 - At creation: temporary DRAFT number
-- At submit/send: definitive fiscal number (immutable per NF525)
+- At submit/send: definitive fiscal number (immutable per ISCA)
 
 ## Installation
 
@@ -517,6 +517,15 @@ fiscal.replayRules(input: FiscalReplayRulesInput, requestOptions?): Promise<Mess
 
 fiscal.forensicExport(options: FiscalForensicExportOptions, requestOptions?): Promise<SingleResponse<Record<string, unknown>>>
   GET /tenant/fiscal/forensic-export
+
+fiscal.downloadMeasuresRegister(requestOptions?): Promise<Blob | ArrayBuffer>
+  GET /tenant/fiscal/isca/measures-register/download
+
+fiscal.downloadTechnicalDossier(requestOptions?): Promise<Blob | ArrayBuffer>
+  GET /tenant/fiscal/isca/technical-dossier/download
+
+fiscal.downloadSelfAttestation(requestOptions?): Promise<Blob | ArrayBuffer>
+  GET /tenant/fiscal/isca/self-attestation/download
 
 
 ### Billing (BillingResource) -- 7 methods
