@@ -120,8 +120,6 @@ export interface InvoiceLineInput {
 export interface CreateInvoiceInput {
   /** Your external reference ID */
   external_id?: string | undefined;
-  /** Invoice number (required) */
-  invoice_number: string;
   /** Direction: outgoing (sale) or incoming (purchase) */
   direction: InvoiceDirection;
   /** Output format for electronic invoice */
