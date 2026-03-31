@@ -427,7 +427,7 @@ describe('invoices.downloadFile', () => {
 
     expect(result).toBeInstanceOf(ArrayBuffer);
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('/invoices/invoice-uuid/download?format=pdf'),
+      expect.stringContaining('/invoices/invoice-uuid/download/pdf'),
       expect.objectContaining({
         method: 'GET',
         headers: expect.objectContaining({
@@ -451,7 +451,7 @@ describe('invoices.downloadFile', () => {
 
     expect(result).toBeInstanceOf(ArrayBuffer);
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('/invoices/invoice-uuid/download?format=xml'),
+      expect.stringContaining('/invoices/invoice-uuid/download/xml'),
       expect.any(Object)
     );
   });

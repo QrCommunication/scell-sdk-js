@@ -228,7 +228,7 @@ export class TenantDirectInvoicesResource {
     params: UpdateTenantInvoiceParams,
     requestOptions?: RequestOptions
   ): Promise<SingleResponse<TenantInvoice>> {
-    return this.http.patch<SingleResponse<TenantInvoice>>(
+    return this.http.put<SingleResponse<TenantInvoice>>(
       `/tenant/invoices/${invoiceId}`,
       params,
       requestOptions
@@ -261,121 +261,29 @@ export class TenantDirectInvoicesResource {
   }
 
   /**
-   * Validate a direct invoice
+   * Submit a direct invoice for processing
    *
-   * Validates the invoice, generates the electronic invoice file,
-   * and changes status from 'draft' to 'validated'.
+   * Submits the invoice for validation and delivery. The invoice will be
+   * validated, the electronic invoice file generated, and the invoice
+   * sent to the buyer. Status changes from 'draft' to 'submitted'.
    *
    * @param invoiceId - Invoice UUID
    * @param requestOptions - Optional request configuration
-   * @returns Validated invoice
+   * @returns Submitted invoice
    *
    * @example
    * ```typescript
-   * const { data: invoice } = await client.directInvoices.validate('invoice-uuid');
-   * console.log('Invoice validated:', invoice.status); // 'validated'
-   * console.log('Validated at:', invoice.validated_at);
+   * const { data: invoice } = await client.directInvoices.submit('invoice-uuid');
+   * console.log('Invoice submitted:', invoice.status); // 'submitted'
    * ```
    */
-  async validate(
+  async submit(
     invoiceId: string,
     requestOptions?: RequestOptions
   ): Promise<SingleResponse<TenantInvoice>> {
     return this.http.post<SingleResponse<TenantInvoice>>(
-      `/tenant/invoices/${invoiceId}/validate`,
+      `/tenant/invoices/${invoiceId}/submit`,
       undefined,
-      requestOptions
-    );
-  }
-
-  /**
-   * Send a direct invoice to the buyer
-   *
-   * Sends the validated invoice to the buyer via email.
-   * The invoice must be in 'validated' status.
-   *
-   * @param invoiceId - Invoice UUID
-   * @param requestOptions - Optional request configuration
-   * @returns Updated invoice
-   *
-   * @example
-   * ```typescript
-   * const { data: invoice } = await client.directInvoices.send('invoice-uuid');
-   * console.log('Invoice sent to:', invoice.buyer.email);
-   * ```
-   */
-  async send(
-    invoiceId: string,
-    requestOptions?: RequestOptions
-  ): Promise<SingleResponse<TenantInvoice>> {
-    return this.http.post<SingleResponse<TenantInvoice>>(
-      `/tenant/invoices/${invoiceId}/send`,
-      undefined,
-      requestOptions
-    );
-  }
-
-  /**
-   * Download invoice as PDF
-   *
-   * Downloads the electronic invoice file as a PDF (Factur-X).
-   *
-   * @param invoiceId - Invoice UUID
-   * @param requestOptions - Optional request configuration
-   * @returns ArrayBuffer containing the PDF file
-   *
-   * @example
-   * ```typescript
-   * // Download invoice PDF
-   * const pdfBuffer = await client.directInvoices.download('invoice-uuid');
-   *
-   * // In Node.js, save to file:
-   * import { writeFileSync } from 'fs';
-   * writeFileSync('invoice.pdf', Buffer.from(pdfBuffer));
-   *
-   * // In browser, trigger download:
-   * const blob = new Blob([pdfBuffer], { type: 'application/pdf' });
-   * const url = URL.createObjectURL(blob);
-   * const a = document.createElement('a');
-   * a.href = url;
-   * a.download = 'invoice.pdf';
-   * a.click();
-   * ```
-   */
-  async download(
-    invoiceId: string,
-    requestOptions?: RequestOptions
-  ): Promise<ArrayBuffer> {
-    return this.http.getRaw(
-      `/tenant/invoices/${invoiceId}/download`,
-      undefined,
-      requestOptions
-    );
-  }
-
-  /**
-   * Download invoice XML
-   *
-   * Downloads the electronic invoice XML (UBL/CII format).
-   *
-   * @param invoiceId - Invoice UUID
-   * @param requestOptions - Optional request configuration
-   * @returns ArrayBuffer containing the XML file
-   *
-   * @example
-   * ```typescript
-   * const xmlBuffer = await client.directInvoices.downloadXml('invoice-uuid');
-   * const xmlString = new TextDecoder().decode(xmlBuffer);
-   * console.log('XML:', xmlString);
-   * ```
-   */
-  async downloadXml(
-    invoiceId: string,
-    requestOptions?: RequestOptions
-  ): Promise<ArrayBuffer> {
-    return this.http.getRaw(
-      `/tenant/invoices/${invoiceId}/download`,
-      { format: 'xml' },
       requestOptions
     );
   }

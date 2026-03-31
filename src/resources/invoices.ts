@@ -479,8 +479,8 @@ export class InvoicesResource {
     requestOptions?: RequestOptions
   ): Promise<ArrayBuffer> {
     return this.http.getRaw(
-      `/invoices/${id}/download`,
-      { format },
+      `/invoices/${id}/download/${format}`,
+      undefined,
       requestOptions
     );
   }

@@ -85,7 +85,7 @@ export class ScellTenantClient {
 
   /** Update tenant profile */
   async updateProfile(input: UpdateTenantProfileInput, requestOptions?: RequestOptions): Promise<SingleResponse<TenantProfile>> {
-    return this.http.post<SingleResponse<TenantProfile>>('/tenant/me', input, requestOptions);
+    return this.http.put<SingleResponse<TenantProfile>>('/tenant/me', input, requestOptions);
   }
 
   /** Get tenant balance */
