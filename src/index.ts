@@ -128,10 +128,12 @@ export class ScellClient {
 }
 
 /**
- * Scell API Client
+ * API Client for server-to-server integration.
+ * Uses X-API-Key header with sk_live_* or sk_test_* keys.
  *
- * Use this client for external API operations with X-API-Key authentication.
- * This is the client you'll use for creating invoices and signatures.
+ * Provides access to both legacy invoice/signature endpoints
+ * and tenant management endpoints. For dedicated tenant operations,
+ * prefer ScellTenantClient which uses X-Tenant-Key header.
  *
  * @example
  * ```typescript
