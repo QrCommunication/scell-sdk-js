@@ -233,3 +233,12 @@ export type {
   TenantQuickStats,
   UpdateTenantProfileInput,
 } from './tenant-profile.js';
+
+// Onboarding types
+export type {
+  OnboardingSession,
+  OnboardingStep,
+  SuperPDPAuthorizeResponse,
+  SuperPDPCallbackResponse,
+  SuperPDPCallbackTenant,
+} from './onboarding.js';

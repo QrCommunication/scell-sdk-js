@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.11.0] - 2026-04-04
+
+### Changed
+
+- **Onboarding**: Replace 4-step KYB flow with SuperPDP OAuth2 Authorization Code flow (3 steps: connect → redirect → complete)
+  - `OnboardingStep` is now `'connect' | 'redirect' | 'complete'`
+
+### Added
+
+- **Onboarding Resource**: `OnboardingResource` on `ScellApiClient` (`client.onboarding`)
+  - `createSession()` — Create a new onboarding session
+  - `getSession(sessionId)` — Get an existing onboarding session
+  - `getSuperPDPAuthorizeUrl(sessionId)` — Get the SuperPDP OAuth2 authorization URL to open in a popup
+  - `superpdpCallback(sessionId, code, state)` — Handle the OAuth2 callback and create the Scell tenant
+
+- **New Types**:
+  - `OnboardingSession` — Onboarding session with `id`, `step`, `publishable_key`, timestamps
+  - `OnboardingStep` — `'connect' | 'redirect' | 'complete'`
+  - `SuperPDPAuthorizeResponse` — `{ authorize_url: string; state: string }`
+  - `SuperPDPCallbackResponse` — `{ success: boolean; authorization_code: string; tenant: SuperPDPCallbackTenant }`
+  - `SuperPDPCallbackTenant` — `{ id: string; name: string; siret: string; environment: string }`
+
+### Removed
+
+- Removed legacy onboarding types: `VerifySiretRequest`, `VerifySiretResponse`, `VerifyVatRequest`, `UploadDocumentRequest`, `KybDocument`, `Representative`, `CompanyData`
+- Removed legacy onboarding methods: `verifySiret`, `verifyVat`, `uploadDocument`, `getDocuments`, `completeOnboarding`
+
 ## [1.5.0] - 2025-03-29
 
 ### Fixed
@@ -125,6 +152,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - ScellRateLimitError with retry-after info
   - ScellInsufficientBalanceError for balance issues
 
+[1.11.0]: https://github.com/QrCommunication/scell-sdk-js/releases/tag/v1.11.0
 [1.5.0]: https://github.com/QrCommunication/scell-sdk-js/releases/tag/v1.5.0
 [1.4.0]: https://github.com/QrCommunication/scell-sdk-js/releases/tag/v1.4.0
 [1.3.0]: https://github.com/QrCommunication/scell-sdk-js/releases/tag/v1.3.0

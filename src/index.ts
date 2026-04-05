@@ -50,6 +50,7 @@ import { TenantCreditNotesResource } from './resources/tenant-credit-notes.js';
 import { TenantDirectInvoicesResource } from './resources/tenant-direct-invoices.js';
 import { TenantIncomingInvoicesResource } from './resources/tenant-incoming-invoices.js';
 import { WebhooksResource } from './resources/webhooks.js';
+import { OnboardingResource } from './resources/onboarding.js';
 
 // Utilities
 import { ScellWebhooks } from './utils/webhook-verify.js';
@@ -179,6 +180,8 @@ export class ScellApiClient {
   public readonly tenantInvoices: TenantDirectInvoicesResource;
   /** Incoming invoice operations (list, accept, reject) */
   public readonly incomingInvoices: TenantIncomingInvoicesResource;
+  /** SuperPDP OAuth2 onboarding flow (partner tenant onboarding) */
+  public readonly onboarding: OnboardingResource;
 
   /**
    * Create a new Scell API Client
@@ -209,6 +212,7 @@ export class ScellApiClient {
     this.creditNotes = new TenantCreditNotesResource(this.http);
     this.tenantInvoices = new TenantDirectInvoicesResource(this.http);
     this.incomingInvoices = new TenantIncomingInvoicesResource(this.http);
+    this.onboarding = new OnboardingResource(this.http);
   }
 }
 
