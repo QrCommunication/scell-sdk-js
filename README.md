@@ -287,6 +287,54 @@ apiClient.incomingInvoices  // Incoming invoice operations
 | `.tenantInvoices` | `create(params)`, `list(filters?)`, `get(id)`, `update(id, params)`, `delete(id)`, `validate(id)`, `send(id)`, `download(id)`, `downloadXml(id)`, `bulkCreate(invoices)`, `bulkSubmit(ids)`, `bulkStatus(ids)` |
 | `.incomingInvoices` | `create(subTenantId, params)`, `listForSubTenant(subTenantId)`, `get(id)`, `accept(id)`, `reject(id, reason)`, `markPaid(id)`, `download(id)` |
 
+### Onboarding
+
+The onboarding flow lets a partner embed Scell's SuperPDP-powered signup inside a popup. SuperPDP handles company registration, KYB, and identity verification. Once complete, a Scell tenant is provisioned for the end-user.
+
+Your publishable key (`pk_live_*`) is safe to use client-side and powers the `onboarding` resource. Retrieve yours from the [Scell dashboard](https://app.scell.io).
+
+```typescript
+import { ScellPublicClient } from '@scell/sdk';
+
+const client = new ScellPublicClient('pk_live_...');
+
+// Step 1: Create a session for the end-user
+const { data: session } = await client.onboarding.createSession({
+  partner_ref: 'my-internal-user-id',
+  redirect_url: 'https://myapp.com/onboarding/complete',
+});
+
+// Step 2: Get the SuperPDP authorize URL
+const { authorize_url, state } = await client.onboarding.getSuperPDPAuthorizeUrl({
+  session_id: session.id,
+});
+
+// Step 3: Open popup — SuperPDP handles signup, KYB, and identity verification
+const popup = window.open(authorize_url, 'superpdp-onboarding', 'width=800,height=700');
+
+// Step 4: Poll or listen for completion, then call the callback
+// Your backend receives the code from SuperPDP and calls:
+const result = await client.onboarding.superpdpCallback({
+  session_id: session.id,
+  code: 'auth_code_from_superpdp',
+  state,
+});
+
+if (result.success) {
+  console.log('Tenant enrolled:', result.tenant.name, '—', result.tenant.siret);
+  // result.tenant: { id, name, siret, environment }
+}
+```
+
+Available methods on `client.onboarding`:
+
+| Method | Description |
+|--------|-------------|
+| `createSession(input)` | Create an onboarding session — `POST /onboarding/sessions` |
+| `getSession(sessionId)` | Retrieve session status — `GET /onboarding/sessions/:id` |
+| `getSuperPDPAuthorizeUrl(input)` | Get the SuperPDP OAuth2 popup URL — `POST /onboarding/superpdp/authorize` |
+| `superpdpCallback(input)` | Complete enrollment after SuperPDP redirect — `POST /onboarding/superpdp/callback` |
+
 ### Companies
 
 ```typescript

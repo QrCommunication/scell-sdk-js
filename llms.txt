@@ -38,6 +38,75 @@ There are 3 authentication modes, each corresponding to a different client class
 3. Tenant Key (ScellTenantClient) -- For multi-tenant partner operations.
    Header: X-Tenant-Key: <tk_live_xxx>
 
+## Onboarding
+
+The `onboarding` resource lets a partner embed the Scell onboarding flow (SuperPDP OAuth2) so their end-users can sign up and complete KYB/identity verification inside a popup, without leaving the partner platform.
+
+Flow:
+1. Create a session → receive a session_id
+2. Get the SuperPDP authorize URL for that session
+3. Open the authorize_url in a popup — SuperPDP handles signup, KYB, and identity
+4. SuperPDP redirects back with a code; call the callback endpoint to complete enrollment
+5. On success, the new tenant is created in Scell with all credentials provisioned
+
+### ScellPublicClient (Publishable Key — Widget / Frontend)
+
+Constructor: new ScellPublicClient(publishableKey: string, config?: ClientConfig)
+  Uses X-Publishable-Key header. Safe to use client-side.
+
+Resources:
+  publicClient.onboarding  -- OnboardingResource
+
+### OnboardingResource (client.onboarding / publicClient.onboarding)
+
+onboarding.createSession(input: CreateOnboardingSessionInput, requestOptions?): Promise<SingleResponse<OnboardingSession>>
+  POST /onboarding/sessions
+
+onboarding.getSession(sessionId: string, requestOptions?): Promise<SingleResponse<OnboardingSession>>
+  GET /onboarding/sessions/:id
+
+onboarding.getSuperPDPAuthorizeUrl(input: SuperPDPAuthorizeInput, requestOptions?): Promise<SuperPDPAuthorizeResponse>
+  POST /onboarding/superpdp/authorize
+  Returns: { authorize_url: string, state: string }
+
+onboarding.superpdpCallback(input: SuperPDPCallbackInput, requestOptions?): Promise<SuperPDPCallbackResponse>
+  POST /onboarding/superpdp/callback
+  Returns: { success: boolean, authorization_code: string, tenant: { id, name, siret, environment } }
+
+### Example — Partner integrating the onboarding widget
+
+```typescript
+import { ScellPublicClient } from '@scell/sdk';
+
+const client = new ScellPublicClient('pk_live_...');
+
+// Step 1: Create a session
+const { data: session } = await client.onboarding.createSession({
+  partner_ref: 'my-internal-user-id',
+  redirect_url: 'https://myapp.com/onboarding/complete',
+});
+
+// Step 2: Get SuperPDP authorize URL
+const { authorize_url, state } = await client.onboarding.getSuperPDPAuthorizeUrl({
+  session_id: session.id,
+});
+
+// Step 3: Open popup — SuperPDP handles signup, KYB, identity verification
+const popup = window.open(authorize_url, 'superpdp-onboarding', 'width=800,height=700');
+
+// Step 4: Handle the callback from your backend route
+// (your backend receives: POST /onboarding/superpdp/callback with { session_id, code, state })
+const result = await client.onboarding.superpdpCallback({
+  session_id: session.id,
+  code: 'auth_code_from_superpdp',
+  state,
+});
+
+if (result.success) {
+  console.log('Tenant enrolled:', result.tenant.name, result.tenant.siret);
+}
+```
+
 ## Static Auth Methods (no authentication required)
 
 ScellAuth.login(credentials: LoginCredentials, baseUrl?: string): Promise<AuthResponse>
