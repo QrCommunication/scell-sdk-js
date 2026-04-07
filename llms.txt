@@ -1,5 +1,5 @@
 # @scell/sdk -- JavaScript/TypeScript SDK for Scell.io
-> Version: 1.8.0 | License: MIT | Node.js >= 18.0.0 | TypeScript >= 5.0.0
+> Version: 1.12.0 | License: MIT | Node.js >= 18.0.0 | TypeScript >= 5.0.0
 
 ## Overview
 
@@ -59,18 +59,18 @@ Resources:
 
 ### OnboardingResource (client.onboarding / publicClient.onboarding)
 
-onboarding.createSession(input: CreateOnboardingSessionInput, requestOptions?): Promise<SingleResponse<OnboardingSession>>
+onboarding.createSession(requestOptions?): Promise<SingleResponse<OnboardingSession>>
   POST /onboarding/sessions
 
 onboarding.getSession(sessionId: string, requestOptions?): Promise<SingleResponse<OnboardingSession>>
-  GET /onboarding/sessions/:id
+  GET /onboarding/sessions/:sessionId
 
-onboarding.getSuperPDPAuthorizeUrl(input: SuperPDPAuthorizeInput, requestOptions?): Promise<SuperPDPAuthorizeResponse>
-  POST /onboarding/superpdp/authorize
+onboarding.getSuperPDPAuthorizeUrl(sessionId: string, requestOptions?): Promise<SuperPDPAuthorizeResponse>
+  GET /onboarding/sessions/:sessionId/superpdp/authorize
   Returns: { authorize_url: string, state: string }
 
-onboarding.superpdpCallback(input: SuperPDPCallbackInput, requestOptions?): Promise<SuperPDPCallbackResponse>
-  POST /onboarding/superpdp/callback
+onboarding.superpdpCallback(sessionId: string, code: string, state: string, requestOptions?): Promise<SuperPDPCallbackResponse>
+  POST /onboarding/sessions/:sessionId/superpdp/callback
   Returns: { success: boolean, authorization_code: string, tenant: { id, name, siret, environment } }
 
 ### Example — Partner integrating the onboarding widget
@@ -81,26 +81,20 @@ import { ScellPublicClient } from '@scell/sdk';
 const client = new ScellPublicClient('pk_live_...');
 
 // Step 1: Create a session
-const { data: session } = await client.onboarding.createSession({
-  partner_ref: 'my-internal-user-id',
-  redirect_url: 'https://myapp.com/onboarding/complete',
-});
+const { data: session } = await client.onboarding.createSession();
 
 // Step 2: Get SuperPDP authorize URL
-const { authorize_url, state } = await client.onboarding.getSuperPDPAuthorizeUrl({
-  session_id: session.id,
-});
+const { authorize_url, state } = await client.onboarding.getSuperPDPAuthorizeUrl(session.id);
 
 // Step 3: Open popup — SuperPDP handles signup, KYB, identity verification
 const popup = window.open(authorize_url, 'superpdp-onboarding', 'width=800,height=700');
 
-// Step 4: Handle the callback from your backend route
-// (your backend receives: POST /onboarding/superpdp/callback with { session_id, code, state })
-const result = await client.onboarding.superpdpCallback({
-  session_id: session.id,
-  code: 'auth_code_from_superpdp',
-  state,
-});
+// Step 4: Handle the callback after SuperPDP redirects back
+const result = await client.onboarding.superpdpCallback(
+  session.id,
+  'auth_code_from_superpdp',
+  state
+);
 
 if (result.success) {
   console.log('Tenant enrolled:', result.tenant.name, result.tenant.siret);
@@ -516,7 +510,7 @@ directCreditNotes.remainingCreditable(invoiceId: string, requestOptions?): Promi
   GET /tenant/invoices/:invoiceId/remaining-creditable
 
 
-### Fiscal Compliance (FiscalResource) -- 23 methods
+### Fiscal Compliance (FiscalResource) -- 26 methods
 
 fiscal.compliance(requestOptions?): Promise<SingleResponse<FiscalComplianceData>>
   GET /tenant/fiscal/compliance

@@ -40,7 +40,6 @@ import type {
  *
  * // Create an invoice
  * const invoice = await client.invoices.create({
- *   invoice_number: 'FACT-2024-001',
  *   direction: 'outgoing',
  *   output_format: 'facturx',
  *   // ...
@@ -119,7 +118,6 @@ export class InvoicesResource {
    * @example
    * ```typescript
    * const { data: invoice } = await client.invoices.create({
-   *   invoice_number: 'FACT-2024-001',
    *   direction: 'outgoing',
    *   output_format: 'facturx',
    *   issue_date: '2024-01-15',

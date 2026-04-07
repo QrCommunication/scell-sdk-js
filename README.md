@@ -113,7 +113,7 @@ const { data: invoice } = await apiClient.invoices.create({
   lines: [
     { description: 'Consulting services', quantity: 10, unit_price: 150.00, vat_rate: 0 },
   ],
-  format: 'ubl',
+  output_format: 'ubl',
 });
 ```
 
@@ -143,7 +143,7 @@ const { data: invoice } = await apiClient.invoices.create({
   lines: [
     { description: 'Design services', quantity: 5, unit_price: 200.00, vat_rate: 0 },
   ],
-  format: 'ubl',
+  output_format: 'ubl',
 });
 ```
 
@@ -249,6 +249,7 @@ client.balance       // Balance and transactions
 client.webhooks      // Webhook management
 client.invoices      // Invoice listing (read-only)
 client.signatures    // Signature listing (read-only)
+client.creditNotes   // Credit notes management
 ```
 
 ### ScellApiClient (External API)
@@ -281,7 +282,7 @@ apiClient.incomingInvoices  // Incoming invoice operations
 | `.signatures` | `create(params)`, `list(filters?)`, `get(id)`, `download(id, type)`, `remind(id)`, `cancel(id)` |
 | `.creditNotes` | `list(subTenantId, options?)`, `create(subTenantId, input)`, `get(id)`, `send(id)`, `download(id)`, `delete(id)`, `remainingCreditable(invoiceId)` |
 | `.subTenants` | `list()`, `create(input)`, `get(id)`, `update(id, input)`, `delete(id)`, `findByExternalId(externalId)` |
-| `.fiscal` | 23 methods (see ScellTenantClient reference) |
+| `.fiscal` | 26 methods (see ScellTenantClient reference) |
 | `.stats` | `overview(options?)`, `monthly(options?)`, `subTenantOverview(subTenantId, options?)` |
 | `.billing` | `invoices(options?)`, `showInvoice(id)`, `downloadInvoice(id)`, `usage(options?)`, `topUp(input)`, `confirmTopUp(input)`, `transactions(options?)` |
 | `.tenantInvoices` | `create(params)`, `list(filters?)`, `get(id)`, `update(id, params)`, `delete(id)`, `validate(id)`, `send(id)`, `download(id)`, `downloadXml(id)`, `bulkCreate(invoices)`, `bulkSubmit(ids)`, `bulkStatus(ids)` |
@@ -299,26 +300,21 @@ import { ScellPublicClient } from '@scell/sdk';
 const client = new ScellPublicClient('pk_live_...');
 
 // Step 1: Create a session for the end-user
-const { data: session } = await client.onboarding.createSession({
-  partner_ref: 'my-internal-user-id',
-  redirect_url: 'https://myapp.com/onboarding/complete',
-});
+const { data: session } = await client.onboarding.createSession();
 
 // Step 2: Get the SuperPDP authorize URL
-const { authorize_url, state } = await client.onboarding.getSuperPDPAuthorizeUrl({
-  session_id: session.id,
-});
+const { authorize_url, state } = await client.onboarding.getSuperPDPAuthorizeUrl(session.id);
 
 // Step 3: Open popup — SuperPDP handles signup, KYB, and identity verification
 const popup = window.open(authorize_url, 'superpdp-onboarding', 'width=800,height=700');
 
 // Step 4: Poll or listen for completion, then call the callback
 // Your backend receives the code from SuperPDP and calls:
-const result = await client.onboarding.superpdpCallback({
-  session_id: session.id,
-  code: 'auth_code_from_superpdp',
-  state,
-});
+const result = await client.onboarding.superpdpCallback(
+  session.id,
+  'auth_code_from_superpdp',
+  state
+);
 
 if (result.success) {
   console.log('Tenant enrolled:', result.tenant.name, '—', result.tenant.siret);
@@ -330,10 +326,10 @@ Available methods on `client.onboarding`:
 
 | Method | Description |
 |--------|-------------|
-| `createSession(input)` | Create an onboarding session — `POST /onboarding/sessions` |
-| `getSession(sessionId)` | Retrieve session status — `GET /onboarding/sessions/:id` |
-| `getSuperPDPAuthorizeUrl(input)` | Get the SuperPDP OAuth2 popup URL — `POST /onboarding/superpdp/authorize` |
-| `superpdpCallback(input)` | Complete enrollment after SuperPDP redirect — `POST /onboarding/superpdp/callback` |
+| `createSession()` | Create an onboarding session — `POST /onboarding/sessions` |
+| `getSession(sessionId)` | Retrieve session status — `GET /onboarding/sessions/:sessionId` |
+| `getSuperPDPAuthorizeUrl(sessionId)` | Get the SuperPDP OAuth2 popup URL — `GET /onboarding/sessions/:sessionId/superpdp/authorize` |
+| `superpdpCallback(sessionId, code, state)` | Complete enrollment after SuperPDP redirect — `POST /onboarding/sessions/:sessionId/superpdp/callback` |
 
 ### Companies
 
@@ -463,6 +459,9 @@ const { signers_reminded } = await apiClient.signatures.remind(signatureId);
 
 // Cancel
 await apiClient.signatures.cancel(signatureId);
+
+// Get audit trail
+const { data: trail } = await apiClient.signatures.auditTrail(signatureId);
 ```
 
 ### Tenant Credit Notes

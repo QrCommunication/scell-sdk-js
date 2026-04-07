@@ -242,3 +242,16 @@ export type {
   SuperPDPCallbackResponse,
   SuperPDPCallbackTenant,
 } from './onboarding.js';
+
+// Tenant incoming invoice input types
+export type {
+  AcceptIncomingInvoiceInput,
+  RejectIncomingInvoiceInput,
+  MarkPaidIncomingInvoiceInput,
+} from '../resources/tenant-incoming-invoices.js';
+
+// Tenant direct credit note remaining types
+export type {
+  DirectInvoiceRemainingCreditable,
+  DirectInvoiceRemainingLine,
+} from '../resources/tenant-direct-credit-notes.js';

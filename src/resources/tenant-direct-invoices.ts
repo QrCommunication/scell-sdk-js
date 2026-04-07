@@ -289,6 +289,34 @@ export class TenantDirectInvoicesResource {
   }
 
   /**
+   * Alias for submit() — validate and send the invoice
+   *
+   * @param invoiceId - Invoice UUID
+   * @param requestOptions - Optional request configuration
+   * @returns Submitted invoice
+   */
+  async validate(
+    invoiceId: string,
+    requestOptions?: RequestOptions
+  ): Promise<SingleResponse<TenantInvoice>> {
+    return this.submit(invoiceId, requestOptions);
+  }
+
+  /**
+   * Alias for submit() — send the invoice to the buyer
+   *
+   * @param invoiceId - Invoice UUID
+   * @param requestOptions - Optional request configuration
+   * @returns Submitted invoice
+   */
+  async send(
+    invoiceId: string,
+    requestOptions?: RequestOptions
+  ): Promise<SingleResponse<TenantInvoice>> {
+    return this.submit(invoiceId, requestOptions);
+  }
+
+  /**
    * Bulk create multiple invoices
    */
   async bulkCreate(

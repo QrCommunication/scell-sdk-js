@@ -132,7 +132,7 @@ export class ScellClient {
  * API Client for server-to-server integration.
  * Uses X-API-Key header with sk_live_* or sk_test_* keys.
  *
- * Provides access to both legacy invoice/signature endpoints
+ * Provides access to both tenant invoice/signature endpoints
  * and tenant management endpoints. For dedicated tenant operations,
  * prefer ScellTenantClient which uses X-Tenant-Key header.
  *
@@ -144,7 +144,6 @@ export class ScellClient {
  *
  * // Create an invoice
  * const invoice = await client.invoices.create({
- *   invoice_number: 'FACT-2024-001',
  *   direction: 'outgoing',
  *   output_format: 'facturx',
  *   // ...
@@ -221,6 +220,9 @@ export { ScellAuth, ScellWebhooks, withRetry, createRetryWrapper };
 
 // Re-export tenant client
 export { ScellTenantClient };
+
+// Re-export public client
+export { ScellPublicClient } from './public-client.js';
 
 // Re-export types
 export type { ClientConfig } from './client.js';

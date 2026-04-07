@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.0] - 2026-04-07
+
+### Added
+
+- **ScellPublicClient**: New client class for client-side / widget use with `X-Publishable-Key` authentication
+  - Exposes `onboarding` resource (SuperPDP OAuth2 flow)
+- **Aliases on TenantDirectInvoicesResource**: `validate(invoiceId)` and `send(invoiceId)` as aliases for `submit()`
+- **Exported types**: `AcceptIncomingInvoiceInput`, `RejectIncomingInvoiceInput`, `MarkPaidIncomingInvoiceInput` from incoming invoices resource; `DirectInvoiceRemainingCreditable`, `DirectInvoiceRemainingLine` from direct credit notes resource
+
+### Fixed
+
+- **JSDoc**: Remove `invoice_number` from `invoices.create()` example calls (server-generated field)
+- **JSDoc**: Fix misleading "legacy" comment on `ScellApiClient` to "tenant"
+
 ## [1.11.0] - 2026-04-04
 
 ### Changed
@@ -32,7 +46,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed legacy onboarding types: `VerifySiretRequest`, `VerifySiretResponse`, `VerifyVatRequest`, `UploadDocumentRequest`, `KybDocument`, `Representative`, `CompanyData`
 - Removed legacy onboarding methods: `verifySiret`, `verifyVat`, `uploadDocument`, `getDocuments`, `completeOnboarding`
 
-## [1.5.0] - 2025-03-29
+## [1.10.1] - 2026-04-02
+
+### Fixed
+
+- **Documentation**: Clarify `ScellApiClient` authentication mode description
+
+## [1.10.0] - 2026-04-01
+
+### Fixed
+
+- Resolve 5 architecture inconsistencies across clients and resources
+
+## [1.9.2] - 2026-03-31
+
+### Added
+
+- **Fiscal**: ISCA document downloads — `downloadMeasuresRegister()`, `downloadTechnicalDossier()`, `downloadSelfAttestation()`
+- **Fiscal**: Renamed NF525 references to ISCA throughout
+
+## [1.9.0] - 2026-03-30
+
+### Changed
+
+- **Invoice numbering**: Remove `invoice_number` from `CreateInvoiceInput` — numbers are server-generated
+  - Draft invoices receive `DRAFT-{SLUG5}-{seq}` numbers automatically
+  - Definitive fiscal numbers assigned at submit time
+
+### Added
+
+- `llms.txt` — LLM-friendly SDK reference document
+
+## [1.8.0] - 2026-03-29
+
+### Added
+
+- **International invoicing**: Optional SIRET, VAT number (`buyer_vat_number`, `seller_vat_number`), and `buyer_legal_id` / `buyer_legal_id_scheme` for non-EU buyers
+
+## [1.7.0] - 2026-03-28
+
+### Added
+
+- **CreditNotes resource** (`ScellClient.creditNotes`): `list()`, `get()`, `create()`, `send()`, `download()`, `remainingCreditable()`
+- **TenantDirectInvoicesResource**: `submit(invoiceId)` method
+
+## [1.6.0] - 2026-03-27
+
+### Added
+
+- Expand `ScellApiClient` with additional resources: `creditNotes`, `tenantInvoices`, `incomingInvoices`
+- **SignaturesResource**: `auditTrail(id)` method
+
+## [1.5.0] - 2026-03-29
 
 ### Fixed
 
