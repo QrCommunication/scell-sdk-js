@@ -328,8 +328,8 @@ Available methods on `client.onboarding`:
 |--------|-------------|
 | `createSession()` | Create an onboarding session — `POST /onboarding/sessions` |
 | `getSession(sessionId)` | Retrieve session status — `GET /onboarding/sessions/:sessionId` |
-| `getSuperPDPAuthorizeUrl(sessionId)` | Get the SuperPDP OAuth2 popup URL — `GET /onboarding/sessions/:sessionId/superpdp/authorize` |
-| `superpdpCallback(sessionId, code, state)` | Complete enrollment after SuperPDP redirect — `POST /onboarding/sessions/:sessionId/superpdp/callback` |
+| `getSuperPDPAuthorizeUrl(sessionId)` | Get the SuperPDP OAuth2 popup URL — `POST /onboarding/superpdp/authorize` |
+| `superpdpCallback(sessionId, code, state)` | Complete enrollment after SuperPDP redirect — `POST /onboarding/superpdp/callback` |
 
 ### Companies
 
