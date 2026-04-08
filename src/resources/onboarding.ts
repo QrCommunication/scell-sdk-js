@@ -105,9 +105,9 @@ export class OnboardingResource {
     sessionId: string,
     requestOptions?: RequestOptions
   ): Promise<SuperPDPAuthorizeResponse> {
-    return this.http.get<SuperPDPAuthorizeResponse>(
-      `/onboarding/sessions/${sessionId}/superpdp/authorize`,
-      undefined,
+    return this.http.post<SuperPDPAuthorizeResponse>(
+      '/onboarding/superpdp/authorize',
+      { session_id: sessionId },
       requestOptions
     );
   }
@@ -143,8 +143,8 @@ export class OnboardingResource {
     requestOptions?: RequestOptions
   ): Promise<SuperPDPCallbackResponse> {
     return this.http.post<SuperPDPCallbackResponse>(
-      `/onboarding/sessions/${sessionId}/superpdp/callback`,
-      { code, state },
+      '/onboarding/superpdp/callback',
+      { session_id: sessionId, code, state },
       requestOptions
     );
   }
