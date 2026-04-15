@@ -568,17 +568,52 @@ type SignatureDownloadType = 'pdf' | 'audit_trail';
 
 interface SignaturePosition {
   page: number;
-  x: number;     // position from left (mm or % depending on API version)
-  y: number;     // position from top
+  x: number;                      // unit defined by `unit`
+  y: number;
   width?: number;
   height?: number;
+  unit?: 'percent' | 'pixel';     // default: 'percent' (0-100)
+  page_width_px?: number;         // optional, fallback A4 (595) if absent
+  page_height_px?: number;        // optional, fallback A4 (842) if absent
 }
 
+// SignatureUIConfig: 21 champs conformes OpenAPI.com EU-SES v1.0.17
 interface SignatureUIConfig {
-  primary_color?: string;   // hex color, e.g. '#2563EB'
-  logo_url?: string;
-  company_name?: string;
-  redirect_url?: string;
+  // Sidebar
+  sidebar_logo?: string;
+  sidebar_background_color?: string;
+  sidebar_title_color?: string;
+  sidebar_text_color?: string;
+  // Header
+  header_background_color?: string;
+  header_title_color?: string;
+  header_subtitle_color?: string;
+  // Footer
+  footer_background_color?: string;
+  // Boutons standards
+  button_text_color?: string;
+  button_text_color_hover?: string;
+  button_background_color?: string;
+  button_background_color_hover?: string;
+  // Bouton "Signer"
+  sign_button_text_color?: string;
+  sign_button_text_color_hover?: string;
+  sign_button_background_color?: string;
+  sign_button_background_color_hover?: string;
+  // Toggles d'affichage
+  hide_sidebar?: boolean;
+  hide_header?: boolean;
+  hide_download_validated?: boolean;
+  hide_download_signed?: boolean;
+  // Iframe (max 20 URLs)
+  iframe_ancestors?: string[];
+}
+
+interface SignatureOptions {
+  signature_mode?: 'typed' | 'drawn' | 'both';
+  signer_must_read?: boolean;
+  user_editable_data?: { name?: boolean; mobile?: boolean; email?: boolean };
+  timezone?: string;              // IANA, e.g. 'Europe/Paris'
 }
 
 interface Signer {
@@ -613,6 +648,7 @@ interface SignerInput {
   phone?: string;
   auth_method?: SignerAuthMethod; // default: 'email'
   position?: SignaturePosition;
+  message?: string;                // max 500 chars, supports {OTP} placeholder
 }
 
 interface CreateSignatureInput {
@@ -622,6 +658,7 @@ interface CreateSignatureInput {
   signers: SignerInput[];
   message?: string;
   ui_config?: SignatureUIConfig;
+  signature_options?: SignatureOptions;
   expires_at?: DateTimeString;
 }
 
@@ -1836,9 +1873,16 @@ const { data: sig } = await client.signatures.create({
     },
   ],
   ui_config: {
-    primary_color: '#2563EB',
-    company_name: 'My Company',
-    redirect_url: 'https://app.mycompany.com/signatures/complete',
+    sidebar_logo: 'https://mycompany.com/logo.png',
+    sidebar_background_color: '#2563EB',
+    sign_button_background_color: '#10B981',
+    hide_download_validated: false,
+    iframe_ancestors: ['https://app.mycompany.com'],
+  },
+  signature_options: {
+    signature_mode: 'both',
+    signer_must_read: true,
+    timezone: 'Europe/Paris',
   },
 });
 
@@ -2749,9 +2793,17 @@ const { data: sig } = await client.signatures.create({
     },
   ],
   ui_config: {
-    primary_color: '#2563EB',
-    company_name: 'My Company SAS',
-    redirect_url: 'https://app.mycompany.com/contracts/done',
+    sidebar_logo: 'https://mycompany.com/logo.png',
+    sidebar_background_color: '#2563EB',
+    sidebar_title_color: '#ffffff',
+    sign_button_background_color: '#10B981',
+    iframe_ancestors: ['https://app.mycompany.com'],
+  },
+  signature_options: {
+    signature_mode: 'both',
+    signer_must_read: true,
+    user_editable_data: { name: false, mobile: true, email: false },
+    timezone: 'Europe/Paris',
   },
   expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
 });

@@ -124,7 +124,8 @@ export class SignaturesResource {
    *       first_name: 'Alice',
    *       last_name: 'Smith',
    *       email: 'alice@example.com',
-   *       auth_method: 'email'
+   *       auth_method: 'email',
+   *       message: 'Bonjour Alice, merci de signer ce contrat. Code OTP: {OTP}'
    *     },
    *     {
    *       first_name: 'Bob',
@@ -133,10 +134,22 @@ export class SignaturesResource {
    *       auth_method: 'sms'
    *     }
    *   ],
+   *   signature_positions: [
+   *     { page: 1, x: 70, y: 85, width: 20, height: 5, unit: 'percent' }
+   *   ],
    *   ui_config: {
-   *     logo_url: 'https://mycompany.com/logo.png',
-   *     primary_color: '#3b82f6',
-   *     company_name: 'My Company'
+   *     sidebar_logo: 'https://mycompany.com/logo.png',
+   *     sidebar_background_color: '#3b82f6',
+   *     sidebar_title_color: '#ffffff',
+   *     sign_button_background_color: '#10b981',
+   *     hide_download_validated: false,
+   *     iframe_ancestors: ['https://myapp.com']
+   *   },
+   *   signature_options: {
+   *     signature_mode: 'both',
+   *     signer_must_read: true,
+   *     user_editable_data: { name: false, email: false, mobile: true },
+   *     timezone: 'Europe/Paris'
    *   },
    *   redirect_complete_url: 'https://myapp.com/signed',
    *   redirect_cancel_url: 'https://myapp.com/cancelled'

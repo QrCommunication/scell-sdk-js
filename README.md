@@ -165,6 +165,7 @@ const { data: signature } = await apiClient.signatures.create({
       last_name: 'Doe',
       email: 'john.doe@example.com',
       auth_method: 'email',
+      message: 'Bonjour John, merci de signer ce contrat. Code OTP : {OTP}',
     },
     {
       first_name: 'Jane',
@@ -173,10 +174,24 @@ const { data: signature } = await apiClient.signatures.create({
       auth_method: 'sms',
     },
   ],
+  signature_positions: [
+    { page: 1, x: 70, y: 85, width: 20, height: 5, unit: 'percent' },
+  ],
   ui_config: {
-    logo_url: 'https://mycompany.com/logo.png',
-    primary_color: '#3b82f6',
-    company_name: 'My Company',
+    // White-label : 21 champs conformes spec OpenAPI.com EU-SES v1.0.17
+    sidebar_logo: 'https://mycompany.com/logo.png',
+    sidebar_background_color: '#3b82f6',
+    sidebar_title_color: '#ffffff',
+    sign_button_background_color: '#10b981',
+    sign_button_background_color_hover: '#059669',
+    hide_download_validated: false,
+    iframe_ancestors: ['https://myapp.com'],
+  },
+  signature_options: {
+    signature_mode: 'both', // 'typed' | 'drawn' | 'both'
+    signer_must_read: true, // force le signataire a parcourir le document
+    user_editable_data: { name: false, mobile: true, email: false },
+    timezone: 'Europe/Paris',
   },
   redirect_complete_url: 'https://myapp.com/signed',
   redirect_cancel_url: 'https://myapp.com/cancelled',
@@ -760,6 +775,12 @@ import type {
   Signature,
   SignatureStatus,
   CreateSignatureInput,
+  SignatureUIConfig,
+  SignatureOptions,
+  SignatureMode,
+  SignaturePosition,
+  SignaturePositionUnit,
+  SignerEditableData,
   Signer,
   // Tenant Credit Notes
   TenantCreditNote,

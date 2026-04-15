@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.13.0] - 2026-04-15
+
+### Added
+
+- `SignatureUIConfig` : 21 champs de personnalisation UI conformes spec OpenAPI.com EU-SES v1.0.17 (sidebar_*, header_*, footer_*, button_*, sign_button_*, hide_*, iframe_ancestors).
+- `SignatureOptions` (nouveau) : signature_mode, signer_must_read, user_editable_data, timezone.
+- `SignerInput.message` : message custom par signataire avec placeholder `{OTP}` (max 500 chars).
+- `SignaturePosition.unit` : `'percent'` (defaut) ou `'pixel'`.
+- `SignaturePosition.page_width_px` / `page_height_px` : dimensions de page optionnelles pour conversion percent->pixel precise (sinon detection auto via parser PDF cote serveur, fallback A4).
+- Nouveaux exports de types : `SignatureMode`, `SignatureOptions`, `SignaturePositionUnit`, `SignerEditableData`.
+
+### Removed (BREAKING vs interfaces internes)
+
+- `SignatureUIConfig.logo_url` -> utiliser `sidebar_logo`.
+- `SignatureUIConfig.primary_color` -> utiliser `sidebar_background_color`.
+- `SignatureUIConfig.company_name` -> pas d'equivalent (non supporte par OpenAPI.com).
+
+### Notes
+
+- `unit: 'percent'` reste le defaut cote serveur, donc les positions sans `unit` continueront de fonctionner.
+- Si vos clients utilisaient `logo_url` / `primary_color`, ils doivent migrer vers `sidebar_logo` / `sidebar_background_color`.
+
 ## [1.12.0] - 2026-04-07
 
 ### Added
