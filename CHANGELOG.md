@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.0] - 2026-05-03
+
+### Added
+
+- **Invoice Templates** : nouveau resource `client.invoiceTemplates` pour la personnalisation des factures et avoirs.
+  - Types : `InvoiceTemplate`, `CreateInvoiceTemplateInput`, `UpdateInvoiceTemplateInput`, `InvoiceTemplateListOptions`.
+  - 6 methodes : `list()`, `get()`, `create()`, `update()`, `delete()`, `markDefault()`.
+  - 3 scopes : `system` | `tenant` | `sub_tenant`.
+  - Cascade : explicit > sub_tenant default > tenant default > system default.
+- **Daily Closure** : nouveau type `DailyClosure` avec `csv_url` (signed URL 5 jours).
+- **Avoirs** : `CreateTenantDirectCreditNoteParams` : champs buyer/seller interdits (heritage strict). Validation cote API : `invoice_id` doit pointer sur une facture creditable.
+- `CreateInvoiceInput`, `CreateTenantDirectInvoiceParams` : nouveau champ `invoice_template_id?: UUID`.
+- `Invoice`, `TenantInvoice`, `CreditNote`, `TenantCreditNote` : output `invoice_template_id: UUID | null`.
+
+### Notes
+
+- No breaking change. Default = template system.
+- Bump : 1.14.0 -> 1.15.0
+
 ## [1.14.0] - 2026-05-03
 
 ### Added

@@ -185,6 +185,136 @@ defaults to `false`. Set the flag explicitly only for individual buyers.
 
 ---
 
+## Invoice Templates — Personnalisation factures / avoirs (since v1.15.0)
+
+Personnalisation visuelle (logo, couleurs, mentions) avec resolution cascade cote serveur.
+
+### Cascade de resolution
+
+1. `invoice.invoice_template_id` explicit
+2. Default sub-tenant template
+3. Default tenant template (avec `is_available_to_subtenants=true` si invoice via sub-tenant)
+4. Default system template (Scell)
+
+### Types
+
+```typescript
+import type {
+  InvoiceTemplate,
+  CreateInvoiceTemplateInput,
+  UpdateInvoiceTemplateInput,
+  InvoiceTemplateScope,         // 'system' | 'tenant' | 'sub_tenant'
+  InvoiceTemplateLogoPosition,  // 'top-left' | 'top-center' | 'top-right'
+} from '@scell/sdk';
+```
+
+### Resource `client.invoiceTemplates`
+
+```typescript
+// Lister
+const page = await client.invoiceTemplates.list({ scope: 'tenant', per_page: 25 });
+
+// Recuperer
+const tpl = await client.invoiceTemplates.get(id);
+
+// Creer
+const tpl = await client.invoiceTemplates.create({
+  scope: 'tenant',
+  name: 'Brand Q4 2026',
+  logo_url: 'https://cdn.client.com/logo.svg',
+  primary_color: '#0F172A',
+  accent_color: '#F472B6',
+  custom_mentions: 'TVA non applicable, art. 293 B du CGI',
+  is_default: true,
+  is_available_to_subtenants: true,
+});
+
+// Modifier
+await client.invoiceTemplates.update(id, { name: 'Renamed' });
+
+// Marquer default
+await client.invoiceTemplates.markDefault(id);
+
+// Supprimer (soft delete)
+await client.invoiceTemplates.delete(id);
+```
+
+### Utiliser un template explicit
+
+```typescript
+const invoice = await api.invoices.create({
+  // ... champs facture
+  invoice_template_id: tpl.id,
+});
+
+// Avoir : herite du template de la facture, override possible
+const cn = await tenant.tenantDirectCreditNotes.create({
+  invoice_id: invoiceId,
+  reason: 'Erreur de facturation',
+  type: 'total',
+  invoice_template_id: anotherTplId, // optional override
+});
+```
+
+### Permissions
+
+| Action | system | tenant own | sub-tenant own | tenant available_to_subtenants | other |
+|--------|--------|------------|----------------|--------------------------------|-------|
+| view | OK | OK | OK | OK (read) | 403 |
+| create/update/delete | 403 | OK | OK | 403 | 403 |
+
+---
+
+## Daily Closure — Cloture quotidienne automatique
+
+Chaque jour a 00:05 UTC, un cron Laravel execute pour chaque tenant actif :
+1. Creation `FiscalClosing` (avec hash ISCA chaine).
+2. Generation CSV format de marche : `increment_id, type, saving_date, document_date, total_excl_tax`.
+3. Stockage CSV sur S3.
+4. Envoi email avec recap chiffre + lien signe (5 jours validite).
+
+### Format email (corps)
+
+- Type de cloture : Journaliere
+- Du / Au : periode UTC
+- Nombre de documents
+- Total HT / TVA
+- Empreinte du block (hash ISCA)
+- Empreinte du fichier (hash CSV)
+- Bouton : "Telecharger votre cloture au format CSV"
+
+### Type DailyClosure
+
+```typescript
+interface DailyClosure {
+  id: UUID;
+  tenant_id: UUID;
+  closing_date: DateString;
+  closing_type: 'daily' | 'monthly' | 'annual';
+  entries_count: number;
+  total_ht: number;
+  total_tax: number;
+  total_ttc: number;
+  currency: string;
+  closing_hash: string;
+  csv_hash: string | null;
+  csv_path: string | null;
+  csv_url?: string;            // signed URL valid 5 days
+  emailed_at: DateTimeString | null;
+  created_at: DateTimeString;
+}
+```
+
+### Recuperer via API
+
+```typescript
+const closings = await api.fiscal.listClosings({ from: '2026-05-01', to: '2026-05-03' });
+const closing = await api.fiscal.getClosing(id);
+// closing.csv_url est une signed URL valable 5 jours
+```
+
+---
+
 ## Authentication & Client Selection
 
 There are **four** client classes, each using a different authentication mode:
