@@ -5,6 +5,7 @@ Official TypeScript SDK for [Scell.io](https://scell.io) - Electronic invoicing 
 ## Features
 
 - Full TypeScript support with strict types
+- B2B and **B2C** invoicing (private individuals — `buyer_is_individual` flag, BR-CO-26 EN16931 compliant)
 - Two authentication modes: Bearer token (dashboard) and API key (external API)
 - Automatic retries with exponential backoff and jitter
 - Webhook signature verification
