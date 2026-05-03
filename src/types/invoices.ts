@@ -164,6 +164,16 @@ export interface CreateInvoiceInput {
   buyer_name: string;
   /** Buyer address */
   buyer_address: Address;
+  /**
+   * B2C flag : true if buyer is a private individual.
+   *
+   * When true, buyer_siret / buyer_vat_number / buyer_legal_id are
+   * NOT required server-side, and the generated Factur-X / UBL / CII
+   * document omits BT-46/BT-47/BT-48 (BR-CO-26 EN16931).
+   *
+   * Default: false (B2B).
+   */
+  buyer_is_individual?: boolean | undefined;
   /** Invoice line items */
   lines: InvoiceLineInput[];
   /** Enable 10-year archiving */

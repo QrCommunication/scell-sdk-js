@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.0] - 2026-05-03
+
+### Added
+
+- **B2C support** : nouveau flag `buyer_is_individual` pour les factures et avoirs avec acheteur particulier.
+  - `InvoiceParty.is_individual?: boolean` (sur seller/buyer ; meaningful uniquement pour buyer).
+  - `CreateInvoiceInput.buyer_is_individual?: boolean` (top-level).
+  - `TenantInvoiceBuyer.is_individual?: boolean` (cote tenant direct).
+  - `CreateTenantDirectInvoiceParams.buyer_is_individual?: boolean`.
+  - `TenantInvoice.buyer_is_individual: boolean` et `TenantInvoice.buyer.is_individual?: boolean` en sortie API.
+  - `TenantCreditNote.buyer_is_individual: boolean` (heritage automatique depuis la facture associee).
+
+### Notes
+
+- Aucun breaking change : tous les champs B2C sont optionnels en input, et le default cote serveur est `false` (B2B).
+- Cote API, en B2C : SIRET / SIREN / VAT / legal_id ne sont plus requis. Factur-X / UBL / CII generes omettent les balises BT-46/BT-47/BT-48 du buyer (BR-CO-26 EN16931). Les mentions legales B2B (Code de commerce L441-10 : penalites de retard 3x taux legal, indemnite forfaitaire 40 EUR) sont automatiquement supprimees.
+
 ## [1.13.0] - 2026-04-15
 
 ### Added

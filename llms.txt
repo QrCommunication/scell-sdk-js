@@ -56,6 +56,135 @@ const { ScellApiClient } = require('@scell/sdk');
 
 ---
 
+## B2C Support — Private Individual Buyer
+
+Since v1.14.0, Scell.io supports B2C invoices and credit notes where the
+buyer is a private individual (no SIRET / SIREN / VAT / legal_id required).
+
+### When to use B2C
+
+| Buyer | Mode | `buyer_is_individual` |
+|-------|------|----------------------|
+| French company (FR) | B2B | `false` (default) |
+| EU company (BE, DE, IT...) | B2B | `false` |
+| Non-EU company (US, CN...) | B2B | `false` |
+| Private individual (FR, EU, world) | **B2C** | `true` |
+
+### Effects when `buyer_is_individual = true`
+
+- **Server-side validation** : `buyer_siret`, `buyer_siren`, `buyer_vat_number`,
+  `buyer_legal_id` are NOT required, even for `buyer_country = 'FR'`.
+- **Factur-X / UBL / CII generation** : balises `BT-46` (BuyerLegalOrganisation),
+  `BT-47` (BuyerTaxIdentifier), `BT-48` (BuyerVATIdentifier) are OMITTED.
+  Only Name (BT-44) and Address (BG-8) of the buyer are included.
+  Conformant with EN16931 BR-CO-26.
+- **Payment terms** : the B2B legal mentions from French Code de commerce
+  L441-10 (late payment penalties + recovery indemnity 40 EUR) are
+  automatically suppressed.
+- **Credit notes** : automatically inherit `buyer_is_individual` from
+  the source invoice.
+
+### Type definitions
+
+```typescript
+import type {
+  CreateInvoiceInput,
+  CreateTenantDirectInvoiceParams,
+  TenantInvoiceBuyer,
+  TenantInvoice,
+} from '@scell/sdk';
+
+// CreateInvoiceInput (ScellClient / ScellApiClient)
+interface CreateInvoiceInput {
+  // ... (existing fields)
+  buyer_is_individual?: boolean | undefined;  // NEW v1.14.0
+}
+
+// TenantInvoiceBuyer (Tenant direct invoices)
+interface TenantInvoiceBuyer {
+  company_name: string;          // for B2C, use the full name
+  siren?: Siren | undefined;     // optional
+  siret?: Siret | undefined;     // optional, ignored if is_individual=true
+  vat_number?: string | undefined;
+  address: Address;
+  email: string;
+  is_individual?: boolean | undefined;  // NEW v1.14.0
+}
+
+// CreateTenantDirectInvoiceParams
+interface CreateTenantDirectInvoiceParams {
+  // ... (existing fields)
+  buyer_is_individual?: boolean | undefined;  // NEW v1.14.0
+                                               // alias for buyer.is_individual
+}
+
+// TenantInvoice (output)
+interface TenantInvoice {
+  // ... (existing fields)
+  buyer: { ...; is_individual?: boolean };
+  buyer_is_individual: boolean;  // NEW v1.14.0
+}
+```
+
+### How to use
+
+**ScellApiClient — server API** :
+```typescript
+const invoice = await api.invoices.create({
+  direction: 'outgoing',
+  output_format: 'facturx',
+  issue_date: '2026-05-03',
+  due_date: '2026-06-03',
+  currency: 'EUR',
+  total_ht: 150,
+  total_tax: 30,
+  total_ttc: 180,
+  seller_siret: '12345678901234',
+  seller_country: 'FR',
+  seller_name: 'Coach Pro SAS',
+  seller_address: { line1: '...', postal_code: '75001', city: 'Paris', country: 'FR' },
+  // No buyer_siret needed for B2C
+  buyer_country: 'FR',
+  buyer_name: 'Marie Dupont',
+  buyer_address: { line1: '12 rue de Rivoli', postal_code: '75001', city: 'Paris', country: 'FR' },
+  buyer_is_individual: true,  // <-- B2C
+  lines: [{ description: 'Coaching', quantity: 1, unit_price: 150, tax_rate: 20, total_ht: 150, total_tax: 30, total_ttc: 180 }],
+});
+```
+
+**ScellTenantClient — tenant direct invoice** :
+```typescript
+const invoice = await tenant.tenantDirectInvoices.create({
+  company_id: companyId,
+  buyer: {
+    company_name: 'Marie Dupont',  // full name for individuals
+    address: { line1: '12 rue de Rivoli', postal_code: '75001', city: 'Paris', country: 'FR' },
+    email: 'marie@example.com',
+    is_individual: true,  // <-- B2C
+  },
+  lines: [{ description: 'Coaching', quantity: 1, unit_price: 150, tax_rate: 20, total_ht: 150, total_tax: 30, total_ttc: 180 }],
+  issue_date: '2026-05-03',
+});
+```
+
+### Inspect B2C status on existing invoice
+
+```typescript
+const invoice = await tenant.tenantDirectInvoices.get(id);
+if (invoice.buyer_is_individual) {
+  console.log('Particulier');
+} else {
+  console.log('Entreprise', invoice.buyer.siret);
+}
+```
+
+### Migrating existing B2B code
+
+No breaking change. All existing calls keep working — `buyer_is_individual`
+defaults to `false`. Set the flag explicitly only for individual buyers.
+
+---
+
 ## Authentication & Client Selection
 
 There are **four** client classes, each using a different authentication mode:

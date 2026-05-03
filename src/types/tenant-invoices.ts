@@ -25,21 +25,30 @@ import type { InvoiceFormat, InvoiceLine, InvoiceLineInput, InvoiceStatus } from
 export type TenantInvoiceDirection = 'outgoing' | 'incoming';
 
 /**
- * Buyer information for direct invoice creation
+ * Buyer information for direct invoice creation.
+ *
+ * For B2C (private individual buyer), set `is_individual: true`.
+ * In that case `siren`, `siret`, `vat_number` are NOT required and
+ * the generated Factur-X / UBL / CII omits BT-46/BT-47/BT-48 (BR-CO-26).
  */
 export interface TenantInvoiceBuyer {
-  /** Buyer company name */
+  /** Buyer company name (or full name for B2C) */
   company_name: string;
   /** SIREN number (9 digits) - optional */
   siren?: Siren | undefined;
-  /** SIRET number (14 digits) - optional */
+  /** SIRET number (14 digits) - optional, ignored if is_individual=true */
   siret?: Siret | undefined;
-  /** VAT number - optional */
+  /** VAT number - optional, ignored if is_individual=true */
   vat_number?: string | undefined;
   /** Buyer address */
   address: Address;
   /** Buyer email for notifications */
   email: string;
+  /**
+   * B2C flag : true if buyer is a private individual.
+   * Default: false (B2B).
+   */
+  is_individual?: boolean | undefined;
 }
 
 /**
@@ -115,6 +124,16 @@ export interface CreateTenantDirectInvoiceParams {
   output_format?: InvoiceFormat | undefined;
   /** External reference ID */
   external_id?: string | undefined;
+  /**
+   * B2C flag : true if buyer is a private individual.
+   *
+   * Equivalent to setting `buyer.is_individual = true`. When true,
+   * buyer SIRET / SIREN / VAT are NOT required server-side. The
+   * generated Factur-X / UBL / CII omits BT-46/BT-47/BT-48 (BR-CO-26).
+   *
+   * Default: false (B2B).
+   */
+  buyer_is_individual?: boolean | undefined;
 }
 
 /**
@@ -333,7 +352,15 @@ export interface TenantInvoice {
     name: string;
     address: Address;
     email?: string | undefined;
+    /** B2C flag : true if buyer is a private individual */
+    is_individual?: boolean;
   };
+  /**
+   * B2C flag : true if buyer is a private individual.
+   * In that case, buyer SIRET/SIREN/VAT are not required and Factur-X
+   * BT-46/BT-47/BT-48 are omitted (BR-CO-26 EN16931 compliant).
+   */
+  buyer_is_individual: boolean;
   lines: InvoiceLine[] | null;
   status: InvoiceStatus;
   status_message: string | null;
@@ -367,6 +394,8 @@ export interface TenantCreditNote {
   currency: CurrencyCode;
   buyer_name: string | null;
   buyer_siret: Siret | null;
+  /** B2C flag, inherited from the source invoice. */
+  buyer_is_individual: boolean;
   seller_name: string | null;
   seller_siret: Siret | null;
   issue_date: DateString;
