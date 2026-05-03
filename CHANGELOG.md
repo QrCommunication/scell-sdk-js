@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.15.1] - 2026-05-03
+
+### Fixed
+
+- **Critical** : URL building bug in `ScellClient.buildUrl()` was dropping or
+  replacing the last segment of `baseUrl` when paths started with `/` or were
+  bare segment names. With `baseUrl = 'https://api.scell.io/api/v1'` and
+  `path = '/tenant/invoices'`, the resulting URL was
+  `https://api.scell.io/tenant/invoices` (missing `/api/v1`), causing 404
+  on every request to the tenant API.
+  - Fix : concatenate `baseUrl` + `path` manually (with leading/trailing
+    slash normalisation) instead of relying on `new URL(path, base)` which
+    follows RFC 3986 path resolution that doesn't fit our use case.
+  - Affects all tenant routes (`/api/v1/tenant/...`) and templates routes.
+
+### Notes
+
+- No API change. Pure bug fix.
+- Bump : 1.15.0 -> 1.15.1
+
 ## [1.15.0] - 2026-05-03
 
 ### Added

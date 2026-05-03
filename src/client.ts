@@ -83,13 +83,25 @@ export class HttpClient {
   }
 
   /**
-   * Build URL with query parameters
+   * Build URL with query parameters.
+   *
+   * Concatenates baseUrl + path manually to preserve the full base path
+   * (including any /api/v1 prefix). Using `new URL(path, base)` would
+   * incorrectly drop or replace the last segment of the base path :
+   *   - new URL('/tenant/invoices', 'https://api.scell.io/api/v1')
+   *       -> 'https://api.scell.io/tenant/invoices'  (drops /api/v1)
+   *   - new URL('tenant/invoices', 'https://api.scell.io/api/v1')
+   *       -> 'https://api.scell.io/api/tenant/invoices' (replaces v1)
+   *
+   * @internal
    */
   private buildUrl(
     path: string,
     query?: Record<string, string | number | boolean | undefined>
   ): string {
-    const url = new URL(path, this.baseUrl);
+    const base = this.baseUrl.replace(/\/+$/, '');
+    const cleanPath = path.replace(/^\/+/, '');
+    const url = new URL(`${base}/${cleanPath}`);
 
     if (query) {
       for (const [key, value] of Object.entries(query)) {
