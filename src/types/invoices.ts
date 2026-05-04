@@ -99,6 +99,29 @@ export interface Invoice {
   payment_reference: string | null;
   /** Optional note about the payment */
   payment_note: string | null;
+  /**
+   * Number of credit notes issued against this invoice (partial or total).
+   * Available since SDK 1.16.0 (API 2026-05-04).
+   */
+  credit_notes_count?: number;
+  /**
+   * Total amount credited (sum of validated/sent/transmitted credit notes).
+   * Use to detect partial vs full credit (credited_amount >= total_ttc).
+   * Available since SDK 1.16.0.
+   */
+  credited_amount?: number;
+  /**
+   * Optional list of related credit notes (loaded only on detail endpoint).
+   * Available since SDK 1.16.0.
+   */
+  credit_notes?: Array<{
+    id: UUID;
+    credit_note_number: string;
+    type: "partial" | "total";
+    total: number;
+    status: string;
+    created_at: DateTimeString;
+  }> | null;
 }
 
 /**
