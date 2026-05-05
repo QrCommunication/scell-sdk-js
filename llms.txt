@@ -2595,7 +2595,7 @@ const fecResult: FiscalFecExportResult = await fiscal.exportFec({
 });
 // fecResult.url (download URL), fecResult.entries_count
 
-// --- Attestation (ISCA certificate) ---
+// --- Attestation (ISCA annual certificate) ---
 const { data: attestations } = await fiscal.listAttestations({ per_page: 10 });
 
 // Generate attestation
@@ -2605,6 +2605,23 @@ const { data: attestation } = await fiscal.generateAttestation();
 const pdfBuffer: ArrayBuffer = await fiscal.downloadAttestationPdf('attestation-uuid');
 // Save to file:
 // writeFileSync('attestation.pdf', Buffer.from(pdfBuffer));
+
+// --- ISCA Self-Attestation NOMINATIVE (since v1.17.0) ---
+// PDF includes the beneficiary identity (legal_name, SIRET, VAT number,
+// address, contact, KYB/KYC status) + software name + version + editor.
+// SHA-256 hash covers the beneficiary block — non-transferable proof.
+
+// For the authenticated tenant (KYB data)
+const tenantPdf: ArrayBuffer = await fiscal.iscaSelfAttestationDownload();
+// writeFileSync('attestation-tenant.pdf', Buffer.from(tenantPdf));
+
+// For a specific sub_tenant (404 if not found or not owned by tenant)
+const subPdf: ArrayBuffer = await fiscal.iscaSelfAttestationDownload('019d5ea8-...');
+// writeFileSync('attestation-sub-tenant.pdf', Buffer.from(subPdf));
+
+// Non-nominative compliance documents
+const measures: ArrayBuffer = await fiscal.iscaMeasuresRegisterDownload();
+const dossier: ArrayBuffer = await fiscal.iscaTechnicalDossierDownload();
 
 // --- ISCA Annual Report ---
 // Download ISCA annual report PDF (ArrayBuffer)

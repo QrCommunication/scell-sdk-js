@@ -74,6 +74,63 @@ export class FiscalResource {
     return this.http.getRaw(`/tenant/fiscal/attestation/${year}/download`, undefined, requestOptions);
   }
 
+  /**
+   * Telecharge l'auto-attestation ISCA NOMINATIVE (PDF) pour le tenant
+   * authentifie ou pour un sub_tenant specifique.
+   *
+   * Le PDF inclut :
+   *   - Identite du logiciel (Scell.io + version)
+   *   - Identite de l'editeur (QR Communication SAS)
+   *   - **Identite nominative du beneficiaire** (tenant ou sub_tenant : nom,
+   *     SIRET, TVA, adresse, contact, statut KYB/KYC)
+   *   - Declaration de conformite (4 piliers ISCA : I, S, C, A)
+   *   - Empreinte d'integrite SHA-256 du document
+   *
+   * Le hash couvre l'identite du beneficiaire, donc 2 attestations pour
+   * 2 beneficiaires differents auront 2 hashes differents — preuve
+   * cryptographique de la nominative.
+   *
+   * @param subTenantId Optionnel. Si fourni, attestation emise pour ce
+   *   sub_tenant (404 si introuvable ou n'appartient pas au tenant).
+   *   Sinon, attestation emise pour le tenant authentifie.
+   * @returns ArrayBuffer du PDF binaire (a sauvegarder ou afficher).
+   *
+   * @example
+   * // Attestation pour le tenant
+   * const pdf = await scell.fiscal.iscaSelfAttestationDownload();
+   * fs.writeFileSync('attestation-tenant.pdf', Buffer.from(pdf));
+   *
+   * @example
+   * // Attestation pour un sub_tenant
+   * const pdf = await scell.fiscal.iscaSelfAttestationDownload('019d5ea8-...');
+   * fs.writeFileSync('attestation-sub.pdf', Buffer.from(pdf));
+   */
+  async iscaSelfAttestationDownload(
+    subTenantId?: string,
+    requestOptions?: RequestOptions,
+  ): Promise<ArrayBuffer> {
+    const path = subTenantId
+      ? `/tenant/fiscal/isca/self-attestation/${subTenantId}/download`
+      : '/tenant/fiscal/isca/self-attestation/download';
+    return this.http.getRaw(path, undefined, requestOptions);
+  }
+
+  /**
+   * Telecharge le registre des mesures ISCA (PDF). Document non-nominatif
+   * decrivant les mesures techniques de conformite implementees par Scell.io.
+   */
+  async iscaMeasuresRegisterDownload(requestOptions?: RequestOptions): Promise<ArrayBuffer> {
+    return this.http.getRaw('/tenant/fiscal/isca/measures-register/download', undefined, requestOptions);
+  }
+
+  /**
+   * Telecharge le dossier technique ISCA (PDF). Document non-nominatif
+   * decrivant l'architecture technique conforme aux exigences NF Z 42-025.
+   */
+  async iscaTechnicalDossierDownload(requestOptions?: RequestOptions): Promise<ArrayBuffer> {
+    return this.http.getRaw('/tenant/fiscal/isca/technical-dossier/download', undefined, requestOptions);
+  }
+
   async entries(options: FiscalEntriesOptions = {}, requestOptions?: RequestOptions): Promise<PaginatedResponse<FiscalEntry>> {
     return this.http.get<PaginatedResponse<FiscalEntry>>('/tenant/fiscal/entries', options as unknown as Record<string, string | number | boolean | undefined>, requestOptions);
   }
