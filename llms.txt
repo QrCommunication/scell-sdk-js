@@ -8,7 +8,7 @@ Scell.io is a B2B micro-SaaS platform providing electronic invoicing (Factur-X/U
 Key capabilities:
 - Create, submit, download French e-invoices (Factur-X, UBL, CII) for domestic and EU/international trade
 - Create electronic signature requests (eIDAS EU-SES via OpenAPI.com)
-- NF525/ISCA fiscal compliance: immutable chain, closings, FEC export, attestation, kill switch
+- ISCA fiscal compliance: immutable chain, closings, FEC export, attestation, kill switch
 - Multi-tenant architecture: sub-tenant provisioning, tenant invoice/credit note management
 - SuperPDP OAuth2 Authorization Code onboarding flow (v1.11.0+, via `ScellPublicClient`)
 - Webhook HMAC-SHA256 verification
@@ -1634,7 +1634,7 @@ interface UpdateTenantCreditNoteParams {
 
 ---
 
-## Fiscal Types (NF525 / ISCA Compliance)
+## Fiscal Types (ISCA Compliance)
 
 ```typescript
 type FiscalComplianceStatus = 'compliant' | 'warning' | 'non_compliant';
@@ -2201,7 +2201,7 @@ const { data: tenant } = await client.subTenants.findByExternalId('customer-123'
 
 ### `client.fiscal` (FiscalResource)
 
-See "Fiscal Compliance (NF525/ISCA)" section below for full details.
+See "Fiscal Compliance (ISCA)" section below for full details.
 
 ### `client.stats` (StatsResource)
 
@@ -2547,11 +2547,11 @@ const response: SuperPDPCallbackResponse =
 
 ---
 
-## Fiscal Compliance (NF525 / ISCA)
+## Fiscal Compliance (ISCA)
 
 Available on both `ScellApiClient.fiscal` and `ScellTenantClient.fiscal`.
 
-The fiscal system implements the French NF525/ISCA standard: an immutable SHA-256 hash chain of all fiscal entries, periodic closings, TSA anchoring (RFC 3161), FEC export for French tax authorities, and attestation certificates.
+The fiscal system implements the French ISCA standard: an immutable SHA-256 hash chain of all fiscal entries, periodic closings, TSA anchoring (RFC 3161), FEC export for French tax authorities, and attestation certificates.
 
 ```typescript
 const fiscal = client.fiscal;

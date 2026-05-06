@@ -1,7 +1,7 @@
 /**
  * Credit Notes Resource (direct user / dashboard)
  *
- * Note: Deletion is forbidden by NF525 fiscal compliance.
+ * Note: Deletion is forbidden by ISCA fiscal compliance.
  *
  * @packageDocumentation
  */

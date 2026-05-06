@@ -167,7 +167,7 @@ export class ScellApiClient {
   public readonly signatures: SignaturesResource;
   /** Sub-tenant management (provision, update, list) */
   public readonly subTenants: SubTenantsResource;
-  /** NF525 fiscal compliance (closings, FEC, attestation) */
+  /** ISCA fiscal compliance (closings, FEC, attestation) */
   public readonly fiscal: FiscalResource;
   /** Platform statistics */
   public readonly stats: StatsResource;

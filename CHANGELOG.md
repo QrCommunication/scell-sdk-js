@@ -163,7 +163,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Fiscal**: ISCA document downloads — `downloadMeasuresRegister()`, `downloadTechnicalDossier()`, `downloadSelfAttestation()`
-- **Fiscal**: Renamed NF525 references to ISCA throughout
+- **Fiscal**: Renamed legacy fiscal certification references to ISCA throughout
 
 ## [1.9.0] - 2026-03-30
 
