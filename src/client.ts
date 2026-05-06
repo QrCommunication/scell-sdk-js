@@ -312,6 +312,63 @@ export class HttpClient {
   }
 
   /**
+   * POST multipart/form-data (uploads).
+   *
+   * Doesn't go through `request()` because that one always JSON.stringify
+   * the body. Reuses headers + error handling.
+   *
+   * @param path - API endpoint path
+   * @param formData - FormData with file(s) and fields
+   * @param options - Request options
+   * @returns Parsed response body (JSON)
+   */
+  async postFormData<T>(
+    path: string,
+    formData: FormData,
+    options?: RequestOptions
+  ): Promise<T> {
+    const url = this.buildUrl(path);
+    const requestHeaders = this.buildHeaders(options?.headers);
+    // Browser/Node fetch sets Content-Type with boundary automatically
+    delete requestHeaders['Content-Type'];
+
+    const requestTimeout = options?.timeout ?? this.timeout;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), requestTimeout);
+    if (options?.signal) {
+      options.signal.addEventListener('abort', () => controller.abort());
+    }
+
+    try {
+      const response = await this.fetchFn(url, {
+        method: 'POST',
+        headers: requestHeaders,
+        body: formData,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      const contentType = response.headers.get('Content-Type') ?? '';
+      let responseBody: unknown;
+      if (contentType.includes('application/json')) {
+        responseBody = await response.json();
+      } else {
+        responseBody = await response.text();
+      }
+
+      if (!response.ok) {
+        parseApiError(response.status, responseBody, response.headers);
+      }
+
+      return responseBody as T;
+    } catch (error) {
+      clearTimeout(timeoutId);
+      throw error;
+    }
+  }
+
+  /**
    * GET request that returns raw binary data as ArrayBuffer
    *
    * Use this for downloading files (PDF, XML, etc.)

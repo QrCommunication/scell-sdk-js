@@ -5,6 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.18.0] - 2026-05-06
+
+### Added
+
+- **`invoiceTemplates.uploadLogo(id, file, filename?)`** — upload d'un logo
+  pour un template (multipart S3). Accepte File, Blob ou Uint8Array.
+  Formats : jpeg, png, webp, svg/svgz. Max 2MB. Retourne le template
+  mis a jour avec le nouveau `logo_url` (URL publique CDN).
+- **`HttpClient.postFormData(path, formData, options?)`** — primitive bas
+  niveau pour les uploads multipart. Reutilise les headers d'auth, gere
+  le timeout, parse les erreurs API.
+
+### Backend requirements
+
+Backend Scell.io v0.7.0+ (endpoint `POST /v1/invoice-templates/{id}/logo`).
+
+### Use case
+
+Permettre aux integrateurs de configurer le branding (logo + couleurs +
+mentions custom) **une fois pour toutes** via SDK, sans avoir besoin de
+re-passer ces parametres sur chaque facture. Les overrides par-facture
+restent prioritaires sur les defauts du template.
+
+```typescript
+// Upload du logo une fois pour toutes
+const template = await scell.invoiceTemplates.uploadLogo(
+  templateId,
+  fs.readFileSync('logo.png'),
+  'logo.png'
+);
+
+// Configurer les couleurs / mentions
+await scell.invoiceTemplates.update(templateId, {
+  primary_color: '#1F2937',
+  accent_color: '#6366F1',
+  footer_text: 'Mentions legales custom',
+});
+
+// Marquer comme template tenant default — utilise sur toutes les factures
+await scell.invoiceTemplates.markDefault(templateId);
+```
+
 ## [1.17.0] - 2026-05-06
 
 ### Added

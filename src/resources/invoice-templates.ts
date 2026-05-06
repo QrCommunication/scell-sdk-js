@@ -49,4 +49,38 @@ export class InvoiceTemplatesResource {
     const res = await this.client.put<{ data: InvoiceTemplate }>(`invoice-templates/${id}/default`);
     return res.data;
   }
+
+  /**
+   * Upload a logo for the template.
+   *
+   * Accepted formats: jpeg, png, webp, svg/svgz. Max 2MB.
+   * The logo is stored on S3 with public ACL, scoped per tenant.
+   *
+   * @param id - Template UUID
+   * @param logo - File / Blob / Buffer to upload
+   * @param filename - Optional filename (defaults to "logo")
+   * @returns The updated template with new logo_url
+   *
+   * @since 1.18.0
+   */
+  async uploadLogo(
+    id: UUID,
+    logo: Blob | File | Uint8Array,
+    filename = 'logo'
+  ): Promise<InvoiceTemplate> {
+    const formData = new FormData();
+    if (logo instanceof Uint8Array) {
+      // Node : wrap Uint8Array into Blob (Node 18+ supports Blob globally)
+      formData.append('logo', new Blob([logo as BlobPart]), filename);
+    } else if (logo instanceof File) {
+      formData.append('logo', logo);
+    } else {
+      formData.append('logo', logo, filename);
+    }
+    const res = await this.client.postFormData<{ data: InvoiceTemplate }>(
+      `invoice-templates/${id}/logo`,
+      formData
+    );
+    return res.data;
+  }
 }
