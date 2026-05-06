@@ -221,4 +221,37 @@ export class CompaniesResource {
       requestOptions
     );
   }
+
+  /**
+   * Upload a logo for a company (POST multipart/form-data)
+   *
+   * The file is sent as the `logo` field. Accepted formats: PNG, JPEG, SVG,
+   * WEBP. The returned `logo_url` is stored on the company and embedded in
+   * generated Factur-X invoice PDFs.
+   *
+   * @param companyId - Company UUID
+   * @param file - Logo file (browser `File`, `Blob`, or Node.js `Blob`)
+   * @param requestOptions - Request options
+   * @returns Object containing the public `logo_url`
+   *
+   * @example
+   * ```typescript
+   * const input = document.querySelector<HTMLInputElement>('input[type="file"]');
+   * const { logo_url } = await client.companies.uploadLogo(company.id, input.files![0]);
+   * console.log('Logo uploaded:', logo_url);
+   * ```
+   */
+  async uploadLogo(
+    companyId: string,
+    file: File | Blob,
+    requestOptions?: RequestOptions
+  ): Promise<{ logo_url: string }> {
+    const formData = new FormData();
+    formData.append('logo', file);
+    return this.http.postFormData<{ logo_url: string }>(
+      `/companies/${companyId}/logo`,
+      formData,
+      requestOptions
+    );
+  }
 }

@@ -26,6 +26,18 @@ export interface Company {
   email: string | null;
   website: string | null;
   logo_url: string | null;
+  /** BT-84 — IBAN for Factur-X payment means */
+  iban?: string | null;
+  /** BT-86 — BIC/SWIFT for Factur-X payment means */
+  bic?: string | null;
+  /** BT-20 — Default payment terms text (e.g. "30 days net") */
+  payment_terms_default?: string | null;
+  /** Default payment due days used when creating invoices (default: 7) */
+  payment_due_days_default?: number | null;
+  /** Default footer text appended to generated invoice PDFs */
+  invoice_footer_default?: string | null;
+  /** BT-22 — Default buyer notes/remarks on invoices */
+  invoice_notes_default?: string | null;
   status: CompanyStatus;
   kyc_completed_at: DateTimeString | null;
   created_at: DateTimeString;
@@ -50,6 +62,18 @@ export interface CreateCompanyInput {
   phone?: string | undefined;
   email?: string | undefined;
   website?: string | undefined;
+  /** BT-84 — IBAN for Factur-X payment means */
+  iban?: string | null | undefined;
+  /** BT-86 — BIC/SWIFT for Factur-X payment means */
+  bic?: string | null | undefined;
+  /** BT-20 — Default payment terms text */
+  payment_terms_default?: string | null | undefined;
+  /** Default payment due days (default: 7) */
+  payment_due_days_default?: number | null | undefined;
+  /** Default footer text for invoice PDFs */
+  invoice_footer_default?: string | null | undefined;
+  /** BT-22 — Default buyer notes on invoices */
+  invoice_notes_default?: string | null | undefined;
 }
 
 /**
@@ -68,6 +92,18 @@ export interface UpdateCompanyInput {
   phone?: string | undefined;
   email?: string | undefined;
   website?: string | undefined;
+  /** BT-84 — IBAN for Factur-X payment means */
+  iban?: string | null | undefined;
+  /** BT-86 — BIC/SWIFT for Factur-X payment means */
+  bic?: string | null | undefined;
+  /** BT-20 — Default payment terms text */
+  payment_terms_default?: string | null | undefined;
+  /** Default payment due days (default: 7) */
+  payment_due_days_default?: number | null | undefined;
+  /** Default footer text for invoice PDFs */
+  invoice_footer_default?: string | null | undefined;
+  /** BT-22 — Default buyer notes on invoices */
+  invoice_notes_default?: string | null | undefined;
 }
 
 /**

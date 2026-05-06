@@ -71,7 +71,7 @@ export class InvoiceTemplatesResource {
     const formData = new FormData();
     if (logo instanceof Uint8Array) {
       // Node : wrap Uint8Array into Blob (Node 18+ supports Blob globally)
-      formData.append('logo', new Blob([logo as BlobPart]), filename);
+      formData.append('logo', new Blob([logo]), filename);
     } else if (logo instanceof File) {
       formData.append('logo', logo);
     } else {
