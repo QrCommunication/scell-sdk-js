@@ -50,6 +50,14 @@ export type {
   RejectionCode,
 } from './invoices.js';
 
+// Buyer types
+export type {
+  Buyer,
+  CreateBuyerInput,
+  ListBuyersInput,
+  UpdateBuyerInput,
+} from './buyers.js';
+
 // Signature types
 export type {
   CreateSignatureInput,

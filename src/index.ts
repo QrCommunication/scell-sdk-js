@@ -39,6 +39,7 @@ import { ApiKeysResource } from './resources/api-keys.js';
 import { AuthResource, ScellAuth } from './resources/auth.js';
 import { BalanceResource } from './resources/balance.js';
 import { BillingResource } from './resources/billing.js';
+import { BuyersResource } from './resources/buyers.js';
 import { CompaniesResource } from './resources/companies.js';
 import { CreditNotesResource } from './resources/credit-notes.js';
 import { FiscalResource } from './resources/fiscal.js';
@@ -86,6 +87,8 @@ export class ScellClient {
   public readonly auth: AuthResource;
   /** Company management */
   public readonly companies: CompaniesResource;
+  /** Buyer registry (scoped tenant + sub_tenant) */
+  public readonly buyers: BuyersResource;
   /** API key management */
   public readonly apiKeys: ApiKeysResource;
   /** Balance and transactions */
@@ -119,6 +122,7 @@ export class ScellClient {
 
     this.auth = new AuthResource(this.http);
     this.companies = new CompaniesResource(this.http);
+    this.buyers = new BuyersResource(this.http);
     this.apiKeys = new ApiKeysResource(this.http);
     this.balance = new BalanceResource(this.http);
     this.webhooks = new WebhooksResource(this.http);
@@ -181,6 +185,8 @@ export class ScellApiClient {
   public readonly incomingInvoices: TenantIncomingInvoicesResource;
   /** SuperPDP OAuth2 onboarding flow (partner tenant onboarding) */
   public readonly onboarding: OnboardingResource;
+  /** Buyer registry (scoped tenant + sub_tenant) */
+  public readonly buyers: BuyersResource;
 
   /**
    * Create a new Scell API Client
@@ -212,6 +218,7 @@ export class ScellApiClient {
     this.tenantInvoices = new TenantDirectInvoicesResource(this.http);
     this.incomingInvoices = new TenantIncomingInvoicesResource(this.http);
     this.onboarding = new OnboardingResource(this.http);
+    this.buyers = new BuyersResource(this.http);
   }
 }
 

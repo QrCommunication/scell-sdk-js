@@ -54,9 +54,18 @@ export interface InvoiceLine {
 }
 
 /**
- * Invoice party (seller or buyer)
+ * Invoice party (seller or buyer).
+ *
+ * For the buyer, the optional fields below are populated when the invoice
+ * was created with `buyer_id` (registry shortcut) or with an explicit
+ * shipping address:
+ *  - `id`: soft link to the buyers registry (Buyer.id)
+ *  - `shipping_address`: snapshot of the BG-13 ship-to (NULL if identical
+ *    to the billing `address`)
+ *  - `is_individual`: B2C flag mirrored from buyer_is_individual
  */
 export interface InvoiceParty {
+  id?: UUID | null;
   siret?: Siret;
   vat_number?: string;
   legal_id?: string;
@@ -64,6 +73,8 @@ export interface InvoiceParty {
   country: string;
   name: string;
   address: Address;
+  shipping_address?: Address | null;
+  is_individual?: boolean;
 }
 
 /**
@@ -173,20 +184,34 @@ export interface CreateInvoiceInput {
   seller_name: string;
   /** Seller address */
   seller_address: Address;
+  /**
+   * Reference an existing buyer in the registry (scoped tenant + sub_tenant).
+   * When provided, the API snapshots the registry's current state onto the
+   * issued invoice; the flat buyer_* fields below become optional.
+   * Mutating the buyer later does NOT change this invoice (ISCA immutability).
+   */
+  buyer_id?: UUID | undefined;
   /** Buyer SIRET (14 digits) */
   buyer_siret?: Siret;
   /** Buyer VAT number */
   buyer_vat_number?: string;
-  /** Buyer country (ISO 3166-1 alpha-2) */
-  buyer_country: string;
+  /** Buyer country (ISO 3166-1 alpha-2) — required unless `buyer_id` is set. */
+  buyer_country?: string;
   /** Buyer legal identifier */
   buyer_legal_id?: string;
   /** Buyer legal identifier scheme */
   buyer_legal_id_scheme?: string;
-  /** Buyer company name */
-  buyer_name: string;
-  /** Buyer address */
-  buyer_address: Address;
+  /** Buyer company name — required unless `buyer_id` is set. */
+  buyer_name?: string;
+  /** Buyer address — required unless `buyer_id` is set. */
+  buyer_address?: Address;
+  /**
+   * Optional shipping address (Factur-X BG-13 / BT-71..80). When omitted
+   * or identical to buyer_address, the API does not emit BG-13 in the XML
+   * (EN16931 presumption ship=bill). Carries an optional `name` (BT-74)
+   * to identify the destination site (e.g. "Entrepot Lyon").
+   */
+  buyer_shipping_address?: Address | undefined;
   /**
    * B2C flag : true if buyer is a private individual.
    *

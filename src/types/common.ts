@@ -38,14 +38,21 @@ export type Siren = string;
 export type CurrencyCode = string;
 
 /**
- * Address structure
+ * Address structure (Factur-X BT-50..55 for billing, BT-75..80 for ship-to).
+ * The optional `name` is used as BT-74 Buyer ship-to name when this address
+ * is attached as a shipping address; ignored on billing addresses (where the
+ * buyer's name is the source of truth).
  */
 export interface Address {
   line1: string;
   line2?: string | undefined;
   postal_code: string;
   city: string;
+  /** Country subdivision / region (Factur-X BT-79). Optional. */
+  region?: string | undefined;
   country: string;
+  /** BT-74 ship-to name (e.g. "Entrepot Lyon"). Only meaningful for shipping. */
+  name?: string | undefined;
 }
 
 /**
