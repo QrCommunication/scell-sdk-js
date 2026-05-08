@@ -289,6 +289,85 @@ export class TenantDirectInvoicesResource {
   }
 
   /**
+   * Download an invoice file as a binary buffer.
+   *
+   * Default format is `facturx` (PDF/A-3 with embedded CII XML).
+   * The tenant scope is verified server-side via the company associated
+   * with the invoice.
+   *
+   * @param invoiceId - Invoice UUID
+   * @param format - Output format (default: 'facturx')
+   * @param requestOptions - Optional request configuration
+   * @returns ArrayBuffer with the binary content (PDF or XML)
+   *
+   * @example
+   * ```ts
+   * // Download Factur-X PDF
+   * const pdfBuffer = await client.tenantInvoices.download('invoice-uuid');
+   *
+   * // In Node.js, save to file:
+   * import { writeFileSync } from 'fs';
+   * writeFileSync('invoice.pdf', Buffer.from(pdfBuffer));
+   *
+   * // In browser, trigger download:
+   * const blob = new Blob([pdfBuffer], { type: 'application/pdf' });
+   * const url = URL.createObjectURL(blob);
+   * const a = document.createElement('a');
+   * a.href = url; a.download = 'invoice.pdf'; a.click();
+   *
+   * // Pure XML (UBL or CII)
+   * const xmlBuffer = await client.tenantInvoices.download('invoice-uuid', 'xml');
+   * ```
+   *
+   * @throws {ScellNotFoundError} 404 if invoice not found or file unavailable
+   * @throws {ScellValidationError} 422 if invoice is draft or format invalid
+   */
+  async download(
+    invoiceId: string,
+    format: 'facturx' | 'pdf' | 'xml' = 'facturx',
+    requestOptions?: RequestOptions
+  ): Promise<ArrayBuffer> {
+    return this.http.getRaw(
+      `/tenant/invoices/${invoiceId}/download`,
+      { format },
+      requestOptions
+    );
+  }
+
+  /**
+   * Download an invoice scoped to a specific sub-tenant.
+   *
+   * Strict scope: the invoice must belong to BOTH the sub-tenant AND the
+   * authenticated tenant. Otherwise 404.
+   *
+   * @param subTenantId - Sub-tenant UUID
+   * @param invoiceId - Invoice UUID
+   * @param format - Output format (default: 'facturx')
+   * @param requestOptions - Optional request configuration
+   * @returns ArrayBuffer with the binary content
+   *
+   * @example
+   * ```ts
+   * const pdf = await client.tenantInvoices.downloadForSubTenant(
+   *   subTenantId,
+   *   invoiceId
+   * );
+   * ```
+   */
+  async downloadForSubTenant(
+    subTenantId: string,
+    invoiceId: string,
+    format: 'facturx' | 'pdf' | 'xml' = 'facturx',
+    requestOptions?: RequestOptions
+  ): Promise<ArrayBuffer> {
+    return this.http.getRaw(
+      `/tenant/sub-tenants/${subTenantId}/invoices/${invoiceId}/download`,
+      { format },
+      requestOptions
+    );
+  }
+
+  /**
    * Alias for submit() — validate and send the invoice
    *
    * @param invoiceId - Invoice UUID

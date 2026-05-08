@@ -3,6 +3,27 @@
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+
+## [2.1.0] - 2026-05-08
+
+### Added
+
+- `client.tenantInvoices.download(invoiceId, format?)` — telecharger une facture du tenant (binary buffer). Comble le gap v2 ou `tenantInvoices` n'avait pas de download (l'endpoint v1 `/tenant/invoices/{id}/download` etait supprime, et le v2 company-scoped `/invoices/{id}/download/pdf` retournait 403 COMPANY_REQUIRED avec une cle tenant).
+- `client.tenantInvoices.downloadForSubTenant(subTenantId, invoiceId, format?)` — variant scope sub-tenant strict (404 si la facture n'appartient pas au sub-tenant ET au tenant).
+- Support des 3 formats : `'facturx'` (defaut, PDF/A-3 + XML CII embarque), `'pdf'` (rendu visuel pur), `'xml'` (UBL ou CII brut).
+
+### Backend
+
+Cote API Scell.io, 2 nouveaux endpoints :
+- `GET /api/v1/tenant/invoices/{invoiceId}/download[?format=]`
+- `GET /api/v1/tenant/sub-tenants/{subTenantId}/invoices/{invoiceId}/download[?format=]`
+
+Le scope tenant_id est verifie cote serveur via la company associee a la facture (ownership chain : invoice → company → tenant). Le scope sub-tenant rajoute un filtre strict sur `companies.sub_tenant_id`.
+
+### Notes
+
+- Pas de breaking change : les autres methodes existent toujours. Bump minor.
+- Le binary est retourne en `ArrayBuffer` cote JS — utiliser `Buffer.from(buffer)` (Node) ou `new Blob([buffer])` (browser) pour persister/afficher.
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [2.0.0] - 2026-05-08
