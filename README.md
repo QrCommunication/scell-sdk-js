@@ -297,7 +297,7 @@ apiClient.incomingInvoices  // Incoming invoice operations
 | `.invoices` | `create(params)`, `list(filters?)`, `get(id)`, `download(id, format?)`, `auditTrail(id)`, `convert(params)`, `incoming(filters?)`, `accept(id, input)`, `reject(id, input)`, `dispute(id, input)`, `markPaid(id, input)`, `downloadFile(id, format?)` |
 | `.signatures` | `create(params)`, `list(filters?)`, `get(id)`, `download(id, type)`, `remind(id)`, `cancel(id)` |
 | `.creditNotes` | `list(subTenantId, options?)`, `create(subTenantId, input)`, `get(id)`, `send(id)`, `download(id)`, `delete(id)`, `remainingCreditable(invoiceId)` |
-| `.subTenants` | `list()`, `create(input)`, `get(id)`, `update(id, input)`, `delete(id)`, `findByExternalId(externalId)` |
+| `.subTenants` | `list()`, `create(input)`, `get(id)`, `update(id, input)`, `delete(id)`, `findByExternalId(externalId)`, `getSuperPDPStatus(id)` (v2), `refreshSuperPDPStatus(id)` (v2, rate-limited 1/min), `getResumeUrl(id)` (v2) |
 | `.fiscal` | 26 methods (see ScellTenantClient reference) |
 | `.stats` | `overview(options?)`, `monthly(options?)`, `subTenantOverview(subTenantId, options?)` |
 | `.billing` | `invoices(options?)`, `showInvoice(id)`, `downloadInvoice(id)`, `usage(options?)`, `topUp(input)`, `confirmTopUp(input)`, `transactions(options?)` |
@@ -659,7 +659,7 @@ const overview = await tenant.stats.overview();
 | Resource | Methods |
 |----------|---------|
 | Direct methods | `me()`, `updateProfile(input)`, `balance()`, `quickStats()`, `regenerateKey()` |
-| `.subTenants` | `list()`, `create(input)`, `get(id)`, `update(id, input)`, `delete(id)`, `findByExternalId(externalId)` |
+| `.subTenants` | `list()`, `create(input)`, `get(id)`, `update(id, input)`, `delete(id)`, `findByExternalId(externalId)`, `getSuperPDPStatus(id)` (v2), `refreshSuperPDPStatus(id)` (v2, rate-limited 1/min), `getResumeUrl(id)` (v2) |
 | `.directInvoices` | `create(params)`, `list(filters?)`, `get(id)`, `update(id, params)`, `delete(id)`, `validate(id)`, `send(id)`, `download(id)`, `downloadXml(id)`, `bulkCreate(invoices)`, `bulkSubmit(ids)`, `bulkStatus(ids)` |
 | `.directCreditNotes` | `create(params)`, `list(filters?)`, `get(id)`, `update(id, params)`, `send(id)`, `download(id)`, `remainingCreditable(invoiceId)` |
 | `.subTenantCreditNotes` | `list(subTenantId, options?)`, `create(subTenantId, input)`, `get(id)`, `update(id, input)`, `send(id)`, `download(id)`, `remainingCreditable(invoiceId)` |

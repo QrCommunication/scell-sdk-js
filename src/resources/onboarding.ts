@@ -1,7 +1,7 @@
 /**
  * Onboarding Resource
  *
- * SuperPDP OAuth2 Authorization Code onboarding flow.
+ * SuperPDP OAuth2 Authorization Code onboarding flow + widget endpoints.
  *
  * @packageDocumentation
  */
@@ -9,7 +9,11 @@
 import type { HttpClient, RequestOptions } from '../client.js';
 import type { SingleResponse } from '../types/common.js';
 import type {
+  CompanyData,
+  CreateWidgetSubTenantInput,
+  CreateWidgetSubTenantResponse,
   OnboardingSession,
+  SireneLookupResponse,
   SuperPDPAuthorizeResponse,
   SuperPDPCallbackResponse,
 } from '../types/onboarding.js';
@@ -20,37 +24,13 @@ import type {
  * Manages the SuperPDP OAuth2 Authorization Code flow for partner tenant onboarding.
  * The flow has 3 steps: connect → redirect → complete.
  *
- * @example
- * ```typescript
- * // 1. Create a session
- * const { data: session } = await client.onboarding.createSession();
- *
- * // 2. Get the SuperPDP authorization URL and open it in a popup
- * const { authorize_url, state } = await client.onboarding.getSuperPDPAuthorizeUrl(session.id);
- * window.open(authorize_url, 'superpdp-onboarding', 'width=800,height=600');
- *
- * // 3. Handle the OAuth2 callback (after user completes onboarding on SuperPDP)
- * const result = await client.onboarding.superpdpCallback(session.id, code, state);
- * if (result.success) {
- *   console.log('Tenant created:', result.tenant.name);
- * }
- * ```
+ * Since v2.0.0 also exposes the publishable-key widget endpoints
+ * (`lookupSirene`, `createSubTenant`).
  */
 export class OnboardingResource {
   constructor(private readonly http: HttpClient) {}
 
-  /**
-   * Create a new onboarding session
-   *
-   * @param requestOptions - Request options
-   * @returns Created onboarding session
-   *
-   * @example
-   * ```typescript
-   * const { data: session } = await client.onboarding.createSession();
-   * console.log('Session step:', session.step); // 'connect'
-   * ```
-   */
+  /** Create a new onboarding session. */
   async createSession(
     requestOptions?: RequestOptions
   ): Promise<SingleResponse<OnboardingSession>> {
@@ -61,19 +41,7 @@ export class OnboardingResource {
     );
   }
 
-  /**
-   * Get an existing onboarding session by ID
-   *
-   * @param sessionId - Onboarding session UUID
-   * @param requestOptions - Request options
-   * @returns Onboarding session
-   *
-   * @example
-   * ```typescript
-   * const { data: session } = await client.onboarding.getSession('session-uuid');
-   * console.log('Current step:', session.step);
-   * ```
-   */
+  /** Get an existing onboarding session by ID. */
   async getSession(
     sessionId: string,
     requestOptions?: RequestOptions
@@ -85,22 +53,7 @@ export class OnboardingResource {
     );
   }
 
-  /**
-   * Get the SuperPDP OAuth2 authorization URL
-   *
-   * Returns a URL to open in a popup so the user can create their SuperPDP account.
-   * After the user completes the flow, SuperPDP redirects back with a code and state.
-   *
-   * @param sessionId - Onboarding session UUID
-   * @param requestOptions - Request options
-   * @returns Authorization URL and CSRF state token
-   *
-   * @example
-   * ```typescript
-   * const { authorize_url, state } = await client.onboarding.getSuperPDPAuthorizeUrl(session.id);
-   * window.open(authorize_url, '_blank', 'width=800,height=600');
-   * ```
-   */
+  /** Get the SuperPDP OAuth2 authorization URL for an onboarding session. */
   async getSuperPDPAuthorizeUrl(
     sessionId: string,
     requestOptions?: RequestOptions
@@ -112,30 +65,7 @@ export class OnboardingResource {
     );
   }
 
-  /**
-   * Handle the SuperPDP OAuth2 callback
-   *
-   * Called after the user completes onboarding on SuperPDP and is redirected back.
-   * Exchanges the authorization code for a tenant account on Scell.
-   *
-   * @param sessionId - Onboarding session UUID
-   * @param code - Authorization code received from SuperPDP callback
-   * @param state - CSRF state token received from SuperPDP callback
-   * @param requestOptions - Request options
-   * @returns Callback result with the created tenant
-   *
-   * @example
-   * ```typescript
-   * const result = await client.onboarding.superpdpCallback(
-   *   session.id,
-   *   callbackCode,
-   *   callbackState
-   * );
-   * if (result.success) {
-   *   console.log('Tenant created:', result.tenant.name, result.tenant.siret);
-   * }
-   * ```
-   */
+  /** Handle the SuperPDP OAuth2 callback and finalize the onboarding session. */
   async superpdpCallback(
     sessionId: string,
     code: string,
@@ -148,4 +78,77 @@ export class OnboardingResource {
       requestOptions
     );
   }
+
+  // ==========================================================================
+  // Widget endpoints (publishable-key auth, since v2.0.0)
+  // ==========================================================================
+
+  /**
+   * Look up a French company by SIRET via the Sirene registry.
+   *
+   * Authenticates with a publishable key (X-Publishable-Key). Use this from
+   * the partner widget to prefill the onboarding form.
+   *
+   * Returns `{ data: null, sirene_lookup_succeeded: true }` when Sirene
+   * answered with no match for the SIRET.
+   * Returns `{ data: null, sirene_lookup_succeeded: false }` on a Sirene
+   * outage or rate-limit — in that case the widget should let the user
+   * fill the form manually.
+   *
+   * @param siret - 14 digit SIRET, with or without spaces.
+   *
+   * @example
+   * ```typescript
+   * const publicClient = new ScellPublicClient('pk_live_...');
+   * const { data, sirene_lookup_succeeded } =
+   *   await publicClient.onboarding.lookupSirene('12345678901234');
+   * if (data) {
+   *   console.log(data.name, data.address.city);
+   * }
+   * ```
+   */
+  async lookupSirene(
+    siret: string,
+    requestOptions?: RequestOptions
+  ): Promise<SireneLookupResponse> {
+    return this.http.post<SireneLookupResponse>(
+      '/widget/onboarding/sirene/lookup',
+      { siret: siret.replace(/\s+/g, '') },
+      requestOptions
+    );
+  }
+
+  /**
+   * Create a SubTenant from widget-collected data (publishable-key auth).
+   *
+   * The publishable key scopes the call to the issuing tenant; no bearer
+   * token is required. Returns the created SubTenant, the localized
+   * recommended next action and a signed resume URL valid 7 days.
+   *
+   * @example
+   * ```typescript
+   * const result = await publicClient.onboarding.createSubTenant({
+   *   external_id: 'crm-42',
+   *   company: companyDataFromSirene,
+   *   identity: { first_name: 'Marie', last_name: 'Dupont', email: 'marie@acme.fr' },
+   *   locale: 'fr',
+   * });
+   * if (result.recommended_action?.cta_url) {
+   *   window.open(result.recommended_action.cta_url);
+   * }
+   * ```
+   */
+  async createSubTenant(
+    input: CreateWidgetSubTenantInput,
+    requestOptions?: RequestOptions
+  ): Promise<CreateWidgetSubTenantResponse> {
+    return this.http.post<CreateWidgetSubTenantResponse>(
+      '/widget/onboarding/sub-tenant',
+      input,
+      requestOptions
+    );
+  }
 }
+
+/* Re-export for convenience when consumers import the resource directly. */
+export type { CompanyData };

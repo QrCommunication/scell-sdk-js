@@ -5,6 +5,84 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-05-08
+
+Major release. Aligns the SDK with the Scell.io API v2 onboarding model
+(SuperPDP-driven sub-tenant lifecycle). The legacy 3-state `kyc_status`
+field is dropped from `SubTenant` and replaced by a richer
+`onboarding_status` enum plus explicit SuperPDP verification fields.
+Five new endpoints are exposed (Sirene lookup, widget create sub-tenant,
+SuperPDP status query, refresh and resume URL).
+
+### Breaking Changes
+
+- **`SubTenant` no longer exposes `kyc_status`, `kyc_verified_at`,
+  `kyc_delegated`.** Backend stopped returning these fields. Code that
+  read them must migrate to the new shape (see Migration Guide below).
+- The `SubTenant` interface now mandates `onboarding_status: OnboardingStatus`.
+  Type-checking will fail loudly on consumers that assumed the legacy shape.
+- The `refreshSuperPDPStatus` endpoint is rate-limited to 1 request /
+  minute / sub-tenant; HTTP 429 is surfaced as `ScellRateLimitError`.
+
+### Added
+
+- **`OnboardingStatus`** type (6 values) replacing legacy `kyc_status`:
+  `pending_superpdp` | `superpdp_redirected` | `superpdp_authorized` |
+  `superpdp_pending_review` | `active` | `superpdp_failed`.
+- **`SubTenant`** new fields: `onboarding_status`,
+  `superpdp_company_verification_status`,
+  `superpdp_user_identity_verification_status`, `last_polled_at`,
+  `recommended_action`, `contact_first_name`, `contact_last_name`,
+  `resume_url`.
+- **`RecommendedAction`** interface — structured i18n action object
+  (`code`, `severity`, `title_fr`, `title_en`, `message_fr`, `message_en`,
+  `cta_label_fr`, `cta_label_en`, `cta_url`, `dismissible`).
+- **`SubTenantsResource.getSuperPDPStatus(id)`** — `GET /sub-tenants/{id}/superpdp-status`.
+- **`SubTenantsResource.refreshSuperPDPStatus(id)`** — `POST /sub-tenants/{id}/superpdp-status/refresh` (rate-limited).
+- **`SubTenantsResource.getResumeUrl(id)`** — `POST /sub-tenants/{id}/resume-url` (signed URL valid 7 days).
+- **`OnboardingResource.lookupSirene(siret)`** — `POST /widget/onboarding/sirene/lookup` (publishable-key auth).
+- **`OnboardingResource.createSubTenant(payload)`** — `POST /widget/onboarding/sub-tenant` (publishable-key auth).
+- New types exported: `CompanyData`, `IdentityFormData`,
+  `CreateWidgetSubTenantInput`, `CreateWidgetSubTenantResponse`,
+  `SireneLookupResponse`, `SubTenantStatusResponse`,
+  `SubTenantResumeUrlResponse`, `SubTenantSummary`,
+  `SuperPDPCompanyVerificationStatus`,
+  `SuperPDPUserIdentityVerificationStatus`.
+
+### Migration Guide
+
+Replace any `kyc_status` reads with `onboarding_status`:
+
+| Legacy `kyc_status` | New `onboarding_status`                                                                       |
+|---------------------|-----------------------------------------------------------------------------------------------|
+| `'pending'`         | `'pending_superpdp'`, `'superpdp_redirected'`, `'superpdp_authorized'`, `'superpdp_pending_review'` |
+| `'verified'`        | `'active'`                                                                                    |
+| `'rejected'`        | `'superpdp_failed'`                                                                           |
+
+```typescript
+// BEFORE (v1.x)
+if (subTenant.kyc_status === 'verified') { /* ... */ }
+
+// AFTER (v2.0)
+if (subTenant.onboarding_status === 'active') { /* ... */ }
+
+// For UI, prefer the localized recommended_action:
+const { data, recommended_action } =
+  await client.subTenants.getSuperPDPStatus(subTenant.id);
+if (recommended_action) {
+  showBanner({
+    title: locale === 'fr' ? recommended_action.title_fr : recommended_action.title_en,
+    severity: recommended_action.severity,
+    cta: { label: recommended_action.cta_label_fr, url: recommended_action.cta_url },
+  });
+}
+```
+
+### Backend requirements
+
+Scell.io API v2.0+ (release 2026-05-08). The new endpoints will return
+404 on older backends.
+
 ## [1.18.0] - 2026-05-06
 
 ### Added

@@ -230,9 +230,16 @@ export type {
 // Sub-Tenant types
 export type {
   CreateSubTenantInput,
+  OnboardingStatus,
+  RecommendedAction,
   SubTenant,
   SubTenantAddress,
   SubTenantListOptions,
+  SubTenantResumeUrlResponse,
+  SubTenantStatusResponse,
+  SubTenantSummary,
+  SuperPDPCompanyVerificationStatus,
+  SuperPDPUserIdentityVerificationStatus,
   UpdateSubTenantInput,
 } from './sub-tenants.js';
 
@@ -248,8 +255,13 @@ export type {
 
 // Onboarding types
 export type {
+  CompanyData,
+  CreateWidgetSubTenantInput,
+  CreateWidgetSubTenantResponse,
+  IdentityFormData,
   OnboardingSession,
   OnboardingStep,
+  SireneLookupResponse,
   SuperPDPAuthorizeResponse,
   SuperPDPCallbackResponse,
   SuperPDPCallbackTenant,

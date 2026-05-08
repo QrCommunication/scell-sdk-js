@@ -1,5 +1,100 @@
 # @scell/sdk — JavaScript/TypeScript SDK for Scell.io
-> Version: 1.12.1 | License: MIT | Node.js >= 18.0.0 | TypeScript >= 5.0.0
+> Version: 2.0.0 | License: MIT | Node.js >= 18.0.0 | TypeScript >= 5.0.0
+
+## v2.0.0 (2026-05-08) — Breaking Changes
+
+Major release. Aligns the SDK with the Scell.io API v2 onboarding model.
+Backend requirement: Scell.io API v2.0+.
+
+### What changed
+
+- `SubTenant` no longer exposes `kyc_status`, `kyc_verified_at`, `kyc_delegated`.
+- New required field `onboarding_status: OnboardingStatus` on `SubTenant`
+  with 6 possible values.
+- New SubTenant fields: `superpdp_company_verification_status`,
+  `superpdp_user_identity_verification_status`, `last_polled_at`,
+  `recommended_action`, `contact_first_name`, `contact_last_name`, `resume_url`.
+- 5 new endpoints (Sirene lookup, widget create sub-tenant, SuperPDP
+  status query/refresh, resume URL).
+
+### Migration: `kyc_status` → `onboarding_status`
+
+| Legacy `kyc_status` | New `onboarding_status`                                                                       |
+|---------------------|-----------------------------------------------------------------------------------------------|
+| `'pending'`         | `'pending_superpdp'`, `'superpdp_redirected'`, `'superpdp_authorized'`, `'superpdp_pending_review'` |
+| `'verified'`        | `'active'`                                                                                    |
+| `'rejected'`        | `'superpdp_failed'`                                                                           |
+
+```typescript
+// BEFORE (v1.x)
+if (subTenant.kyc_status === 'verified') { /* onboarded */ }
+
+// AFTER (v2.0)
+if (subTenant.onboarding_status === 'active') { /* onboarded */ }
+```
+
+## Onboarding v2 — Widget endpoints (publishable-key auth)
+
+```typescript
+import { ScellPublicClient } from '@scell/sdk';
+
+const publicClient = new ScellPublicClient('pk_live_...');
+
+// 1. Sirene lookup (prefill widget)
+const lookup = await publicClient.onboarding.lookupSirene('12345678901234');
+// { data: CompanyData | null, sirene_lookup_succeeded: boolean }
+
+// 2. Create sub-tenant from widget data
+const result = await publicClient.onboarding.createSubTenant({
+  external_id: 'crm-42',
+  company: lookup.data!,
+  identity: { first_name: 'Marie', last_name: 'Dupont', email: 'marie@acme.fr' },
+  locale: 'fr',
+});
+// result.data: SubTenant
+// result.recommended_action: RecommendedAction | null  (FR/EN i18n)
+// result.resume_url: string | null  (signed, valid 7 days)
+```
+
+## SubTenants SuperPDP status v2 — Bearer auth (master tenant)
+
+```typescript
+import { ScellApiClient, ScellRateLimitError } from '@scell/sdk';
+
+const client = new ScellApiClient('sk_live_...');
+
+// Cached status
+const status = await client.subTenants.getSuperPDPStatus(subTenantId);
+// status.data: SubTenant (onboarding_status + superpdp_*_verification_status)
+// status.recommended_action: RecommendedAction | null
+
+// Force fresh poll (rate-limited 1/min/sub-tenant)
+try {
+  const fresh = await client.subTenants.refreshSuperPDPStatus(subTenantId);
+} catch (e) {
+  if (e instanceof ScellRateLimitError) { /* backoff */ }
+}
+
+// Regenerate signed resume URL (valid 7 days)
+const { resume_url, expires_at } = await client.subTenants.getResumeUrl(subTenantId);
+```
+
+## RecommendedAction (i18n FR/EN)
+
+```typescript
+interface RecommendedAction {
+  code: string;
+  severity: 'info' | 'warning' | 'critical' | 'success';
+  title_fr: string; title_en: string;
+  message_fr: string; message_en: string;
+  cta_label_fr: string; cta_label_en: string;
+  cta_url: string | null;
+  dismissible: boolean;
+}
+```
+
+---
+
 
 ## Overview
 
