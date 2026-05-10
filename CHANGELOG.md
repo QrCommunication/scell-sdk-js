@@ -4,6 +4,34 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [2.5.0] - 2026-05-10
+
+### Documentation only — no runtime change
+
+The JS SDK already covered the full EU-SES contract from v2.x: 21
+`ui_config` fields, 4 `signature_options`, multi-signers with `message`
+and `auth_method: 'email'|'sms'|'both'`, `signature_positions[].unit`,
+`page_width_px`, `page_height_px`. This release adds documentation for
+the backend's new wrapper page.
+
+### What changed server-side
+
+When `signatures.create()` returns, each signer's `signing_url` now
+points to `https://sign.scell.io/sign/{sig}/{signer}?expires=…&signature=HMAC`
+instead of OpenAPI.com directly. The wrapper page embeds the upstream
+OpenAPI.com signing flow inside an iframe with default Scell.io
+branding. If the request omits `ui_config`, the backend fills the 16
+visual fields automatically. Per-field overrides are preserved.
+`iframe_ancestors` is auto-extended with `https://sign.scell.io` and
+`https://scell.io` (capped at 20, deduplicated).
+
+You don't need to change anything in your code. Just distribute the
+`signers[i].signing_url` to your end-users as you already do.
+
+### Migration
+
+`pnpm add @scell/sdk@2.5` (or `^2`).
+
 ## [2.3.0] - 2026-05-10
 
 ### Fixed (CRITICAL — broken Sirene lookup parsing)
