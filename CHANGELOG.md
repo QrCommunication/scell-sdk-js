@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [2.2.0] - 2026-05-10
+
+### Added
+
+- `client.billing.payInvoice(invoiceId, requestOptions?)` — initie le paiement Stripe d'une facture plateforme via `POST /api/v1/tenant/billing/invoices/{id}/pay`. Retourne un `SingleResponse<PaymentIntent>` avec le `client_secret` a passer a `stripe.confirmCardPayment()`.
+- Type `PaymentIntent` (exporté depuis `@scell/sdk`) — champs : `client_secret`, `payment_intent_id`, `amount` (centimes), `currency` (ISO 4217 lowercase), `status`.
+- Champ optionnel `stripe_payment_intent_id?: string | null` ajouté au type `TenantInvoice`.
+
+### Errors
+
+- `ScellNotFoundError` (404) si la facture n'appartient pas au tenant
+- `ScellValidationError` (422) si le statut de la facture ne permet pas le paiement (draft, paid, cancelled)
+
+---
+
 ## [2.1.0] - 2026-05-08
 
 ### Added

@@ -374,6 +374,11 @@ export interface TenantInvoice {
   validated_at: DateTimeString | null;
   paid_at: DateTimeString | null;
   payment_reference: string | null;
+  /**
+   * Stripe PaymentIntent ID (pi_...) if a payment has been initiated.
+   * Available since API Wave 1 B3.
+   */
+  stripe_payment_intent_id?: string | null;
 }
 
 /**

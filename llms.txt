@@ -1,5 +1,82 @@
 # @scell/sdk — JavaScript/TypeScript SDK for Scell.io
-> Version: 2.0.0 | License: MIT | Node.js >= 18.0.0 | TypeScript >= 5.0.0
+> Version: 2.2.0 | License: MIT | Node.js >= 18.0.0 | TypeScript >= 5.0.0
+
+## v2.2.0 (2026-05-10) — Billing Invoice Pay (Stripe)
+
+Minor, additive release. Adds Stripe payment initiation for platform billing invoices.
+
+### New method `client.billing.payInvoice()`
+
+```typescript
+import { ScellApiClient, type PaymentIntent, type SingleResponse } from '@scell/sdk';
+
+const client = new ScellApiClient('sk_live_xxx');
+
+const { data: pi }: SingleResponse<PaymentIntent> =
+  await client.billing.payInvoice('billing-invoice-uuid');
+
+// Pass client_secret to Stripe.js on the front-end
+await stripe.confirmCardPayment(pi.client_secret, {
+  payment_method: { card: cardElement },
+});
+
+console.log(pi.payment_intent_id); // pi_...
+console.log(pi.amount);            // 4900 (cents)
+console.log(pi.currency);          // "eur"
+console.log(pi.status);            // "requires_payment_method"
+```
+
+**Errors**: `ScellNotFoundError` 404 (invoice belongs to another tenant) ·
+`ScellValidationError` 422 (status not payable: draft, paid, cancelled).
+
+**New type**: `PaymentIntent` — exported from `@scell/sdk`.
+**Updated type**: `TenantInvoice` — new optional field `stripe_payment_intent_id?: string | null`.
+
+---
+
+## v2.1.0 (2026-05-08) — Tenant Invoice Download
+
+Minor, additive release. Closes a gap where tenant API keys (`sk_live_*` /
+`sk_test_*`) could not download Factur-X PDF / UBL XML / CII XML for
+invoices created via `client.tenantInvoices.create(...)` or
+`client.tenantInvoices.createForSubTenant(...)`.
+
+### New methods on `client.tenantInvoices`
+
+```typescript
+import { ScellClient } from '@scell/sdk';
+import { writeFileSync } from 'node:fs';
+
+const client = new ScellClient({ apiKey: 'sk_live_xxx' });
+
+// Download a tenant-direct invoice (Factur-X PDF/A-3 by default)
+const pdfBuffer = await client.tenantInvoices.download('019d-uuid');
+writeFileSync('invoice.pdf', Buffer.from(pdfBuffer));
+
+// Pure XML (UBL or CII depending on the invoice's output_format)
+const xmlBuffer = await client.tenantInvoices.download('019d-uuid', 'xml');
+
+// Sub-tenant scoped (404 if invoice belongs to another sub-tenant — anti-IDOR)
+const pdf = await client.tenantInvoices.downloadForSubTenant(
+  'sub-tenant-uuid',
+  'invoice-uuid',
+);
+
+// Format param: 'facturx' (default) | 'pdf' (alias) | 'xml'
+```
+
+Both methods return a `Promise<ArrayBuffer>` (binary). Wrap with
+`Buffer.from(buffer)` in Node.js or `new Blob([buffer], { type })` in
+the browser.
+
+### Endpoints (backend)
+
+- `GET /api/v1/tenant/invoices/{invoiceId}/download[?format=facturx|pdf|xml]`
+- `GET /api/v1/tenant/sub-tenants/{subTenantId}/invoices/{invoiceId}/download[?format=]`
+
+Auth: `X-API-Key: sk_*` (server-side only, never publishable key).
+
+---
 
 ## v2.0.0 (2026-05-08) — Breaking Changes
 
@@ -2414,6 +2491,13 @@ const { data: result } = await client.tenantInvoices.bulkSubmit(['inv-uuid-1', '
 
 // Check bulk operation status
 const { data: status } = await client.tenantInvoices.bulkStatus('bulk-operation-uuid');
+
+// Download — Factur-X PDF/A-3 (default) — returns ArrayBuffer
+const pdfBuffer = await client.tenantInvoices.download('inv-uuid');
+const xmlBuffer = await client.tenantInvoices.download('inv-uuid', 'xml');
+
+// Sub-tenant scoped download (404 if invoice belongs to another sub-tenant)
+const pdf = await client.tenantInvoices.downloadForSubTenant('sub-tenant-uuid', 'inv-uuid');
 ```
 
 ### `client.incomingInvoices` (TenantIncomingInvoicesResource)

@@ -71,3 +71,24 @@ export interface BillingTransactionListOptions {
   per_page?: number;
   page?: number;
 }
+
+/**
+ * PaymentIntent — returned by `billing.payInvoice()`.
+ *
+ * Pass `clientSecret` to Stripe.js `confirmCardPayment()` to finalize
+ * the payment on the client side.
+ *
+ * @since 2.2.0
+ */
+export interface PaymentIntent {
+  /** Stripe PaymentIntent client_secret — pass to Stripe.js confirmCardPayment() */
+  client_secret: string;
+  /** Stripe PaymentIntent ID (pi_...) */
+  payment_intent_id: string;
+  /** Amount in smallest currency unit (e.g. cents for EUR) */
+  amount: number;
+  /** ISO 4217 currency code in lowercase (e.g. "eur") */
+  currency: string;
+  /** Stripe PaymentIntent status (e.g. "requires_payment_method", "succeeded") */
+  status: string;
+}

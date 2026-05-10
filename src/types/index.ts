@@ -217,6 +217,7 @@ export type {
   BillingTransactionListOptions,
   BillingUsage,
   BillingUsageOptions,
+  PaymentIntent,
 } from './billing.js';
 
 // Stats types
