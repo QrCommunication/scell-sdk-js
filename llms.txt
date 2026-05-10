@@ -1189,9 +1189,13 @@ interface CreateSignatureInput {
   expires_at?: DateTimeString;
 }
 
-interface SignatureListOptions extends PaginationOptions {
+interface SignatureListOptions {
+  company_id?: UUID;
+  sub_tenant_id?: UUID;
   status?: SignatureStatus;
-  search?: string;
+  environment?: Environment;
+  /** Max 100. */
+  per_page?: number;
 }
 
 interface SignatureDownloadResponse {

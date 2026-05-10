@@ -214,11 +214,17 @@ export interface CreateSignatureInput {
 
 /**
  * Signature list filter options
+ *
+ * All filters are scoped to the authenticated tenant. `sub_tenant_id`
+ * additionally restricts results to a single sub-tenant belonging to
+ * the current tenant (anti-IDOR is enforced server-side).
  */
 export interface SignatureListOptions {
   company_id?: UUID | undefined;
+  sub_tenant_id?: UUID | undefined;
   status?: SignatureStatus | undefined;
   environment?: Environment | undefined;
+  /** Max 100. */
   per_page?: number | undefined;
 }
 

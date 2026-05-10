@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [2.6.0] - 2026-05-10
+
+### Added
+
+- `signatures.list()` and `signatures.get()` are now usable under API key
+  authentication (`sk_live_*` / `sk_test_*`), in addition to Sanctum
+  (dashboard). Server-side scope changed from `user_id` to `tenant_id`
+  (resolved via `company.tenant_id`), fixing a pre-existing 500 error
+  when calling these endpoints under `sk_*`.
+- `SignatureListOptions.sub_tenant_id` — restrict the result set to a
+  single sub-tenant of the current tenant. Anti-IDOR is enforced
+  server-side: passing an arbitrary sub-tenant UUID that doesn't belong
+  to the authenticated tenant returns 404.
+
+### Notes
+
+- `per_page` is capped at 100 server-side.
+- No breaking change. Existing calls without `sub_tenant_id` keep the
+  same behavior (scoped to the tenant, no sub-tenant filter).
+
+### Migration
+
+`pnpm add @scell/sdk@2.6` (or `^2`).
+
 ## [2.5.0] - 2026-05-10
 
 ### Documentation only — no runtime change

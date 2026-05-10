@@ -454,9 +454,12 @@ writeFileSync('invoice.xml', Buffer.from(xmlBuffer));
 ### Signatures
 
 ```typescript
-// List signatures (dashboard)
+// List signatures (works under Sanctum dashboard AND sk_*/api key)
+// Scoped to the authenticated tenant. Filters: status, environment,
+// company_id, sub_tenant_id (restrict to one sub-tenant), per_page (max 100).
 const { data, meta } = await client.signatures.list({
   status: 'pending',
+  sub_tenant_id: 'optional-sub-tenant-uuid',
   per_page: 25,
 });
 

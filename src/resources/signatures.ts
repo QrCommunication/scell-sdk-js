@@ -47,7 +47,18 @@ export class SignaturesResource {
   constructor(private readonly http: HttpClient) {}
 
   /**
-   * List signature requests with optional filtering
+   * List signature requests with optional filtering.
+   *
+   * Scoped to the authenticated tenant. Available under both Sanctum
+   * (dashboard) and API key authentication (`sk_live_*` / `sk_test_*`).
+   *
+   * Filters:
+   * - `status` — restrict by signature status.
+   * - `environment` — `'production'` or `'sandbox'`.
+   * - `company_id` — restrict to a specific company of the tenant.
+   * - `sub_tenant_id` — restrict to one sub-tenant of the current
+   *   tenant (anti-IDOR enforced server-side).
+   * - `per_page` — max 100.
    *
    * @param options - Filter and pagination options
    * @param requestOptions - Request options
@@ -57,6 +68,7 @@ export class SignaturesResource {
    * ```typescript
    * const { data, meta } = await client.signatures.list({
    *   status: 'pending',
+   *   sub_tenant_id: 'sub-tenant-uuid',
    *   per_page: 25
    * });
    * console.log(`${meta.total} pending signatures`);
