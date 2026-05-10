@@ -1,5 +1,101 @@
 # @scell/sdk — JavaScript/TypeScript SDK for Scell.io
-> Version: 2.2.0 | License: MIT | Node.js >= 18.0.0 | TypeScript >= 5.0.0
+> Version: 2.3.0 | License: MIT | Node.js >= 18.0.0 | TypeScript >= 5.0.0
+
+## v2.3.0 (2026-05-10) — Fix Sirene lookup parsing
+
+Critical patch release. The pre-2.3.0 `CompanyData` type assumed a nested
+`address.line1` shape but the real API returns flat fields
+(`address_line1`, `postal_code`, `city`, `country`). All address fields
+arrived as `undefined`, breaking the partner widget prefill since v2.0.0.
+
+### New `lookupSirene()` return type — `SireneLookupResult`
+
+```typescript
+import { ScellPublicClient } from '@scell/sdk';
+
+const client = new ScellPublicClient('pk_live_...');
+const result = await client.onboarding.lookupSirene('10178342100015');
+
+// result: SireneLookupResult
+//   data: CompanyData | null
+//   sirene_lookup_succeeded: boolean
+//   manual_entry_required: boolean
+//   code: string | null
+
+if (result.data) {
+  // Sirene found the company
+  console.log(result.data.name);            // 'RL CONSEIL'
+  console.log(result.data.legal_name);      // 'RL CONSEIL'
+  console.log(result.data.address_line1);   // '200 RUE DE LA CROIX NIVERT'
+  console.log(result.data.postal_code);     // '75015'
+  console.log(result.data.city);            // 'PARIS'
+  console.log(result.data.country);         // 'FR'
+  console.log(result.data.vat_number);      // 'FR95101783421'
+  console.log(result.data.legal_form);      // '5710'
+  console.log(result.data.naf_code);        // '62.02A'
+  console.log(result.data.creation_date);   // '2026-01-19'
+  console.log(result.data.is_active);       // true
+} else if (result.manual_entry_required) {
+  // Etalab + INSEE both down -> show manual entry form
+  // result.code === 'SIRENE_MANUAL_ENTRY_REQUIRED'
+} else if (result.code === 'SIRENE_NOT_FOUND') {
+  // SIRET unknown to the registry
+}
+```
+
+### `CompanyData` interface (mirror of API shape)
+
+```typescript
+interface CompanyData {
+  siret: string;
+  siren: string;
+  name: string;
+  legal_name?: string | null;
+  legal_form?: string | null;
+  legal_form_code?: string | null;
+  naf_code?: string | null;
+  naf_label?: string | null;
+  vat_number?: string | null;
+  address_line1: string;          // <- flat (was nested before)
+  address_line2?: string | null;
+  postal_code: string;
+  city: string;
+  country: string;
+  is_active: boolean;
+  creation_date?: string | null;  // <- new
+  employee_range?: string | null; // <- new
+}
+```
+
+### Helper `parseSireneLookup(raw)`
+
+For partners who proxy the endpoint server-side and want to reuse the
+discriminant logic:
+
+```typescript
+import { parseSireneLookup } from '@scell/sdk';
+
+const raw = await fetch('/api/proxy/sirene', { ... }).then(r => r.json());
+const result = parseSireneLookup(raw);
+```
+
+### Migration from v2.2.0
+
+```typescript
+// BEFORE — never worked, address was always undefined
+const { data, sirene_lookup_succeeded } =
+  await client.onboarding.lookupSirene('10178342100015');
+console.log(data?.address.line1); // undefined
+
+// AFTER (v2.3.0+)
+const result = await client.onboarding.lookupSirene('10178342100015');
+console.log(result.data?.address_line1); // '200 RUE DE LA CROIX NIVERT'
+```
+
+The `SireneLookupResponse` type is kept as a `@deprecated` alias of
+`SireneLookupResult` so `import { SireneLookupResponse }` still compiles.
+
+---
 
 ## v2.2.0 (2026-05-10) — Billing Invoice Pay (Stripe)
 

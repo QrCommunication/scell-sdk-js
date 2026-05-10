@@ -4,6 +4,63 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [2.3.0] - 2026-05-10
+
+### Fixed (CRITICAL — broken Sirene lookup parsing)
+
+- `OnboardingResource.lookupSirene()` returned a `SireneLookupResponse` whose
+  shape did **not** match the actual API. The `CompanyData.address` interface
+  was nested (`address.line1`) but the API returns flat fields (`address_line1`,
+  `postal_code`, `city`, `country`). Result: every address field arrived as
+  `undefined` since v2.0.0.
+- The discriminant `sirene_lookup_succeeded` was read at the response root,
+  but the API exposes `data.sirene_lookup_failed: true` (negation) only in
+  the manual-entry fallback case. The field was therefore always `undefined`.
+
+### Changed
+
+- `lookupSirene()` now returns a discriminated `SireneLookupResult` with
+  four guaranteed fields: `data: CompanyData | null`,
+  `sirene_lookup_succeeded`, `manual_entry_required`, `code`.
+- `CompanyData` interface restructured to mirror the real API shape (flat
+  address) and gains `legal_name`, `creation_date`, `employee_range`.
+
+### Added
+
+- New exported helper `parseSireneLookup(raw)` for partners who call the
+  endpoint manually (eg. through a server-side proxy).
+- Type `SireneLookupRawResponse` documents the raw HTTP payload.
+- Type `SireneManualEntryData` documents the partial fallback payload.
+- Type alias `SireneLookupResponse` is kept as a deprecated alias for
+  `SireneLookupResult` to preserve `import { SireneLookupResponse }`.
+
+### Migration
+
+```typescript
+// BEFORE v2.3.0 — never worked, address was always empty
+const { data, sirene_lookup_succeeded } =
+  await client.onboarding.lookupSirene('10178342100015');
+console.log(data?.address.line1); // -> undefined
+
+// AFTER v2.3.0
+const result = await client.onboarding.lookupSirene('10178342100015');
+if (result.data) {
+  console.log(result.data.address_line1); // -> '200 RUE DE LA CROIX NIVERT'
+  console.log(result.data.city);          // -> 'PARIS'
+} else if (result.manual_entry_required) {
+  // fallback: Etalab + INSEE down, ask user to fill manually
+} else if (result.code === 'SIRENE_NOT_FOUND') {
+  // SIRET unknown
+}
+```
+
+### Tests
+
+- `tests/onboarding-sirene.test.ts` (4 tests): success / manual_entry /
+  not_found / empty payload paths — all using prod-captured payloads.
+
+---
+
 ## [2.2.0] - 2026-05-10
 
 ### Added
