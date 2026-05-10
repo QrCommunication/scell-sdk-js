@@ -154,8 +154,8 @@ export interface UpdateSubTenantInput {
 }
 
 /**
- * Response from `GET /sub-tenants/{id}/superpdp-status` and
- * `POST /sub-tenants/{id}/superpdp-status/refresh` (since v2.0.0).
+ * Response from `GET /tenant/sub-tenants/{id}/superpdp-status` and
+ * `POST /tenant/sub-tenants/{id}/superpdp-status/refresh` (since v2.0.0).
  */
 export interface SubTenantStatusResponse {
   data: SubTenant;
@@ -163,7 +163,7 @@ export interface SubTenantStatusResponse {
 }
 
 /**
- * Response from `POST /sub-tenants/{id}/resume-url` (since v2.0.0).
+ * Response from `POST /tenant/sub-tenants/{id}/resume-url` (since v2.0.0).
  */
 export interface SubTenantResumeUrlResponse {
   resume_url: string;

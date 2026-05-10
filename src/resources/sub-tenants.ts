@@ -64,7 +64,7 @@ export class SubTenantsResource {
     requestOptions?: RequestOptions
   ): Promise<SubTenantStatusResponse> {
     return this.http.get<SubTenantStatusResponse>(
-      `/sub-tenants/${id}/superpdp-status`,
+      `/tenant/sub-tenants/${id}/superpdp-status`,
       undefined,
       requestOptions
     );
@@ -92,7 +92,7 @@ export class SubTenantsResource {
     requestOptions?: RequestOptions
   ): Promise<SubTenantStatusResponse> {
     return this.http.post<SubTenantStatusResponse>(
-      `/sub-tenants/${id}/superpdp-status/refresh`,
+      `/tenant/sub-tenants/${id}/superpdp-status/refresh`,
       undefined,
       requestOptions
     );
@@ -115,7 +115,7 @@ export class SubTenantsResource {
     requestOptions?: RequestOptions
   ): Promise<SubTenantResumeUrlResponse> {
     return this.http.post<SubTenantResumeUrlResponse>(
-      `/sub-tenants/${id}/resume-url`,
+      `/tenant/sub-tenants/${id}/resume-url`,
       undefined,
       requestOptions
     );

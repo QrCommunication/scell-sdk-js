@@ -1,6 +1,11 @@
 # Changelog
 
 All notable changes to this project will be documented in this file.
+## [2.7.1] - 2026-05-10
+
+### Fixed
+- `SubTenantsResource.getSuperPdpStatus`, `refreshSuperPdpStatus` and `getResumeUrl` were calling `/sub-tenants/{id}/...` instead of `/tenant/sub-tenants/{id}/...`. The legacy path resolved against the Sanctum dashboard block — 401 systematic for `sk_*` API keys. User workaround: direct HTTP call.
+
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
