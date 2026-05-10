@@ -4,6 +4,39 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [2.7.0] - 2026-05-10
+
+### Added
+
+- **`TenantSignaturesResource`** — read-only access to signatures via the
+  new URL-nested tenant endpoints (`X-API-Key` authentication only,
+  `sk_live_*` / `sk_test_*`). Exposes :
+  - `client.tenantSignatures.list(options?)` →
+    `GET /v1/tenant/signatures`
+  - `client.tenantSignatures.get(id)` →
+    `GET /v1/tenant/signatures/{id}`
+  - `client.tenantSignatures.listForSubTenant(subTenantId, options?)` →
+    `GET /v1/tenant/sub-tenants/{subTenantId}/signatures`
+  - `client.tenantSignatures.getForSubTenant(subTenantId, id)` →
+    `GET /v1/tenant/sub-tenants/{subTenantId}/signatures/{id}`
+
+  Also exposed as `client.signatures` on `ScellTenantClient`. Server-side
+  scope is strict (anti-IDOR enforced) : signatures and sub-tenants must
+  belong to the authenticated tenant or 404 is returned.
+
+- New type `TenantSignatureListOptions` — query filters for the
+  URL-nested endpoints (`status`, `environment`, `per_page`).
+  `sub_tenant_id` is no longer a query param under this surface ; the
+  scope is expressed via the URL itself.
+
+### Why
+
+The previous flat `signatures.list()` (introduced in v2.6.0 under
+`X-API-Key`) still works, but the URL-nested pattern matches the
+existing convention used by tenant invoices and credit notes. It also
+sidesteps the historical `403 COMPANY_REQUIRED` returned to tenant
+master keys without a resolvable `company_id`.
+
 ## [2.6.0] - 2026-05-10
 
 ### Added

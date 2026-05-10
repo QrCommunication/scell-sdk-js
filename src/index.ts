@@ -50,6 +50,7 @@ import { SubTenantsResource } from './resources/sub-tenants.js';
 import { TenantCreditNotesResource } from './resources/tenant-credit-notes.js';
 import { TenantDirectInvoicesResource } from './resources/tenant-direct-invoices.js';
 import { TenantIncomingInvoicesResource } from './resources/tenant-incoming-invoices.js';
+import { TenantSignaturesResource } from './resources/tenant-signatures.js';
 import { WebhooksResource } from './resources/webhooks.js';
 import { OnboardingResource } from './resources/onboarding.js';
 
@@ -181,6 +182,8 @@ export class ScellApiClient {
   public readonly creditNotes: TenantCreditNotesResource;
   /** Tenant invoice operations (create, submit, update, delete) */
   public readonly tenantInvoices: TenantDirectInvoicesResource;
+  /** Tenant signature operations (read-only, scoped via X-API-Key) */
+  public readonly tenantSignatures: TenantSignaturesResource;
   /** Incoming invoice operations (list, accept, reject) */
   public readonly incomingInvoices: TenantIncomingInvoicesResource;
   /** SuperPDP OAuth2 onboarding flow (partner tenant onboarding) */
@@ -216,6 +219,7 @@ export class ScellApiClient {
     this.billing = new BillingResource(this.http);
     this.creditNotes = new TenantCreditNotesResource(this.http);
     this.tenantInvoices = new TenantDirectInvoicesResource(this.http);
+    this.tenantSignatures = new TenantSignaturesResource(this.http);
     this.incomingInvoices = new TenantIncomingInvoicesResource(this.http);
     this.onboarding = new OnboardingResource(this.http);
     this.buyers = new BuyersResource(this.http);

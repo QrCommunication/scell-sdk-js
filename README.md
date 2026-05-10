@@ -287,6 +287,7 @@ apiClient.fiscal            // ISCA fiscal compliance
 apiClient.stats             // Platform statistics
 apiClient.billing           // Usage, top-up, transactions
 apiClient.tenantInvoices    // Tenant invoice operations
+apiClient.tenantSignatures  // Tenant signature operations (read-only, URL-nested)
 apiClient.incomingInvoices  // Incoming invoice operations
 ```
 
@@ -302,6 +303,7 @@ apiClient.incomingInvoices  // Incoming invoice operations
 | `.stats` | `overview(options?)`, `monthly(options?)`, `subTenantOverview(subTenantId, options?)` |
 | `.billing` | `invoices(options?)`, `showInvoice(id)`, `downloadInvoice(id)`, `usage(options?)`, `topUp(input)`, `confirmTopUp(input)`, `transactions(options?)` |
 | `.tenantInvoices` | `create(params)`, `list(filters?)`, `get(id)`, `update(id, params)`, `delete(id)`, `validate(id)`, `send(id)`, `download(id)`, `downloadXml(id)`, `bulkCreate(invoices)`, `bulkSubmit(ids)`, `bulkStatus(ids)` |
+| `.tenantSignatures` | `list(options?)`, `get(id)`, `listForSubTenant(subTenantId, options?)`, `getForSubTenant(subTenantId, id)` (read-only, URL-nested under `/tenant/signatures` and `/tenant/sub-tenants/{id}/signatures`) |
 | `.incomingInvoices` | `create(subTenantId, params)`, `listForSubTenant(subTenantId)`, `get(id)`, `accept(id)`, `reject(id, reason)`, `markPaid(id)`, `download(id)` |
 
 ### Onboarding
@@ -629,6 +631,12 @@ const note = await tenant.directCreditNotes.create({ ... });
 // Incoming Invoices
 const incoming = await tenant.incomingInvoices.listForSubTenant(subId);
 await tenant.incomingInvoices.accept(invoiceId);
+
+// Signatures (read-only, URL-nested)
+const sigs = await tenant.signatures.list({ status: 'completed' });
+const sig = await tenant.signatures.get('sig-uuid');
+const subSigs = await tenant.signatures.listForSubTenant(subId, { status: 'pending' });
+const subSig = await tenant.signatures.getForSubTenant(subId, 'sig-uuid');
 
 // Fiscal Compliance
 const compliance = await tenant.fiscal.compliance();

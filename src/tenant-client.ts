@@ -12,6 +12,7 @@ import { TenantDirectInvoicesResource } from './resources/tenant-direct-invoices
 import { TenantDirectCreditNotesResource } from './resources/tenant-direct-credit-notes.js';
 import { TenantIncomingInvoicesResource } from './resources/tenant-incoming-invoices.js';
 import { TenantCreditNotesResource } from './resources/tenant-credit-notes.js';
+import { TenantSignaturesResource } from './resources/tenant-signatures.js';
 import { FiscalResource } from './resources/fiscal.js';
 import { BillingResource } from './resources/billing.js';
 import { StatsResource } from './resources/stats.js';
@@ -57,6 +58,9 @@ export class ScellTenantClient {
   /** Sub-tenants resource */
   public readonly subTenants: SubTenantsResource;
 
+  /** Tenant signatures resource (read-only, URL-nested under /tenant/signatures) */
+  public readonly signatures: TenantSignaturesResource;
+
   /**
    * Create a new Scell Tenant Client
    *
@@ -74,6 +78,7 @@ export class ScellTenantClient {
     this.billing = new BillingResource(this.http);
     this.stats = new StatsResource(this.http);
     this.subTenants = new SubTenantsResource(this.http);
+    this.signatures = new TenantSignaturesResource(this.http);
   }
 
   // ── Tenant Profile Methods ──────────────────────────────

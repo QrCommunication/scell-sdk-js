@@ -280,3 +280,8 @@ export type {
   DirectInvoiceRemainingCreditable,
   DirectInvoiceRemainingLine,
 } from '../resources/tenant-direct-credit-notes.js';
+
+// Tenant signatures (URL-nested, read-only)
+export type {
+  TenantSignatureListOptions,
+} from '../resources/tenant-signatures.js';

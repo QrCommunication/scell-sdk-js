@@ -621,7 +621,7 @@ const client = new ScellApiClient('sk_live_xxx');
 const sandboxClient = new ScellApiClient('sk_test_xxx');
 ```
 
-Available resources: `invoices`, `signatures`, `subTenants`, `fiscal`, `stats`, `billing`, `creditNotes` (TenantCreditNotes), `tenantInvoices`, `incomingInvoices`, `onboarding`
+Available resources: `invoices`, `signatures`, `subTenants`, `fiscal`, `stats`, `billing`, `creditNotes` (TenantCreditNotes), `tenantInvoices`, `tenantSignatures` (read-only, URL-nested), `incomingInvoices`, `onboarding`
 
 ### ScellTenantClient (Tenant Key)
 
@@ -2438,6 +2438,47 @@ console.log('Reminded', reminded_count, 'signers');
 // Cancel
 await client.signatures.cancel('sig-uuid');
 ```
+
+### `client.tenantSignatures` (TenantSignaturesResource — read-only, URL-nested)
+
+Available on `ScellApiClient` (as `tenantSignatures`) and on
+`ScellTenantClient` (as `signatures`). Read-only access to signatures
+scoped strictly to the authenticated tenant via `X-API-Key`. Anti-IDOR
+is enforced server-side : passing an arbitrary sub-tenant or signature
+UUID that does not belong to the tenant returns 404.
+
+```typescript
+// List all signatures of the tenant
+const { data, meta } = await client.tenantSignatures.list({
+  status: 'completed',
+  environment: 'production',
+  per_page: 50,
+});
+
+// Get a single signature
+const { data: sig } = await client.tenantSignatures.get('sig-uuid');
+
+// Sub-tenant scoped (URL-nested, no sub_tenant_id query param)
+const { data: subSigs } = await client.tenantSignatures.listForSubTenant(
+  'sub-tenant-uuid',
+  { status: 'pending' },
+);
+
+const { data: subSig } = await client.tenantSignatures.getForSubTenant(
+  'sub-tenant-uuid',
+  'sig-uuid',
+);
+```
+
+Endpoints :
+- `GET /v1/tenant/signatures`
+- `GET /v1/tenant/signatures/{id}`
+- `GET /v1/tenant/sub-tenants/{subTenantId}/signatures`
+- `GET /v1/tenant/sub-tenants/{subTenantId}/signatures/{id}`
+
+Filter options (`TenantSignatureListOptions`) : `status`
+(`pending` | `completed` | `refused` | `expired`), `environment`
+(`sandbox` | `production`), `per_page` (max 100).
 
 ### `client.subTenants` (SubTenantsResource)
 
