@@ -231,6 +231,8 @@ export type {
 // Sub-Tenant types
 export type {
   CreateSubTenantInput,
+  DeleteSubTenantOptions,
+  DeleteSubTenantResponse,
   OnboardingStatus,
   RecommendedAction,
   SubTenant,
@@ -239,6 +241,7 @@ export type {
   SubTenantResumeUrlResponse,
   SubTenantStatusResponse,
   SubTenantSummary,
+  SubTenantSuperPDPAuthorizeResponse,
   SuperPDPCompanyVerificationStatus,
   SuperPDPUserIdentityVerificationStatus,
   UpdateSubTenantInput,

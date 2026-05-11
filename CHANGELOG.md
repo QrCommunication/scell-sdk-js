@@ -2,6 +2,76 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.9.0] - 2026-05-11
+
+### Added
+
+- **`SubTenantsResource.superpdpAuthorize(id)`** — generates a fresh
+  SuperPDP OAuth authorize URL for a sub-tenant. Useful for
+  partner-UI "Reconnect SuperPDP" buttons outside the refresh-status
+  error path. Returns `{ authorize_url, state }`.
+- **`SubTenantsResource.delete(id, { cascade: true })`** — opt-in
+  cascade deletion. Without `cascade`, deleting a sub-tenant that still
+  owns Companies fails with `DeleteSubTenantHasCompaniesError` (422,
+  carries `companiesCount`). Retry with `{ cascade: true }` to delete
+  the Companies along with the sub-tenant. The success response shape
+  is now `{ message: string; companies_deleted: number }` (was
+  `MessageResponse`).
+- Three new error classes for the sub-tenant lifecycle :
+  - `SubTenantMissingAccessTokenError` (422 `MISSING_ACCESS_TOKEN`,
+    thrown by `refreshSuperPDPStatus`). Exposes `authorizeUrl` +
+    `state`, ready to redirect into a fresh OAuth flow.
+  - `DeleteSubTenantHasCompaniesError` (422 `SUB_TENANT_HAS_COMPANIES`).
+    Exposes `companiesCount`.
+  - `DeleteSubTenantFiscalLockedError` (422
+    `SUB_TENANT_HAS_FISCAL_ENTRIES`). ISCA compliance — these
+    sub-tenants are never deletable, no flag can override.
+- New types : `SubTenantSuperPDPAuthorizeResponse`,
+  `DeleteSubTenantOptions`, `DeleteSubTenantResponse`.
+
+### Changed
+
+- `SubTenantsResource.delete()` return type changed from
+  `Promise<MessageResponse>` to `Promise<DeleteSubTenantResponse>`.
+  Backward compatible at runtime — `{ message }` is still present,
+  `companies_deleted` is the only new field.
+- `SubTenantsResource.delete()` second argument now accepts
+  `DeleteSubTenantOptions & RequestOptions`. The previous shape
+  (`RequestOptions` only) remains valid — existing callers compile
+  unchanged.
+
+### Migration
+
+```diff
+- // delete a sub-tenant (legacy)
+- await client.subTenants.delete(id);
+
++ // delete with retry pattern when sub-tenant owns Companies
++ try {
++   await client.subTenants.delete(id);
++ } catch (e) {
++   if (e instanceof DeleteSubTenantHasCompaniesError) {
++     const { companies_deleted } =
++       await client.subTenants.delete(id, { cascade: true });
++   } else if (e instanceof DeleteSubTenantFiscalLockedError) {
++     // ISCA-locked — soft archive instead.
++   }
++ }
+
++ // recover from MISSING_ACCESS_TOKEN on refreshSuperPDPStatus
++ try {
++   await client.subTenants.refreshSuperPDPStatus(id);
++ } catch (e) {
++   if (e instanceof SubTenantMissingAccessTokenError) {
++     window.location.assign(e.authorizeUrl);
++   }
++ }
+
++ // generate an authorize URL ad hoc
++ const { authorize_url, state } =
++   await client.subTenants.superpdpAuthorize(id);
+```
+
 ## [2.8.0] - 2026-05-11
 
 ### Changed (BREAKING — ApiKey DTO shape)

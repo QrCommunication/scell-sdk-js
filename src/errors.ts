@@ -130,6 +130,79 @@ export class ScellValidationError extends ScellError {
 }
 
 /**
+ * Error thrown when a sub-tenant has no SuperPDP access_token available
+ * to call `superpdp-status/refresh`. Returned as 422 with
+ * `code: 'MISSING_ACCESS_TOKEN'`. The body carries a fresh
+ * `authorize_url` + `state` the partner UI can redirect the sub-tenant to.
+ *
+ * @example
+ * ```typescript
+ * try {
+ *   await client.subTenants.refreshSuperPDPStatus(id);
+ * } catch (e) {
+ *   if (e instanceof SubTenantMissingAccessTokenError) {
+ *     redirectTo(e.authorizeUrl);
+ *   }
+ * }
+ * ```
+ */
+export class SubTenantMissingAccessTokenError extends ScellError {
+  public readonly authorizeUrl: string;
+  public readonly state: string;
+
+  constructor(
+    message: string,
+    authorizeUrl: string,
+    state: string,
+    body?: unknown
+  ) {
+    super(message, 422, 'MISSING_ACCESS_TOKEN', body);
+    this.name = 'SubTenantMissingAccessTokenError';
+    this.authorizeUrl = authorizeUrl;
+    this.state = state;
+  }
+}
+
+/**
+ * Error thrown when deleting a sub-tenant that still owns Companies but
+ * has no fiscal entries. Retry with `?cascade=true` to delete the
+ * Companies along with the sub-tenant.
+ *
+ * @example
+ * ```typescript
+ * try {
+ *   await client.subTenants.delete(id);
+ * } catch (e) {
+ *   if (e instanceof DeleteSubTenantHasCompaniesError) {
+ *     await client.subTenants.delete(id, { cascade: true });
+ *   }
+ * }
+ * ```
+ */
+export class DeleteSubTenantHasCompaniesError extends ScellError {
+  public readonly companiesCount: number;
+
+  constructor(message: string, companiesCount: number, body?: unknown) {
+    super(message, 422, 'SUB_TENANT_HAS_COMPANIES', body);
+    this.name = 'DeleteSubTenantHasCompaniesError';
+    this.companiesCount = companiesCount;
+  }
+}
+
+/**
+ * Error thrown when deleting a sub-tenant that has fiscal entries
+ * (Invoice / CreditNote already issued). ISCA compliance forbids
+ * removing fiscally-locked entities. This error is final — no
+ * `cascade` flag can override it.
+ */
+export class DeleteSubTenantFiscalLockedError extends ScellError {
+  constructor(message: string, body?: unknown) {
+    super(message, 422, 'SUB_TENANT_HAS_FISCAL_ENTRIES', body);
+    this.name = 'DeleteSubTenantFiscalLockedError';
+  }
+}
+
+/**
  * Error thrown when rate limit is exceeded (429)
  *
  * @example
@@ -237,8 +310,34 @@ export function parseApiError(
       throw new ScellAuthorizationError(message, body);
     case 404:
       throw new ScellNotFoundError(message, body);
-    case 422:
+    case 422: {
+      // Sub-tenant specific codes (since v2.9.0). These extend ScellError,
+      // not ScellValidationError, because they carry structured fields
+      // (authorize_url, state, companies_count) rather than per-field
+      // validation messages.
+      const errorBodyTyped = errorBody as
+        | { code?: string; authorize_url?: string; state?: string; companies_count?: number }
+        | undefined;
+      if (code === 'MISSING_ACCESS_TOKEN' && errorBodyTyped) {
+        throw new SubTenantMissingAccessTokenError(
+          message,
+          errorBodyTyped.authorize_url ?? '',
+          errorBodyTyped.state ?? '',
+          body
+        );
+      }
+      if (code === 'SUB_TENANT_HAS_COMPANIES' && errorBodyTyped) {
+        throw new DeleteSubTenantHasCompaniesError(
+          message,
+          errorBodyTyped.companies_count ?? 0,
+          body
+        );
+      }
+      if (code === 'SUB_TENANT_HAS_FISCAL_ENTRIES') {
+        throw new DeleteSubTenantFiscalLockedError(message, body);
+      }
       throw new ScellValidationError(message, errors, body);
+    }
     case 429: {
       const retryAfter = headers?.get('Retry-After');
       throw new ScellRateLimitError(

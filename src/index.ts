@@ -242,6 +242,8 @@ export type { VerifySignatureOptions } from './utils/webhook-verify.js';
 
 // Re-export errors
 export {
+  DeleteSubTenantFiscalLockedError,
+  DeleteSubTenantHasCompaniesError,
   ScellError,
   ScellAuthenticationError,
   ScellAuthorizationError,
@@ -252,6 +254,7 @@ export {
   ScellInsufficientBalanceError,
   ScellNetworkError,
   ScellTimeoutError,
+  SubTenantMissingAccessTokenError,
 } from './errors.js';
 
 // Re-export all types

@@ -169,3 +169,40 @@ export interface SubTenantResumeUrlResponse {
   resume_url: string;
   expires_at: string;
 }
+
+/**
+ * Response from `POST /tenant/sub-tenants/{id}/superpdp-authorize`
+ * (since v2.9.0). Returns a fresh SuperPDP OAuth authorize URL plus
+ * the associated `state` parameter for CSRF protection.
+ */
+export interface SubTenantSuperPDPAuthorizeResponse {
+  authorize_url: string;
+  state: string;
+}
+
+/**
+ * Options accepted by `SubTenantsResource.delete()` (since v2.9.0).
+ *
+ * Pass `cascade: true` to delete dependent Companies alongside the
+ * sub-tenant. Without it, the API rejects deletion of a sub-tenant
+ * that still owns Companies (422 `SUB_TENANT_HAS_COMPANIES`).
+ *
+ * Sub-tenants with fiscal entries (issued Invoices / CreditNotes)
+ * are NEVER deletable regardless of this flag, due to ISCA
+ * compliance (422 `SUB_TENANT_HAS_FISCAL_ENTRIES`).
+ */
+export interface DeleteSubTenantOptions {
+  cascade?: boolean;
+}
+
+/**
+ * Response body from `DELETE /tenant/sub-tenants/{id}` (since v2.9.0).
+ *
+ * `companies_deleted` reports how many Companies were cascade-deleted
+ * with the sub-tenant. Zero when `cascade` was not used or the
+ * sub-tenant owned no Companies.
+ */
+export interface DeleteSubTenantResponse {
+  message: string;
+  companies_deleted: number;
+}
