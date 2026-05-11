@@ -46,6 +46,13 @@ export interface CreateCreditNoteInput {
   invoice_id: UUID;
   reason: string;
   items: CreditNoteItem[];
+  /**
+   * Target a specific sub-tenant of the authenticated tenant. When
+   * omitted, the credit note is created under the master tenant
+   * directly. The server returns `404 SUB_TENANT_NOT_FOUND` if the
+   * UUID does not belong to the current tenant (anti-IDOR).
+   */
+  sub_tenant_id?: UUID | undefined;
 }
 
 /**

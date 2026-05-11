@@ -1,6 +1,56 @@
 # Changelog
 
 All notable changes to this project will be documented in this file.
+
+## [2.8.0] - 2026-05-11
+
+### Changed (BREAKING — ApiKey DTO shape)
+
+- `ApiKey` no longer carries `company_id`. Backend refonte 2026-05-11
+  removed the `api_keys.company_id` column: keys are now scoped to the
+  tenant, not to a specific company. Existing `sk_*` keys keep working
+  without change — only the DTO returned by the API and consumed by the
+  SDK has been simplified.
+- `CreateApiKeyInput` no longer accepts `company_id`. Calls that used
+  to pass it will fail TypeScript compilation; remove the field.
+- The `apiKeys.create()` signature is unchanged at runtime (still
+  takes a `CreateApiKeyInput`), but its accepted shape is narrower.
+
+### Added
+
+- `CreateInvoiceInput.sub_tenant_id?`, `CreateSignatureInput.sub_tenant_id?`
+  and `CreateCreditNoteInput.sub_tenant_id?` (optional `UUID`). Pass
+  this field on write operations to target a specific sub-tenant under
+  the authenticated tenant. Server-side scope is strictly enforced :
+  - `401 TENANT_NOT_RESOLVED` if the `sk_*` key cannot be resolved to
+    a tenant
+  - `404 SUB_TENANT_NOT_FOUND` if the sub-tenant UUID does not belong
+    to the authenticated tenant (anti-IDOR)
+  - `422 NO_ISSUER_COMPANY` if the resolved sub-tenant (or tenant) has
+    no Company that can issue the document
+- Updated `apiKeys` JSDoc samples and `llms.txt` / `README.md` to drop
+  every `company_id` mention on the API-key surface.
+
+### Migration
+
+```diff
+- await client.apiKeys.create({
+-   name: 'Production Integration',
+-   company_id: 'company-uuid',
+-   environment: 'production',
+- });
++ await client.apiKeys.create({
++   name: 'Production Integration',
++   environment: 'production',
++ });
+
+- // Target a sub-tenant via the API key (no longer possible)
++ await client.invoices.create({
++   sub_tenant_id: 'sub-tenant-uuid',
++   /* ...usual fields... */
++ });
+```
+
 ## [2.7.1] - 2026-05-10
 
 ### Fixed

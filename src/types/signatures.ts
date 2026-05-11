@@ -186,6 +186,13 @@ export interface SignerInput {
 export interface CreateSignatureInput {
   /** Your external reference ID */
   external_id?: string | undefined;
+  /**
+   * Target a specific sub-tenant of the authenticated tenant. When
+   * omitted, the signature is created under the master tenant directly.
+   * The server returns `404 SUB_TENANT_NOT_FOUND` if the UUID does
+   * not belong to the current tenant (anti-IDOR).
+   */
+  sub_tenant_id?: UUID | undefined;
   /** Document title */
   title: string;
   /** Document description */

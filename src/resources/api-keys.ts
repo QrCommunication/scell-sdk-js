@@ -19,12 +19,15 @@ import type {
 /**
  * API Keys resource
  *
+ * Since 2026-05-11 backend refonte, API keys are tenant-scoped. To
+ * target a sub-tenant on a write operation, pass `sub_tenant_id` in
+ * the per-resource payload (invoice, signature, credit note).
+ *
  * @example
  * ```typescript
- * // Create an API key for a company
+ * // Create a tenant-scoped API key
  * const apiKey = await client.apiKeys.create({
  *   name: 'Production Key',
- *   company_id: 'company-uuid',
  *   environment: 'production'
  * });
  *
@@ -95,7 +98,6 @@ export class ApiKeysResource {
    * ```typescript
    * const { data: apiKey } = await client.apiKeys.create({
    *   name: 'Production Integration',
-   *   company_id: 'company-uuid',
    *   environment: 'production',
    *   permissions: ['invoices:write', 'signatures:write']
    * });

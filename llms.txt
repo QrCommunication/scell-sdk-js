@@ -1,5 +1,76 @@
 # @scell/sdk — JavaScript/TypeScript SDK for Scell.io
-> Version: 2.3.0 | License: MIT | Node.js >= 18.0.0 | TypeScript >= 5.0.0
+> Version: 2.8.0 | License: MIT | Node.js >= 18.0.0 | TypeScript >= 5.0.0
+
+## v2.8.0 (2026-05-11) — API keys tenant-scoped (BREAKING)
+
+The backend refonte 2026-05-11 dropped `api_keys.company_id`. API keys
+are now scoped strictly to the tenant. Each `sk_*` key belongs to a
+tenant; targeting a specific sub-tenant is now done per-call on the
+write payload, not on the key itself.
+
+### Breaking — `ApiKey` / `CreateApiKeyInput`
+
+```typescript
+interface ApiKey {
+  id: UUID;
+  name: string;
+  key_prefix: string;         // first 8 chars (e.g. 'sk_live_')
+  environment: Environment;
+  permissions: string[];
+  rate_limit: number;
+  last_used_at: DateTimeString | null;
+  expires_at: DateTimeString | null;
+  created_at: DateTimeString;
+  // company_id REMOVED in 2.8.0 — keys are tenant-scoped now
+}
+
+interface CreateApiKeyInput {
+  name: string;
+  environment: Environment;
+  permissions?: string[];
+  expires_at?: DateTimeString;
+  // company_id REMOVED in 2.8.0
+}
+```
+
+### New — `sub_tenant_id?` on write payloads
+
+`CreateInvoiceInput`, `CreateSignatureInput` and `CreateCreditNoteInput`
+all accept an optional `sub_tenant_id: UUID`. Pass it to issue the
+document under a specific sub-tenant of the authenticated tenant.
+
+```typescript
+await client.invoices.create({
+  sub_tenant_id: 'sub-tenant-uuid',
+  direction: 'outgoing',
+  output_format: 'factur-x',
+  /* ...usual fields... */
+});
+
+await client.signatures.create({
+  sub_tenant_id: 'sub-tenant-uuid',
+  title: 'NDA',
+  document: pdfBase64,
+  document_name: 'nda.pdf',
+  signers: [/* ... */],
+});
+
+await client.creditNotes.create({
+  sub_tenant_id: 'sub-tenant-uuid',
+  invoice_id: 'invoice-uuid',
+  reason: 'Refund',
+  items: [/* ... */],
+});
+```
+
+### Possible errors
+
+- `401 TENANT_NOT_RESOLVED` — the `sk_*` key cannot be resolved to a
+  tenant (revoked, expired, env mismatch).
+- `404 SUB_TENANT_NOT_FOUND` — `sub_tenant_id` does not belong to the
+  authenticated tenant (anti-IDOR).
+- `422 NO_ISSUER_COMPANY` — the resolved tenant or sub-tenant has no
+  Company that can issue the document. Create / select a Company first.
 
 ## v2.3.0 (2026-05-10) — Fix Sirene lookup parsing
 
