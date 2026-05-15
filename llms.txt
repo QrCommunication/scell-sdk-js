@@ -1,5 +1,40 @@
 # @scell/sdk — JavaScript/TypeScript SDK for Scell.io
-> Version: 2.8.0 | License: MIT | Node.js >= 18.0.0 | TypeScript >= 5.0.0
+> Version: 2.10.0 | License: MIT | Node.js >= 18.0.0 | TypeScript >= 5.0.0
+
+## v2.10.0 (2026-05-15) — Fix 500 on fiscal/closings + `ots_proof_base64`
+
+Mirror of the backend fix shipped the same day. `GET /tenant/fiscal/closings`
+returned a generic 500 ("Scell API error: Server Error") every time a daily
+closing had been anchored to OpenTimestamps: the raw `ots_proof` BYTEA
+column (non-UTF8 magic bytes from the `.ots` format) made `json_encode()`
+crash with `InvalidArgumentException: Type is not supported`.
+
+The API now exposes the OTS receipt encoded in base64. This SDK:
+
+- Enriches the `FiscalClosing` type with all backend fields:
+  `sub_tenant_id`, `first_sequence_number`, `last_sequence_number`,
+  `closing_hash`, `previous_closing_hash`, `totals`, `cumulative_totals`,
+  `csv_path`, `csv_hash`, `ots_proof_base64`, `ots_status`,
+  `ots_submitted_at`, `ots_bitcoin_confirmed_at`, `ots_calendars`,
+  `metadata`.
+- Adds two new exported types: `FiscalClosingTotals` and
+  `FiscalClosingOtsCalendar`.
+- Stays 100% backward compatible (every new field is optional).
+
+Decode the OpenTimestamps receipt:
+
+```ts
+import { writeFileSync } from 'node:fs';
+
+const { data } = await client.fiscal.closings();
+for (const closing of data) {
+  if (closing.ots_proof_base64) {
+    writeFileSync(`./${closing.id}.ots`,
+      Buffer.from(closing.ots_proof_base64, 'base64'));
+    // Verify offline with: $ ots verify ./<id>.ots
+  }
+}
+```
 
 ## v2.8.0 (2026-05-11) — API keys tenant-scoped (BREAKING)
 
@@ -2014,14 +2049,59 @@ interface FiscalAttestation {
   expires_at?: DateTimeString;
 }
 
+interface FiscalClosingTotals {
+  invoices_count?: number;
+  invoices_total_ht?: number;
+  invoices_total_ttc?: number;
+  invoices_total_tax?: number;
+  credit_notes_count?: number;
+  credit_notes_total?: number;
+  total_entries?: number;
+}
+
+interface FiscalClosingOtsCalendar {
+  calendar: string;     // e.g. https://alice.btc.calendar.opentimestamps.org
+  ok: boolean;
+  error?: string | null;
+}
+
 interface FiscalClosing {
   id: UUID;
-  type: 'daily' | 'monthly';
-  closed_at: DateString;
+  tenant_id: UUID;
+  sub_tenant_id?: UUID | null;      // null for master tenant's own flows
+  closing_date: DateString;
+  closing_type: 'daily' | 'monthly' | 'annual';
+  status: 'closed' | 'anchored';
   entries_count: number;
-  hash: string;
-  previous_hash?: string;
-  created_at: DateTimeString;
+
+  // Legacy / derived (pre-2.10.0 payloads)
+  total_debit?: number;
+  total_credit?: number;
+  chain_hash?: string;              // alias of closing_hash
+
+  // Sequence + chain hash (ISCA)
+  first_sequence_number?: number;
+  last_sequence_number?: number;
+  closing_hash?: string;            // SHA-256
+  previous_closing_hash?: string | null;
+
+  totals?: FiscalClosingTotals;
+  cumulative_totals?: Record<string, number>;
+  environment?: 'sandbox' | 'production';
+
+  csv_path?: string | null;         // S3 path of the daily-closure CSV
+  csv_hash?: string | null;
+
+  // OpenTimestamps Bitcoin anchoring (since v2.10.0)
+  // Raw BYTEA proof is NOT exposed (non-UTF8); base64-encoded instead.
+  ots_proof_base64?: string | null;
+  ots_status?: 'pending' | 'bitcoin_confirmed' | 'failed' | null;
+  ots_submitted_at?: DateTimeString | null;
+  ots_bitcoin_confirmed_at?: DateTimeString | null;
+  ots_calendars?: FiscalClosingOtsCalendar[] | null;
+
+  metadata?: Record<string, unknown> | null;
+  created_at?: DateTimeString;
 }
 
 interface FiscalEntry {

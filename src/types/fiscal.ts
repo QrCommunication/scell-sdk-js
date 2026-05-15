@@ -71,17 +71,99 @@ export interface FiscalIntegrityHistoryOptions {
 
 // ── Closings ────────────────────────────────────────────────
 
+/**
+ * Detail by-calendar for OpenTimestamps blockchain anchoring.
+ * Tracks each calendar server's success/failure independently.
+ */
+export interface FiscalClosingOtsCalendar {
+  /** Calendar URL (e.g. `https://alice.btc.calendar.opentimestamps.org`) */
+  calendar: string;
+  /** Whether the calendar accepted the submit */
+  ok: boolean;
+  /** Error message if ok is false */
+  error?: string | null;
+}
+
+/**
+ * Raw totals snapshot for a fiscal closing. Keys reflect the backend
+ * service `FiscalClosingService::calculateTotals()`.
+ */
+export interface FiscalClosingTotals {
+  invoices_count?: number;
+  invoices_total_ht?: number;
+  invoices_total_ttc?: number;
+  invoices_total_tax?: number;
+  credit_notes_count?: number;
+  credit_notes_total?: number;
+  total_entries?: number;
+}
+
+/**
+ * A daily / monthly / annual fiscal closing record from the immutable
+ * ledger. Each closing seals a period with a SHA-256 `closing_hash`
+ * chained to the previous closing of the same `(tenant, sub_tenant)`
+ * pair (ISCA self-certification).
+ *
+ * @since 2.10.0 OTS fields added (`ots_proof_base64`, `ots_status`,
+ *               `ots_submitted_at`, `ots_bitcoin_confirmed_at`,
+ *               `ots_calendars`). The raw binary `ots_proof` BYTEA
+ *               column is intentionally NOT exposed (non-UTF8 string
+ *               made `json_encode()` crash; backend now ships a
+ *               JSON-safe base64 representation).
+ */
 export interface FiscalClosing {
   id: string;
   tenant_id: string;
+  /** Null for the master tenant's own flows; UUID for a sub-tenant closing. */
+  sub_tenant_id?: string | null;
   closing_date: string;
-  closing_type: string;
-  status: string;
+  closing_type: 'daily' | 'monthly' | 'annual' | string;
+  status: 'closed' | 'anchored' | string;
   entries_count: number;
-  total_debit: number;
-  total_credit: number;
+
+  // Legacy / derived fields (kept for backward compat with pre-2.10.0 payloads)
+  total_debit?: number;
+  total_credit?: number;
+  /** Alias of `closing_hash` in older API responses. */
   chain_hash?: string;
-  environment?: string;
+
+  // Sequence + chain hash
+  first_sequence_number?: number;
+  last_sequence_number?: number;
+  closing_hash?: string;
+  previous_closing_hash?: string | null;
+
+  // Totals
+  totals?: FiscalClosingTotals;
+  cumulative_totals?: Record<string, number>;
+
+  environment?: 'sandbox' | 'production' | string;
+
+  // CSV export (daily closing format)
+  csv_path?: string | null;
+  csv_hash?: string | null;
+
+  /**
+   * OpenTimestamps receipt anchoring `closing_hash` into Bitcoin,
+   * encoded in base64 (the underlying BYTEA blob is not UTF-8 safe).
+   *
+   * To verify externally:
+   * ```ts
+   * import { writeFileSync } from 'node:fs';
+   * const raw = Buffer.from(closing.ots_proof_base64, 'base64');
+   * writeFileSync(`./${closing.id}.ots`, raw);
+   * // then: $ ots verify ./xxx.ots
+   * ```
+   *
+   * Null until the closing has been submitted to OTS calendar servers.
+   */
+  ots_proof_base64?: string | null;
+  ots_status?: 'pending' | 'bitcoin_confirmed' | 'failed' | null;
+  ots_submitted_at?: string | null;
+  ots_bitcoin_confirmed_at?: string | null;
+  ots_calendars?: FiscalClosingOtsCalendar[] | null;
+
+  metadata?: Record<string, unknown> | null;
   created_at?: string;
 }
 

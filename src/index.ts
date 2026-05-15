@@ -53,6 +53,7 @@ import { TenantIncomingInvoicesResource } from './resources/tenant-incoming-invo
 import { TenantSignaturesResource } from './resources/tenant-signatures.js';
 import { WebhooksResource } from './resources/webhooks.js';
 import { OnboardingResource } from './resources/onboarding.js';
+import { QuotesResource } from './resources/quotes.js';
 
 // Utilities
 import { ScellWebhooks } from './utils/webhook-verify.js';
@@ -102,6 +103,8 @@ export class ScellClient {
   public readonly signatures: SignaturesResource;
   /** Credit notes management */
   public readonly creditNotes: CreditNotesResource;
+  /** Quote management (create, send, accept, convert) */
+  public readonly quotes: QuotesResource;
 
   /**
    * Create a new Scell Dashboard Client
@@ -130,6 +133,7 @@ export class ScellClient {
     this.invoices = new InvoicesResource(this.http);
     this.signatures = new SignaturesResource(this.http);
     this.creditNotes = new CreditNotesResource(this.http);
+    this.quotes = new QuotesResource(this.http);
   }
 }
 
@@ -190,6 +194,8 @@ export class ScellApiClient {
   public readonly onboarding: OnboardingResource;
   /** Buyer registry (scoped tenant + sub_tenant) */
   public readonly buyers: BuyersResource;
+  /** Quote management (create, send, accept, convert to deposit / balance) */
+  public readonly quotes: QuotesResource;
 
   /**
    * Create a new Scell API Client
@@ -223,6 +229,7 @@ export class ScellApiClient {
     this.incomingInvoices = new TenantIncomingInvoicesResource(this.http);
     this.onboarding = new OnboardingResource(this.http);
     this.buyers = new BuyersResource(this.http);
+    this.quotes = new QuotesResource(this.http);
   }
 }
 
@@ -239,6 +246,16 @@ export { ScellPublicClient } from './public-client.js';
 export type { ClientConfig } from './client.js';
 export type { RetryOptions } from './utils/retry.js';
 export type { VerifySignatureOptions } from './utils/webhook-verify.js';
+
+// Re-export QuotesResource
+export { QuotesResource } from './resources/quotes.js';
+export type {
+  QuoteAuditLogResponse,
+  QuotePdfResponse,
+  QuotePreviewResponse,
+  RegeneratePublicLinkResponse,
+  SendQuoteResponse,
+} from './resources/quotes.js';
 
 // Re-export errors
 export {

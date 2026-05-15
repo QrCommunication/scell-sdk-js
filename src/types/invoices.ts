@@ -78,6 +78,17 @@ export interface InvoiceParty {
 }
 
 /**
+ * Invoice type (standard, deposit from quote, or balance/solde)
+ *
+ * - `standard` : regular invoice (default, backward compatible)
+ * - `deposit`  : acompte invoice generated from a quote via `convertToDeposit`
+ * - `balance`  : solde invoice generated from a quote via `convertToBalance`
+ *
+ * Available since SDK 2.11.0 (API 2026-05-16).
+ */
+export type InvoiceType = 'standard' | 'deposit' | 'balance';
+
+/**
  * Invoice entity
  */
 export interface Invoice {
@@ -85,6 +96,21 @@ export interface Invoice {
   external_id: string | null;
   invoice_number: string;
   direction: InvoiceDirection;
+  /**
+   * Invoice type for quote-to-invoice conversion workflow.
+   * Absent on invoices created before v2.11.0 — treat `undefined` as `'standard'`.
+   */
+  invoice_type?: InvoiceType | undefined;
+  /**
+   * UUID of the parent quote this invoice was generated from.
+   * Only set on `deposit` and `balance` invoice types.
+   */
+  parent_quote_id?: string | undefined;
+  /**
+   * UUIDs of prior invoices deducted in a balance (solde) invoice.
+   * Only set on `balance` invoice types; contains the deposit invoice IDs.
+   */
+  parent_invoice_ids?: string[] | undefined;
   output_format: InvoiceFormat;
   issue_date: DateString;
   due_date: DateString | null;

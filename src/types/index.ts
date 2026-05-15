@@ -45,10 +45,31 @@ export type {
   InvoiceListOptions,
   InvoiceParty,
   InvoiceStatus,
+  InvoiceType,
   MarkPaidInput,
   RejectInvoiceInput,
   RejectionCode,
 } from './invoices.js';
+
+// Quote types
+export type {
+  AcceptQuoteInput,
+  ConvertToBalanceInput,
+  ConvertToDepositInput,
+  CreateQuoteInput,
+  Quote,
+  QuoteActorType,
+  QuoteAuditEntry,
+  QuoteLine,
+  QuoteLineInput,
+  QuoteListParams,
+  QuoteListResponse,
+  QuoteSignature,
+  QuoteStatus,
+  RefuseQuoteInput,
+  SendQuoteInput,
+  UpdateQuoteInput,
+} from './quotes.js';
 
 // Buyer types
 export type {
@@ -179,6 +200,8 @@ export type {
   FiscalAttestation,
   FiscalAttestationStatus,
   FiscalClosing,
+  FiscalClosingOtsCalendar,
+  FiscalClosingTotals,
   FiscalClosingsOptions,
   FiscalComplianceData,
   FiscalComplianceStatus,

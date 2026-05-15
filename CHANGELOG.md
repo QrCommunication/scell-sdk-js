@@ -2,6 +2,92 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.11.0] - 2026-05-15
+
+### Added
+
+- **`QuotesResource`** — full quote lifecycle management:
+  - `create(input)` — create a draft quote with lines, buyer, conditions
+  - `list(params)` — paginated listing with filters (status, q, company_id, sub_tenant_id, environment, from/to)
+  - `get(id)` — detail with lines and audit log
+  - `update(id, input)` — partial update (PATCH, draft only)
+  - `delete(id)` — soft delete (draft only)
+  - `send(id, input)` — transition to `sent` + generate public link + optional email
+  - `cancel(id)` — transition to `cancelled`
+  - `duplicate(id)` — create a new draft from an existing quote
+  - `convertToDeposit(id, input)` — generate a deposit (`invoice_type='deposit'`) invoice from a quote; supports `deposit_percent` or `deposit_amount`
+  - `convertToBalance(id, input)` — generate a balance/solde (`invoice_type='balance'`) invoice deducting prior deposit
+  - `auditLog(id)` — tamper-evident audit log with chain hash integrity flag
+  - `regeneratePublicLink(id)` — rotate the public buyer link (old token immediately invalidated)
+  - `revokePublicLink(id)` — revoke the public link without replacing it
+  - `pdf(id)` — presigned PDF download URL (5 min TTL)
+  - `preview(id)` — presigned HTML preview URL (5 min TTL)
+- `QuotesResource` is available on both `ScellClient` (`client.quotes`) and `ScellApiClient` (`client.quotes`)
+- New types exported from `@scell/sdk`:
+  `Quote`, `QuoteLine`, `QuoteLineInput`, `QuoteSignature`, `QuoteAuditEntry`,
+  `QuoteStatus`, `QuoteActorType`,
+  `CreateQuoteInput`, `UpdateQuoteInput`, `SendQuoteInput`,
+  `ConvertToDepositInput`, `ConvertToBalanceInput`,
+  `AcceptQuoteInput`, `RefuseQuoteInput`,
+  `QuoteListParams`, `QuoteListResponse`
+- **`InvoiceType`** union type: `'standard' | 'deposit' | 'balance'` (exported)
+- **`Invoice`** type extended with three new optional fields (backward compatible):
+  - `invoice_type?: InvoiceType` — discriminant for quote-to-invoice conversion workflow
+  - `parent_quote_id?: string` — UUID of the originating quote (deposit + balance invoices)
+  - `parent_invoice_ids?: string[]` — UUIDs of deposit invoices deducted in balance invoices
+
+### Compat
+
+- Fully backward compatible. All new `Invoice` fields are optional — existing
+  code hydrating invoices from API responses before v2.11.0 continues to work.
+- `invoice_type` absent from pre-v2.11.0 payloads should be treated as `'standard'`.
+
+## [2.10.0] - 2026-05-15
+
+### Fixed (mirror of backend fix from the same day)
+
+- `GET /tenant/fiscal/closings` returned `500 Server Error` whenever a
+  daily closing had been anchored on OpenTimestamps. The backend
+  serialised the raw `ots_proof` BYTEA column (non-UTF8 magic bytes from
+  the `.ots` format) which crashed `json_encode()` with
+  `InvalidArgumentException: Type is not supported`. The API now exposes
+  the receipt encoded in base64; this SDK surfaces the new field.
+
+### Added
+
+- `FiscalClosing` type enriched with all backend fields:
+  - `sub_tenant_id`, `first_sequence_number`, `last_sequence_number`
+  - `closing_hash`, `previous_closing_hash`
+  - `totals` (typed via the new `FiscalClosingTotals` interface) and
+    `cumulative_totals`
+  - `csv_path`, `csv_hash`
+  - `ots_proof_base64`, `ots_status`, `ots_submitted_at`,
+    `ots_bitcoin_confirmed_at`, `ots_calendars` (typed via the new
+    `FiscalClosingOtsCalendar` interface)
+  - `metadata`
+- Two new exported types: `FiscalClosingTotals` and
+  `FiscalClosingOtsCalendar`.
+
+### Compat
+
+- Fully backward compatible: every new field is optional. Pre-v2.10.0
+  payloads (only `chain_hash`, `total_debit`, `total_credit`) keep
+  hydrating correctly.
+
+### Decoding the OpenTimestamps proof (Node)
+
+```ts
+import { writeFileSync } from 'node:fs';
+
+const { data: closings } = await client.fiscal.closings();
+for (const c of closings) {
+  if (c.ots_proof_base64) {
+    writeFileSync(`./${c.id}.ots`, Buffer.from(c.ots_proof_base64, 'base64'));
+    // $ ots verify ./<id>.ots  to validate against Bitcoin
+  }
+}
+```
+
 ## [2.9.0] - 2026-05-11
 
 ### Added
