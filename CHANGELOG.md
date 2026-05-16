@@ -2,9 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
-## [2.11.0] - 2026-05-15
+## [2.12.0] - 2026-05-16
 
 ### Added
+
+- **Signature blocks** — three new optional fields on `CreateSignatureInput` (all backward-compatible):
+  - `initials_block?: InitialsBlock` — appose des paraphes (initiales) automatiquement sur les pages selectionnees.
+    Supporte `mode: 'auto' | 'custom'`, `source: 'signer_name' | 'custom'`, `custom_text` (max 8 chars),
+    `pages: 'all' | 'except_last' | number[]`, `position`, `font_size`, `color`.
+  - `mentions?: Mention[]` — tableau de mentions legales a faire valider par les signataires.
+    Chaque mention porte un `label`, `required`, `signer_index` (0-base, optionnel),
+    `position: { page, x, y, w?, h?, unit? }`, `fallback_text`, `font_size`, `color`.
+  - `date_block?: DateBlock` — appose la date du jour de signature.
+    Supporte `format` (tokens `date-fns`), `timezone` (IANA), `position: { page: number | 'last', x, y, unit? }`,
+    `font_size`, `color`.
+- New types exported from `@scell/sdk`:
+  `InitialsBlock`, `Mention`, `MentionPosition`, `DateBlock`, `DateBlockPosition`,
+  `SignatureBlockPosition`, `SignatureBlockUnit`
+
+### Added (continued — Quotes, from same minor version)
 
 - **`QuotesResource`** — full quote lifecycle management:
   - `create(input)` — create a draft quote with lines, buyer, conditions

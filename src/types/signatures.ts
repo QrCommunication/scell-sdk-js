@@ -1,5 +1,200 @@
 import type { DateTimeString, Environment, UUID } from './common.js';
 
+// ---------------------------------------------------------------------------
+// v2.11.0 — Signature blocks (paraphe, mentions légales, date du jour)
+// ---------------------------------------------------------------------------
+
+/**
+ * Unite des coordonnees d'un bloc de signature.
+ * Identique a `SignaturePositionUnit` — reutilisee pour les blocs additionnels.
+ */
+export type SignatureBlockUnit = 'percent' | 'pixel';
+
+/**
+ * Position 2D d'un element flottant sur une page.
+ */
+export interface SignatureBlockPosition {
+  /** Coordonnee X. Unite definie par le champ `unit` du bloc parent. */
+  x: number;
+  /** Coordonnee Y. Unite definie par le champ `unit` du bloc parent. */
+  y: number;
+  /** Unite des coordonnees. Defaut: `'percent'` (0-100). */
+  unit?: SignatureBlockUnit | undefined;
+}
+
+/**
+ * Bloc de paraphe (initiales) — appose automatiquement sur chaque page selectionnee.
+ *
+ * @example
+ * ```typescript
+ * const initials: InitialsBlock = {
+ *   enabled: true,
+ *   mode: 'auto',
+ *   source: 'signer_name',
+ *   pages: 'except_last',
+ *   position: { x: 5, y: 90, unit: 'percent' },
+ *   font_size: 10,
+ *   color: '#1a1a1a',
+ * };
+ * ```
+ */
+export interface InitialsBlock {
+  /**
+   * Active ou desactive le bloc.
+   * @default true
+   */
+  enabled?: boolean | undefined;
+  /**
+   * Mode de generation des initiales.
+   * - `'auto'` : genere automatiquement depuis `source`.
+   * - `'custom'` : utilise `custom_text`.
+   * @default 'auto'
+   */
+  mode?: 'auto' | 'custom' | undefined;
+  /**
+   * Source des initiales en mode `'auto'`.
+   * - `'signer_name'` : derive depuis `first_name` + `last_name` du signataire.
+   * - `'custom'` : utilise `custom_text` (ignoree si `mode !== 'auto'`).
+   * @default 'signer_name'
+   */
+  source?: 'signer_name' | 'custom' | undefined;
+  /**
+   * Texte d'initiales en mode `'custom'` ou quand `source === 'custom'`.
+   * Maximum 8 caracteres.
+   */
+  custom_text?: string | undefined;
+  /**
+   * Pages sur lesquelles apposer le bloc.
+   * - `'all'` : toutes les pages.
+   * - `'except_last'` : toutes sauf la derniere (la signature principale occupant la derniere page).
+   * - `number[]` : liste de numeros de page (1-indexes).
+   * @default 'all'
+   */
+  pages?: 'all' | 'except_last' | number[] | undefined;
+  /** Position du bloc sur chaque page concernee. */
+  position?: SignatureBlockPosition | undefined;
+  /** Taille de la police en points. */
+  font_size?: number | undefined;
+  /** Couleur du texte en hexadecimal (`#RRGGBB`). */
+  color?: string | undefined;
+}
+
+/**
+ * Position d'une mention legale sur une page du document.
+ */
+export interface MentionPosition {
+  /** Numero de page (1-indexe). */
+  page: number;
+  /** Coordonnee X. */
+  x: number;
+  /** Coordonnee Y. */
+  y: number;
+  /** Largeur de la zone de rendu (optionnel). */
+  w?: number | undefined;
+  /** Hauteur de la zone de rendu (optionnel). */
+  h?: number | undefined;
+  /** Unite des coordonnees. Defaut: `'percent'`. */
+  unit?: SignatureBlockUnit | undefined;
+}
+
+/**
+ * Mention legale apposee sur le document a signer.
+ *
+ * Le signataire coche ou signe la mention pour la valider.
+ * Chaque mention peut etre ciblee sur un signataire specifique (via `signer_index`).
+ *
+ * @example
+ * ```typescript
+ * const cguMention: Mention = {
+ *   label: 'J\'accepte les conditions générales d\'utilisation',
+ *   required: true,
+ *   signer_index: 0,
+ *   position: { page: 2, x: 10, y: 80, unit: 'percent' },
+ *   font_size: 9,
+ *   color: '#333333',
+ * };
+ * ```
+ */
+export interface Mention {
+  /** Texte de la mention legale. */
+  label: string;
+  /**
+   * Indique si la mention est obligatoire pour finaliser la signature.
+   * @default false
+   */
+  required?: boolean | undefined;
+  /**
+   * Index du signataire cible (0-base). Si absent, la mention s'applique a tous les signataires.
+   */
+  signer_index?: number | undefined;
+  /** Position du bloc de mention sur la page. */
+  position: MentionPosition;
+  /**
+   * Texte de repli affiche si la mention ne peut etre calculee dynamiquement.
+   */
+  fallback_text?: string | undefined;
+  /** Taille de la police en points. */
+  font_size?: number | undefined;
+  /** Couleur du texte en hexadecimal (`#RRGGBB`). */
+  color?: string | undefined;
+}
+
+/**
+ * Position du bloc date — identique a `MentionPosition` mais avec support
+ * de la page `'last'` (commodite pour positionner sur la derniere page).
+ */
+export interface DateBlockPosition {
+  /** Numero de page (1-indexe) ou `'last'` pour la derniere page du document. */
+  page: number | 'last';
+  /** Coordonnee X. */
+  x: number;
+  /** Coordonnee Y. */
+  y: number;
+  /** Unite des coordonnees. Defaut: `'percent'`. */
+  unit?: SignatureBlockUnit | undefined;
+}
+
+/**
+ * Bloc date du jour — appose automatiquement la date de signature.
+ *
+ * Le format suit la convention `date-fns` / `Intl.DateTimeFormat`.
+ *
+ * @example
+ * ```typescript
+ * const dateBlock: DateBlock = {
+ *   enabled: true,
+ *   format: 'dd/MM/yyyy',
+ *   timezone: 'Europe/Paris',
+ *   position: { page: 'last', x: 70, y: 88, unit: 'percent' },
+ *   font_size: 9,
+ *   color: '#555555',
+ * };
+ * ```
+ */
+export interface DateBlock {
+  /**
+   * Active ou desactive le bloc.
+   * @default true
+   */
+  enabled?: boolean | undefined;
+  /**
+   * Format de la date (tokens `date-fns` : `dd/MM/yyyy`, `yyyy-MM-dd`, etc.).
+   * @default 'dd/MM/yyyy'
+   */
+  format?: string | undefined;
+  /**
+   * Fuseau horaire IANA (ex: `'Europe/Paris'`).
+   * @default 'UTC'
+   */
+  timezone?: string | undefined;
+  /** Position du bloc date sur la page. */
+  position?: DateBlockPosition | undefined;
+  /** Taille de la police en points. */
+  font_size?: number | undefined;
+  /** Couleur du texte en hexadecimal (`#RRGGBB`). */
+  color?: string | undefined;
+}
+
 /**
  * Signer authentication method
  */
@@ -217,6 +412,63 @@ export interface CreateSignatureInput {
   expires_at?: DateTimeString | undefined;
   /** Enable 10-year archiving */
   archive_enabled?: boolean | undefined;
+
+  // --- v2.11.0 blocks ---
+
+  /**
+   * Bloc de paraphe (initiales) appose automatiquement sur les pages selectionnees.
+   *
+   * Permet de materialiser la lecture de chaque page par le signataire sans
+   * exiger une signature complete sur chacune d'elles.
+   *
+   * @example
+   * ```typescript
+   * initials_block: {
+   *   enabled: true,
+   *   mode: 'auto',
+   *   source: 'signer_name',
+   *   pages: 'except_last',
+   *   position: { x: 5, y: 90, unit: 'percent' },
+   *   color: '#1a1a1a',
+   * }
+   * ```
+   */
+  initials_block?: InitialsBlock | undefined;
+
+  /**
+   * Tableau de mentions legales a apposer sur le document.
+   *
+   * Chaque mention peut etre obligatoire et ciblee sur un signataire specifique.
+   * Utile pour les CGU, consentements RGPD, declarations sur l'honneur, etc.
+   *
+   * @example
+   * ```typescript
+   * mentions: [
+   *   {
+   *     label: "J'accepte les CGU",
+   *     required: true,
+   *     signer_index: 0,
+   *     position: { page: 2, x: 10, y: 80, unit: 'percent' },
+   *   }
+   * ]
+   * ```
+   */
+  mentions?: Mention[] | undefined;
+
+  /**
+   * Bloc date du jour — appose automatiquement la date de signature sur le document.
+   *
+   * @example
+   * ```typescript
+   * date_block: {
+   *   enabled: true,
+   *   format: 'dd/MM/yyyy',
+   *   timezone: 'Europe/Paris',
+   *   position: { page: 'last', x: 70, y: 88, unit: 'percent' },
+   * }
+   * ```
+   */
+  date_block?: DateBlock | undefined;
 }
 
 /**

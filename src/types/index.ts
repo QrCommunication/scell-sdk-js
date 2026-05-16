@@ -82,7 +82,14 @@ export type {
 // Signature types
 export type {
   CreateSignatureInput,
+  DateBlock,
+  DateBlockPosition,
+  InitialsBlock,
+  Mention,
+  MentionPosition,
   Signature,
+  SignatureBlockPosition,
+  SignatureBlockUnit,
   SignatureDownloadResponse,
   SignatureDownloadType,
   SignatureListOptions,

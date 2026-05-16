@@ -196,6 +196,47 @@ const { data: signature } = await apiClient.signatures.create({
   },
   redirect_complete_url: 'https://myapp.com/signed',
   redirect_cancel_url: 'https://myapp.com/cancelled',
+
+  // v2.11.0 — Signature blocks (all optional, backward-compatible)
+
+  // Bloc paraphe : initiales apposees automatiquement sur chaque page sauf la derniere
+  initials_block: {
+    enabled: true,
+    mode: 'auto',
+    source: 'signer_name', // derive depuis first_name + last_name du signataire
+    pages: 'except_last',
+    position: { x: 5, y: 90, unit: 'percent' },
+    font_size: 10,
+    color: '#1a1a1a',
+  },
+
+  // Mentions legales : l'utilisateur coche ou signe chaque mention
+  mentions: [
+    {
+      label: "J'accepte les conditions generales d'utilisation",
+      required: true,
+      signer_index: 0, // cible le premier signataire uniquement (0-base)
+      position: { page: 2, x: 10, y: 80, unit: 'percent' },
+      font_size: 9,
+      color: '#333333',
+    },
+    {
+      label: 'Lu et approuve par toutes les parties',
+      required: true,
+      position: { page: 3, x: 10, y: 90, unit: 'percent' },
+      // Sans signer_index : la mention s'applique a tous les signataires
+    },
+  ],
+
+  // Bloc date : date du jour de signature apposee sur la derniere page
+  date_block: {
+    enabled: true,
+    format: 'dd/MM/yyyy',         // tokens date-fns
+    timezone: 'Europe/Paris',     // IANA
+    position: { page: 'last', x: 70, y: 88, unit: 'percent' },
+    font_size: 9,
+    color: '#555555',
+  },
 });
 
 // Send signing URLs to signers
