@@ -22,6 +22,7 @@ import type {
   SendQuoteInput,
   UpdateQuoteInput,
 } from '../types/quotes.js';
+import { PaymentScheduleResource } from './payment-schedule.js';
 
 // Re-export for convenience
 export type { QuoteListParams, QuoteListResponse };
@@ -106,7 +107,33 @@ export interface QuoteAuditLogResponse {
  * ```
  */
 export class QuotesResource {
-  constructor(private readonly http: HttpClient) {}
+  /**
+   * Payment schedule sub-resource.
+   *
+   * Allows defining, updating, and tracking payment milestones on a quote.
+   *
+   * @example
+   * ```typescript
+   * // Define 3-step schedule: deposit + milestone + balance
+   * await client.quotes.paymentSchedule.set('quote-uuid', [
+   *   { amount_type: 'percent', amount_value: 30, due_date: '2026-06-01', milestone_label: 'Acompte' },
+   *   { amount_type: 'percent', amount_value: 40, due_date: '2026-07-01', milestone_label: 'Mi-parcours' },
+   *   { amount_type: 'percent', amount_value: 30, due_date: '2026-08-01', milestone_label: 'Solde' },
+   * ]);
+   *
+   * // Convert first line to a deposit invoice
+   * const { data: invoice } = await client.quotes.paymentSchedule.convertLine(
+   *   'quote-uuid',
+   *   'line-uuid',
+   *   { due_date: '2026-06-01' }
+   * );
+   * ```
+   */
+  readonly paymentSchedule: PaymentScheduleResource;
+
+  constructor(private readonly http: HttpClient) {
+    this.paymentSchedule = new PaymentScheduleResource(http);
+  }
 
   /**
    * List quotes with optional filtering and pagination

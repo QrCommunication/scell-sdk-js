@@ -25,6 +25,8 @@ import type {
   InvoiceListOptions,
   MarkPaidInput,
   RejectInvoiceInput,
+  SendInvoiceByEmailInput,
+  SendInvoiceByEmailResponse,
 } from '../types/invoices.js';
 
 /**
@@ -479,6 +481,55 @@ export class InvoicesResource {
     return this.http.getRaw(
       `/invoices/${id}/download/${format}`,
       undefined,
+      requestOptions
+    );
+  }
+
+  /**
+   * Send an invoice to the buyer by email
+   *
+   * The destination email is resolved in this order:
+   *  1. `options.recipient_email` — explicit override
+   *  2. `invoice.buyer_billing_email` — dedicated accounts-payable address
+   *  3. `invoice.buyer_email` — general contact email
+   *  4. `quote.buyer_email` — fallback if the invoice originates from a quote
+   *  5. HTTP 422 `BUYER_HAS_NO_EMAIL` — no resolvable address
+   *
+   * **Draft invoices:** when the invoice is in `draft` status, it is
+   * automatically transitioned to `validated` before sending. Show a
+   * confirmation modal to the user to avoid accidental premature validation.
+   *
+   * After a successful call, `invoice.sent_to_buyer_at` and
+   * `invoice.sent_to_buyer_email` are populated. A dashboard notification
+   * is also dispatched (visible in the activity feed).
+   *
+   * @param invoiceId - Invoice UUID
+   * @param options - Optional recipient override, CC addresses, and message
+   * @param requestOptions - Per-request options
+   * @returns Send confirmation with actual recipient and timestamp
+   *
+   * @example
+   * ```typescript
+   * // Send with default email resolution
+   * const result = await client.invoices.sendByEmail('invoice-uuid');
+   * console.log('Sent to:', result.sent_to, 'at', result.sent_at);
+   *
+   * // Override recipient and add CC
+   * const result = await client.invoices.sendByEmail('invoice-uuid', {
+   *   recipient_email: 'compta@client.com',
+   *   cc: ['manager@client.com'],
+   *   message: 'Veuillez trouver ci-joint votre facture.',
+   * });
+   * ```
+   */
+  async sendByEmail(
+    invoiceId: string,
+    options: SendInvoiceByEmailInput = {},
+    requestOptions?: RequestOptions
+  ): Promise<SendInvoiceByEmailResponse> {
+    return this.http.post<SendInvoiceByEmailResponse>(
+      `/invoices/${invoiceId}/send-by-email`,
+      options,
       requestOptions
     );
   }

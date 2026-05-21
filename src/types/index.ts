@@ -49,6 +49,9 @@ export type {
   MarkPaidInput,
   RejectInvoiceInput,
   RejectionCode,
+  // Invoice email delivery (since v2.13.0)
+  SendInvoiceByEmailInput,
+  SendInvoiceByEmailResponse,
 } from './invoices.js';
 
 // Quote types
@@ -318,3 +321,25 @@ export type {
 export type {
   TenantSignatureListOptions,
 } from '../resources/tenant-signatures.js';
+
+// Payment schedule types (since v2.13.0)
+export type {
+  AmountType,
+  ConvertScheduleLineInput,
+  PatchPaymentScheduleInput,
+  PaymentScheduleLine,
+  PaymentScheduleLineInput,
+  PaymentScheduleLineUpdateInput,
+  PaymentScheduleResponse,
+  PaymentSummary,
+  ScheduleLineStatus,
+  SchedulePreset,
+} from './payment-schedule.js';
+
+// Branding types (since v2.13.0)
+export type {
+  Branding,
+  BrandingLogoUploadUrlInput,
+  BrandingLogoUploadUrlResponse,
+  UpdateBrandingInput,
+} from './branding.js';

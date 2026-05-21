@@ -54,6 +54,7 @@ import { TenantSignaturesResource } from './resources/tenant-signatures.js';
 import { WebhooksResource } from './resources/webhooks.js';
 import { OnboardingResource } from './resources/onboarding.js';
 import { QuotesResource } from './resources/quotes.js';
+import { BrandingResource } from './resources/branding.js';
 
 // Utilities
 import { ScellWebhooks } from './utils/webhook-verify.js';
@@ -105,6 +106,20 @@ export class ScellClient {
   public readonly creditNotes: CreditNotesResource;
   /** Quote management (create, send, accept, convert) */
   public readonly quotes: QuotesResource;
+  /**
+   * Branding profile management (logo, colors, email footer/signature).
+   *
+   * Controls how invoice delivery emails and signature requests are displayed
+   * to recipients. Applies to the tenant scope.
+   *
+   * @example
+   * ```typescript
+   * const { upload_url, public_url } = await client.branding.tenant.uploadLogo('image/png');
+   * await fetch(upload_url, { method: 'PUT', body: logoBuffer });
+   * await client.branding.tenant.update({ brand_logo_url: public_url });
+   * ```
+   */
+  public readonly branding: BrandingResource;
 
   /**
    * Create a new Scell Dashboard Client
@@ -134,6 +149,7 @@ export class ScellClient {
     this.signatures = new SignaturesResource(this.http);
     this.creditNotes = new CreditNotesResource(this.http);
     this.quotes = new QuotesResource(this.http);
+    this.branding = new BrandingResource(this.http);
   }
 }
 
@@ -196,6 +212,23 @@ export class ScellApiClient {
   public readonly buyers: BuyersResource;
   /** Quote management (create, send, accept, convert to deposit / balance) */
   public readonly quotes: QuotesResource;
+  /**
+   * Branding profile management — controls how invoice emails and signature
+   * requests appear to recipients, for both tenant and sub-tenant scopes.
+   *
+   * @example
+   * ```typescript
+   * // Get tenant branding status
+   * const branding = await client.branding.tenant.get();
+   * if (!branding.is_complete) console.log('Missing:', branding.missing_fields);
+   *
+   * // Update sub-tenant branding
+   * await client.branding.subTenants.update('sub-tenant-uuid', {
+   *   brand_primary_color: '#1A73E8',
+   * });
+   * ```
+   */
+  public readonly branding: BrandingResource;
 
   /**
    * Create a new Scell API Client
@@ -230,6 +263,7 @@ export class ScellApiClient {
     this.onboarding = new OnboardingResource(this.http);
     this.buyers = new BuyersResource(this.http);
     this.quotes = new QuotesResource(this.http);
+    this.branding = new BrandingResource(this.http);
   }
 }
 
@@ -257,6 +291,10 @@ export type {
   SendQuoteResponse,
 } from './resources/quotes.js';
 
+// Re-export new resources (since v2.13.0)
+export { PaymentScheduleResource } from './resources/payment-schedule.js';
+export { BrandingResource } from './resources/branding.js';
+
 // Re-export errors
 export {
   DeleteSubTenantFiscalLockedError,
@@ -272,6 +310,13 @@ export {
   ScellNetworkError,
   ScellTimeoutError,
   SubTenantMissingAccessTokenError,
+  // Payment schedule errors (since v2.13.0)
+  QuoteNotEditableError,
+  ScheduleLineAlreadyInvoicedError,
+  ScheduleSumExceedsTotalError,
+  // Invoice email delivery errors (since v2.13.0)
+  BuyerHasNoEmailError,
+  InvoiceBrandingIncompleteError,
 } from './errors.js';
 
 // Re-export all types

@@ -31,6 +31,19 @@ export interface Buyer {
    */
   shipping_address: Address | null;
   has_distinct_shipping_address: boolean;
+  /**
+   * Dedicated accounts-payable / billing email address (BT-49 extension).
+   * Distinct from `email` (which is the general contact email).
+   *
+   * Resolution order for `invoices.sendByEmail()`:
+   *  1. `recipient_email` override in the request body
+   *  2. `invoice.buyer_billing_email` (snapshot of this field)
+   *  3. `invoice.buyer_email` (snapshot of the general `email`)
+   *  4. 422 `BUYER_HAS_NO_EMAIL`
+   *
+   * Available since SDK 2.13.0.
+   */
+  billing_email: string | null;
   metadata: Record<string, unknown> | null;
   notes: string | null;
   created_at: DateTimeString;
@@ -47,6 +60,12 @@ export interface CreateBuyerInput {
   legal_id?: string;
   legal_id_scheme?: string;
   email?: string;
+  /**
+   * Dedicated accounts-payable / billing email address.
+   * When set, this address takes priority over `email` for invoice delivery.
+   * Available since SDK 2.13.0.
+   */
+  billing_email?: string;
   phone?: string;
   shipping_address?: Address;
   metadata?: Record<string, unknown>;

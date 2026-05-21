@@ -159,6 +159,75 @@ export interface Invoice {
     status: string;
     created_at: DateTimeString;
   }> | null;
+  /**
+   * UUID of the payment schedule line that triggered the generation of this
+   * deposit invoice. Available since SDK 2.13.0.
+   */
+  schedule_line_id?: UUID | null | undefined;
+  /**
+   * Timestamp when this invoice was sent to the buyer via `send-by-email`.
+   * Available since SDK 2.13.0.
+   */
+  sent_to_buyer_at?: DateTimeString | null | undefined;
+  /**
+   * Email address that the invoice was sent to (resolved from
+   * `buyer_billing_email`, `buyer_email`, or an explicit `recipient_email`
+   * override). Available since SDK 2.13.0.
+   */
+  sent_to_buyer_email?: string | null | undefined;
+  /**
+   * Snapshot of the buyer's billing email at the time the invoice was
+   * created (from `Buyer.billing_email`). May differ from `buyer_email`
+   * when the buyer uses a dedicated accounts-payable address.
+   * Available since SDK 2.13.0.
+   */
+  buyer_billing_email?: string | null | undefined;
+}
+
+/**
+ * Input for sending an invoice to the buyer by email
+ *
+ * All fields are optional. When `recipient_email` is omitted, the server
+ * resolves the destination in this order:
+ *  1. `invoice.buyer_billing_email` (dedicated A/P address)
+ *  2. `invoice.buyer_email` (general contact)
+ *  3. `quote.buyer_email` (if the invoice originates from a quote)
+ *  4. 422 `BUYER_HAS_NO_EMAIL` — no resolvable address
+ *
+ * If the invoice is in `draft` status, the server auto-transitions it to
+ * `validated` before sending. A confirmation modal is recommended in UIs.
+ *
+ * Available since SDK 2.13.0.
+ */
+export interface SendInvoiceByEmailInput {
+  /**
+   * Override the recipient email address for this send.
+   * When omitted, the server follows the resolution cascade described above.
+   */
+  recipient_email?: string | undefined;
+  /**
+   * Additional CC recipients (max 5).
+   */
+  cc?: string[] | undefined;
+  /**
+   * Optional plain-text message appended to the email body.
+   * Max 2000 characters.
+   */
+  message?: string | undefined;
+}
+
+/**
+ * Response returned after a successful `sendByEmail()` call
+ */
+export interface SendInvoiceByEmailResponse {
+  /** Actual email address the invoice was sent to */
+  sent_to: string;
+  /** ISO 8601 timestamp of the send */
+  sent_at: DateTimeString;
+  /** SMTP message-ID of the sent email */
+  message_id: string;
+  /** CC addresses included (empty array if none) */
+  cc: string[];
 }
 
 /**

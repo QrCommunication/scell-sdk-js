@@ -2,6 +2,57 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.13.0] - 2026-05-21
+
+### Added
+
+- **`PaymentScheduleResource`** — installment plan management on quotes (`client.quotes.paymentSchedule.*`):
+  - `get(quoteId)` — fetch all schedule lines with `meta` (total_count, pending_count, invoiced_count, total_percent)
+  - `set(quoteId, lines)` — create or atomically replace the full schedule (POST); lines are `PaymentScheduleLineInput[]`
+  - `patch(quoteId, changes)` — targeted modifications (`add`, `update`, `remove`) that preserve already-invoiced lines
+  - `delete(quoteId)` — drop the entire schedule (only when quote is editable and no lines are invoiced)
+  - `summary(quoteId)` — real-time `PaymentSummary` with `schedule`, `invoiced`, `next_due`, `overdue`, `superpdp_status` sections
+  - `convertLine(quoteId, lineId, options?)` — generate a deposit invoice from a pending schedule line
+  - `presets()` — catalog of server-defined preset templates (30/70, 50/50, 30/30/40, etc.) for quick schedule setup
+- `PaymentScheduleResource` is exposed as `client.quotes.paymentSchedule` on both `ScellClient` and `ScellApiClient`
+- **`BrandingResource`** — tenant and sub-tenant branding profile management (`client.branding.*`):
+  - `tenant.get(requestOptions?)` — get the tenant branding profile (`Branding`) with `is_complete` and `missing_fields`
+  - `tenant.update(data, requestOptions?)` — PATCH partial update; send `null` to clear a field
+  - `tenant.uploadLogo(mimeType, requestOptions?)` — get a pre-signed S3 URL for logo upload
+  - `subTenants.get(id, requestOptions?)` — get the branding profile for a specific sub-tenant
+  - `subTenants.update(id, data, requestOptions?)` — PATCH update for a sub-tenant branding
+  - `subTenants.uploadLogo(id, mimeType, requestOptions?)` — get a pre-signed S3 URL for sub-tenant logo upload
+- `BrandingResource` is available on both `ScellClient` (`client.branding`) and `ScellApiClient` (`client.branding`)
+- **`invoices.sendByEmail(invoiceId, options?, requestOptions?)`** — send an invoice by email to the buyer:
+  - Optional `recipient_email` override (falls back to `buyer.billing_email` then `buyer.email`)
+  - Optional `cc` array and `message` custom text
+  - Returns `SendInvoiceByEmailResponse` with `sent_to`, `sent_at`, `message_id`, `cc`
+- **`billing_email`** on `Buyer` / `CreateBuyerInput` — dedicated accounts-payable email (BT-49 extension)
+- New types exported from `@scell/sdk`:
+  - Payment schedule: `AmountType`, `ScheduleLineStatus`, `PaymentScheduleLine`, `PaymentScheduleLineInput`, `PaymentScheduleLineUpdateInput`, `PatchPaymentScheduleInput`, `ConvertScheduleLineInput`, `PaymentScheduleResponse`, `PaymentSummary`, `SchedulePreset`
+  - Branding: `Branding`, `UpdateBrandingInput`, `BrandingLogoUploadUrlInput`, `BrandingLogoUploadUrlResponse`
+  - Invoice email: `SendInvoiceByEmailInput`, `SendInvoiceByEmailResponse`
+- **5 new typed error classes**:
+  - `QuoteNotEditableError` (409) — quote accepted/locked; payment schedule cannot be modified
+  - `ScheduleLineAlreadyInvoicedError` (422) — schedule line has already been converted to a deposit invoice
+  - `ScheduleSumExceedsTotalError` (422) — schedule lines sum exceeds 100% (or fixed-amount total)
+  - `BuyerHasNoEmailError` (422) — no email resolvable for the buyer; provide `recipient_email` or update buyer registry
+  - `InvoiceBrandingIncompleteError` (422) — tenant/sub-tenant branding profile is incomplete
+- New optional fields on `Invoice` (backward-compatible, all `| undefined`):
+  - `schedule_line_id` — UUID of the payment schedule line this invoice was generated from
+  - `sent_to_buyer_at` — ISO 8601 timestamp of last email delivery
+  - `sent_to_buyer_email` — email address it was last sent to
+  - `buyer_billing_email` — snapshot of the buyer's billing email at invoice creation time
+
+### Compat
+
+- Fully backward compatible. All new `Invoice` fields are optional. Existing code continues to work unmodified.
+- `QuoteNotEditableError` requires a `case 409` handler — previously `409` would fall through to generic `ScellError`.
+  Code catching `ScellError` (base class) is unaffected.
+- `billing_email` is `null` on buyers that were created before v2.13.0 — always check for null.
+
+---
+
 ## [2.12.0] - 2026-05-16
 
 ### Added

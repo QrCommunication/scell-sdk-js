@@ -203,6 +203,136 @@ export class DeleteSubTenantFiscalLockedError extends ScellError {
 }
 
 /**
+ * Error thrown when an operation targets a quote that is no longer editable
+ * (e.g. the payment schedule is locked because the quote has been accepted).
+ *
+ * HTTP 409 — code: `'QUOTE_NOT_EDITABLE'`
+ *
+ * @example
+ * ```typescript
+ * try {
+ *   await client.quotes.paymentSchedule.set('quote-uuid', lines);
+ * } catch (e) {
+ *   if (e instanceof QuoteNotEditableError) {
+ *     console.log('Quote is locked — cannot modify the payment schedule after acceptance');
+ *   }
+ * }
+ * ```
+ */
+export class QuoteNotEditableError extends ScellError {
+  constructor(message = 'Quote is not editable', body?: unknown) {
+    super(message, 409, 'QUOTE_NOT_EDITABLE', body);
+    this.name = 'QuoteNotEditableError';
+  }
+}
+
+/**
+ * Error thrown when attempting to convert or remove a payment schedule line
+ * that has already been converted into a deposit invoice.
+ *
+ * HTTP 422 — code: `'SCHEDULE_LINE_ALREADY_INVOICED'`
+ *
+ * @example
+ * ```typescript
+ * try {
+ *   await client.quotes.paymentSchedule.convertLine(quoteId, lineId);
+ * } catch (e) {
+ *   if (e instanceof ScheduleLineAlreadyInvoicedError) {
+ *     console.log('Line already invoiced — check invoice_id:', e.body);
+ *   }
+ * }
+ * ```
+ */
+export class ScheduleLineAlreadyInvoicedError extends ScellError {
+  constructor(message = 'Schedule line has already been invoiced', body?: unknown) {
+    super(message, 422, 'SCHEDULE_LINE_ALREADY_INVOICED', body);
+    this.name = 'ScheduleLineAlreadyInvoicedError';
+  }
+}
+
+/**
+ * Error thrown when the sum of payment schedule lines exceeds 100% (or the
+ * quote's total TTC for absolute-amount lines).
+ *
+ * HTTP 422 — code: `'SCHEDULE_SUM_EXCEEDS_TOTAL'`
+ *
+ * @example
+ * ```typescript
+ * try {
+ *   await client.quotes.paymentSchedule.set(quoteId, [
+ *     { amount_type: 'percent', amount_value: 60, milestone_label: 'A' },
+ *     { amount_type: 'percent', amount_value: 60, milestone_label: 'B' }, // 120% > 100%
+ *   ]);
+ * } catch (e) {
+ *   if (e instanceof ScheduleSumExceedsTotalError) {
+ *     console.log('Sum exceeds 100% of the quote total');
+ *   }
+ * }
+ * ```
+ */
+export class ScheduleSumExceedsTotalError extends ScellError {
+  constructor(message = 'Schedule lines sum exceeds quote total', body?: unknown) {
+    super(message, 422, 'SCHEDULE_SUM_EXCEEDS_TOTAL', body);
+    this.name = 'ScheduleSumExceedsTotalError';
+  }
+}
+
+/**
+ * Error thrown when `invoices.sendByEmail()` cannot resolve a recipient
+ * email address. The invoice's buyer has no email set in any of the
+ * resolution cascade steps.
+ *
+ * HTTP 422 — code: `'BUYER_HAS_NO_EMAIL'`
+ *
+ * **Fix:** set `buyer.billing_email` or `buyer.email` in the buyer registry,
+ * or pass an explicit `recipient_email` override in the request body.
+ *
+ * @example
+ * ```typescript
+ * try {
+ *   await client.invoices.sendByEmail('invoice-uuid');
+ * } catch (e) {
+ *   if (e instanceof BuyerHasNoEmailError) {
+ *     console.log('No email on file — ask the buyer for their billing email');
+ *   }
+ * }
+ * ```
+ */
+export class BuyerHasNoEmailError extends ScellError {
+  constructor(message = 'No email address resolvable for this buyer', body?: unknown) {
+    super(message, 422, 'BUYER_HAS_NO_EMAIL', body);
+    this.name = 'BuyerHasNoEmailError';
+  }
+}
+
+/**
+ * Error thrown when an email send attempts to use tenant/sub-tenant branding
+ * override but the branding profile is incomplete (missing required fields).
+ *
+ * HTTP 422 — code: `'INVOICE_BRANDING_INCOMPLETE'`
+ *
+ * Check `branding.missing_fields` for the list of fields to complete.
+ *
+ * @example
+ * ```typescript
+ * try {
+ *   await client.invoices.sendByEmail('invoice-uuid');
+ * } catch (e) {
+ *   if (e instanceof InvoiceBrandingIncompleteError) {
+ *     const branding = await client.branding.tenant.get();
+ *     console.log('Complete these fields:', branding.missing_fields);
+ *   }
+ * }
+ * ```
+ */
+export class InvoiceBrandingIncompleteError extends ScellError {
+  constructor(message = 'Branding profile is incomplete', body?: unknown) {
+    super(message, 422, 'INVOICE_BRANDING_INCOMPLETE', body);
+    this.name = 'InvoiceBrandingIncompleteError';
+  }
+}
+
+/**
  * Error thrown when rate limit is exceeded (429)
  *
  * @example
@@ -310,6 +440,12 @@ export function parseApiError(
       throw new ScellAuthorizationError(message, body);
     case 404:
       throw new ScellNotFoundError(message, body);
+    case 409:
+      // Business-state conflicts — quote not editable (locked after acceptance)
+      if (code === 'QUOTE_NOT_EDITABLE') {
+        throw new QuoteNotEditableError(message, body);
+      }
+      throw new ScellError(message, status, code, body);
     case 422: {
       // Sub-tenant specific codes (since v2.9.0). These extend ScellError,
       // not ScellValidationError, because they carry structured fields
@@ -335,6 +471,20 @@ export function parseApiError(
       }
       if (code === 'SUB_TENANT_HAS_FISCAL_ENTRIES') {
         throw new DeleteSubTenantFiscalLockedError(message, body);
+      }
+      // Payment schedule codes (since v2.13.0)
+      if (code === 'SCHEDULE_LINE_ALREADY_INVOICED') {
+        throw new ScheduleLineAlreadyInvoicedError(message, body);
+      }
+      if (code === 'SCHEDULE_SUM_EXCEEDS_TOTAL') {
+        throw new ScheduleSumExceedsTotalError(message, body);
+      }
+      // Invoice send-by-email codes (since v2.13.0)
+      if (code === 'BUYER_HAS_NO_EMAIL') {
+        throw new BuyerHasNoEmailError(message, body);
+      }
+      if (code === 'INVOICE_BRANDING_INCOMPLETE') {
+        throw new InvoiceBrandingIncompleteError(message, body);
       }
       throw new ScellValidationError(message, errors, body);
     }
