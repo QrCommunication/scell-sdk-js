@@ -182,6 +182,51 @@ export interface Invoice {
    * Available since SDK 2.13.0.
    */
   buyer_billing_email?: string | null | undefined;
+  /**
+   * UUID of the deposit group this invoice belongs to.
+   * Populated on standalone deposit invoices (created directly via
+   * `POST /invoices` with `invoice_type: 'deposit'`, without a parent quote).
+   * All deposit invoices sharing the same `deposit_group_id` are part of
+   * the same commercial deal. Available since SDK 2.15.0.
+   */
+  deposit_group_id?: string | null | undefined;
+  /**
+   * Total pre-tax amount of the commercial deal (HT), set at group creation.
+   * Used to track progress across multiple deposit invoices.
+   * Available since SDK 2.15.0.
+   */
+  deposit_total_ht?: number | null | undefined;
+  /**
+   * Free-text reference for the deposit group (e.g. purchase order number,
+   * contract reference). Available since SDK 2.15.0.
+   */
+  deposit_reference_text?: string | null | undefined;
+  /**
+   * Progress summary for the deposit group. Present only on the detail
+   * endpoint (`GET /invoices/:id`), not on list responses.
+   * Available since SDK 2.15.0.
+   */
+  deposit_group_progress?: {
+    /** Total pre-tax amount of the deal (copied from `deposit_total_ht`) */
+    deposit_total_ht: number;
+    /** Sum of all deposit invoices emitted in this group (HT) */
+    sum_deposits_ht: number;
+    /** Remaining amount not yet invoiced (HT) */
+    remaining_ht: number;
+    /** Percentage invoiced so far (0–100) */
+    progress_percent: number;
+    /** Whether a balance (solde) invoice has already been emitted */
+    has_balance: boolean;
+    /** Number of invoices in the group */
+    invoices_count: number;
+    /** Brief summary of each invoice in the group */
+    invoices: Array<{
+      id: string;
+      invoice_type: InvoiceType;
+      total_ht: number;
+      invoice_number: string;
+    }>;
+  } | null | undefined;
 }
 
 /**
@@ -328,6 +373,43 @@ export interface CreateInvoiceInput {
   lines: InvoiceLineInput[];
   /** Enable 10-year archiving */
   archive_enabled?: boolean | undefined;
+  /**
+   * Invoice type for standalone deposit workflows (without a parent quote).
+   *
+   * - `'standard'` (default): regular invoice
+   * - `'deposit'`: standalone deposit/acompte invoice — debits TVA immediately
+   *   (CGI art. 289). Creates or joins a deposit group.
+   * - `'balance'`: final balance/solde invoice that deducts prior deposits
+   *   (Factur-X BG-22 code '80').
+   *
+   * When used with a parent quote, this field is set automatically by
+   * `quotes.convertToDeposit()` / `quotes.convertToBalance()`.
+   * Available since SDK 2.15.0.
+   */
+  invoice_type?: InvoiceType | undefined;
+  /**
+   * UUID of an existing deposit group to join.
+   *
+   * - `undefined` / `null`: creates a new deposit group (only relevant when
+   *   `invoice_type` is `'deposit'`).
+   * - Existing UUID: links this invoice to an existing group. The UUID must
+   *   belong to a deposit group owned by the same tenant/sub-tenant
+   *   (anti-IDOR: server returns 404 otherwise).
+   *
+   * Available since SDK 2.15.0.
+   */
+  deposit_group_id?: string | null | undefined;
+  /**
+   * Total pre-tax amount of the commercial deal (HT).
+   * Stored on the deposit group at creation time; ignored when joining an
+   * existing group (`deposit_group_id` provided). Available since SDK 2.15.0.
+   */
+  deposit_total_ht?: number | undefined;
+  /**
+   * Free-text reference for the deposit group (purchase order number, contract
+   * reference, etc.). Max 500 characters. Available since SDK 2.15.0.
+   */
+  deposit_reference_text?: string | undefined;
 }
 
 /**
