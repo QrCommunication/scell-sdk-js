@@ -2,6 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.14.0] - 2026-05-24
+
+### Added
+
+- **`PaymentSummary.lines: PaymentScheduleLine[]`** — Le payload
+  `GET /api/v1/quotes/{id}/payment-summary` expose désormais la liste
+  complète des lignes d'échéancier en plus des agrégats
+  (`schedule` / `invoiced` / `next_due` / `overdue` / `superpdp_status`).
+  Permet d'afficher le tracker visuel complet (highlight de la
+  prochaine échéance, grisé des passées, rouge des overdue) sans
+  seconde requête `GET /payment-schedule`.
+
+### Parité atteinte avec le backend
+
+Toutes les méthodes Quote + PaymentSchedule sont couvertes :
+`list/get/create/update/delete/send/cancel/duplicate/convertToDeposit/
+convertToBalance/regeneratePublicLink/revokePublicLink/auditLog/pdf/preview`
++ `paymentSchedule.{list/set/patch/delete/summary/convertLine/presets}`.
+
+## [2.13.1] - 2026-05-24
+
+### Added
+
+- **`Quote.callback_url`** + **`CreateQuoteInput.callback_url`** +
+  **`UpdateQuoteInput.callback_url`** — Le tenant peut fournir une
+  URL de callback à la création du devis. Après acceptation ou refus
+  via le viewer public, le buyer est redirigé vers cette URL avec
+  query string :
+  `?status=signed|refused&quote_id=<UUID>&quote_number=<num>&reason=<txt>`
+- Format : URL absolue HTTPS, max 500 caractères.
+
+### Backend
+
+- Migration `quotes.callback_url` + validation backend `nullable url max:500`.
+- Viewer SPA redirige `window.location.href` après accept/refuse.
+
 ## [2.13.0] - 2026-05-21
 
 ### Added
