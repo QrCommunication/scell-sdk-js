@@ -137,6 +137,14 @@ export interface PaymentSummary {
   overdue: ScheduleLineSummaryRef[];
   /** SUPER PDP status for each deposit invoice already issued */
   superpdp_status: ScheduleInvoiceSuperPDPStatus[];
+  /**
+   * Full payment schedule lines list (since v2.14.0).
+   *
+   * Permet au consumer d'afficher le tracker complet (toutes les
+   * échéances + status + highlight de la next_due) sans seconde
+   * requête `GET /payment-schedule`. Ordonné par `due_date` puis `order`.
+   */
+  lines: PaymentScheduleLine[];
 }
 
 // ---------------------------------------------------------------------------
