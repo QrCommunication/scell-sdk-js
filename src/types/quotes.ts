@@ -174,6 +174,17 @@ export interface Quote {
   /** ID of the balance invoice created from this quote (if converted) */
   balance_invoice_id: UUID | null;
 
+  /**
+   * URL de callback fournie par le tenant à la création.
+   *
+   * Si présente, le viewer public redirige le buyer vers cette URL après
+   * acceptation ou refus avec query string :
+   *   `?status=signed|refused&quote_id=<UUID>&quote_number=<num>&reason=<txt>`
+   *
+   * `null` = comportement par défaut (page confirmation Scell.io).
+   */
+  callback_url: string | null;
+
   metadata: Record<string, unknown> | null;
 
   // Relations (populated on detail endpoint)
@@ -271,6 +282,18 @@ export interface CreateQuoteInput {
   /** Auto-convert to deposit invoice upon acceptance */
   auto_convert_on_accept?: boolean | undefined;
 
+  /**
+   * URL de callback : après acceptation ou refus via le viewer public,
+   * le buyer est redirigé vers cette URL avec query string
+   * `status=signed|refused&quote_id=...&quote_number=...&reason=...`.
+   *
+   * Permet au tenant d'intégrer la signature dans son propre flow
+   * (page de remerciement, dashboard client, automation post-signature).
+   *
+   * Format : URL absolue HTTPS, max 500 caractères.
+   */
+  callback_url?: string | undefined;
+
   lines: QuoteLineInput[];
   metadata?: Record<string, unknown> | undefined;
 }
@@ -307,6 +330,12 @@ export interface UpdateQuoteInput {
 
   signature_required?: boolean | undefined;
   auto_convert_on_accept?: boolean | undefined;
+  /**
+   * URL de callback tenant. Mise à jour autorisée tant que le devis
+   * n'est pas signé. Voir `CreateQuoteInput.callback_url` pour les
+   * détails du flow de redirection.
+   */
+  callback_url?: string | null | undefined;
 
   lines?: QuoteLineInput[] | undefined;
   metadata?: Record<string, unknown> | undefined;
