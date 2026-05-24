@@ -1,8 +1,6 @@
 /**
  * Credit Notes Resource (direct user / dashboard)
  *
- * Note: Deletion is forbidden by ISCA fiscal compliance.
- *
  * @packageDocumentation
  */
 
@@ -112,6 +110,59 @@ export class CreditNotesResource {
     return this.http.post<SingleResponse<CreditNote>>(
       '/credit-notes',
       input,
+      requestOptions
+    );
+  }
+
+  /**
+   * Update a draft credit note
+   *
+   * Only credit notes in `draft` status can be updated.
+   *
+   * @param id - Credit note UUID
+   * @param input - Partial credit note data to update
+   * @param requestOptions - Request options
+   * @returns Updated credit note
+   *
+   * @example
+   * ```typescript
+   * const { data: creditNote } = await client.creditNotes.update('cn-uuid', {
+   *   reason: 'Updated refund reason',
+   * });
+   * ```
+   */
+  async update(
+    id: string,
+    input: Partial<CreateCreditNoteInput>,
+    requestOptions?: RequestOptions
+  ): Promise<SingleResponse<CreditNote>> {
+    return this.http.put<SingleResponse<CreditNote>>(
+      `/credit-notes/${id}`,
+      input,
+      requestOptions
+    );
+  }
+
+  /**
+   * Delete a draft credit note
+   *
+   * Only credit notes in `draft` status can be deleted. Once sent,
+   * the credit note is part of the ISCA fiscal chain and cannot be removed.
+   *
+   * @param id - Credit note UUID
+   * @param requestOptions - Request options
+   *
+   * @example
+   * ```typescript
+   * await client.creditNotes.delete('cn-uuid');
+   * ```
+   */
+  async delete(
+    id: string,
+    requestOptions?: RequestOptions
+  ): Promise<MessageResponse> {
+    return this.http.delete<MessageResponse>(
+      `/credit-notes/${id}`,
       requestOptions
     );
   }

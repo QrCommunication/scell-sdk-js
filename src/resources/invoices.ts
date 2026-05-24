@@ -27,6 +27,7 @@ import type {
   RejectInvoiceInput,
   SendInvoiceByEmailInput,
   SendInvoiceByEmailResponse,
+  UpdateInvoiceInput,
 } from '../types/invoices.js';
 
 /**
@@ -161,6 +162,65 @@ export class InvoicesResource {
     return this.http.post<MessageWithDataResponse<Invoice>>(
       '/invoices',
       input,
+      requestOptions
+    );
+  }
+
+  /**
+   * Update a draft invoice
+   *
+   * Only invoices in `draft` status can be updated. Once submitted or
+   * validated, the invoice is immutable (ISCA compliance).
+   *
+   * @param id - Invoice UUID
+   * @param input - Partial invoice data to update
+   * @param requestOptions - Request options
+   * @returns Updated invoice
+   *
+   * @example
+   * ```typescript
+   * const { data: invoice } = await client.invoices.update('invoice-uuid', {
+   *   due_date: '2026-08-15',
+   *   lines: [
+   *     { description: 'Updated service', quantity: 2, unit_price: 200, tax_rate: 20 },
+   *   ],
+   * });
+   * ```
+   */
+  async update(
+    id: string,
+    input: UpdateInvoiceInput,
+    requestOptions?: RequestOptions
+  ): Promise<SingleResponse<Invoice>> {
+    return this.http.put<SingleResponse<Invoice>>(
+      `/invoices/${id}`,
+      input,
+      requestOptions
+    );
+  }
+
+  /**
+   * Delete a draft invoice
+   *
+   * Only invoices in `draft` status can be deleted. Once submitted,
+   * validated, or transmitted, the invoice cannot be removed (ISCA
+   * fiscal compliance — the hash chain is immutable).
+   *
+   * @param id - Invoice UUID
+   * @param requestOptions - Request options
+   *
+   * @example
+   * ```typescript
+   * await client.invoices.delete('invoice-uuid');
+   * // Invoice is permanently removed
+   * ```
+   */
+  async delete(
+    id: string,
+    requestOptions?: RequestOptions
+  ): Promise<MessageResponse> {
+    return this.http.delete<MessageResponse>(
+      `/invoices/${id}`,
       requestOptions
     );
   }

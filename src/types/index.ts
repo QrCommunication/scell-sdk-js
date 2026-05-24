@@ -31,6 +31,7 @@ export type {
   AuditTrailResponse,
   ConvertInvoiceInput,
   CreateInvoiceInput,
+  UpdateInvoiceInput,
   DisputeInvoiceInput,
   DisputeType,
   IncomingInvoiceParams,

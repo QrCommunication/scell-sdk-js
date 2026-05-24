@@ -413,6 +413,11 @@ export interface CreateInvoiceInput {
 }
 
 /**
+ * Update a draft invoice. All fields are optional (partial update).
+ */
+export type UpdateInvoiceInput = Partial<Omit<CreateInvoiceInput, 'direction' | 'output_format'>>;
+
+/**
  * Invoice list filter options
  */
 export interface InvoiceListOptions {
