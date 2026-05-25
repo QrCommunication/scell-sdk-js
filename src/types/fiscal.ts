@@ -117,8 +117,8 @@ export interface FiscalClosing {
   /** Null for the master tenant's own flows; UUID for a sub-tenant closing. */
   sub_tenant_id?: string | null;
   closing_date: string;
-  closing_type: 'daily' | 'monthly' | 'annual' | string;
-  status: 'closed' | 'anchored' | string;
+  closing_type: 'daily' | 'monthly' | 'annual' | (string & {});
+  status: 'closed' | 'anchored' | (string & {});
   entries_count: number;
 
   // Legacy / derived fields (kept for backward compat with pre-2.10.0 payloads)
@@ -137,7 +137,7 @@ export interface FiscalClosing {
   totals?: FiscalClosingTotals;
   cumulative_totals?: Record<string, number>;
 
-  environment?: 'sandbox' | 'production' | string;
+  environment?: 'sandbox' | 'production' | (string & {});
 
   // CSV export (daily closing format)
   csv_path?: string | null;

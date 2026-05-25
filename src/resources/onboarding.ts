@@ -15,7 +15,6 @@ import type {
   OnboardingSession,
   SireneLookupRawResponse,
   SireneLookupResult,
-  SireneManualEntryData,
   SuperPDPAuthorizeResponse,
   SuperPDPCallbackResponse,
 } from '../types/onboarding.js';
@@ -183,7 +182,7 @@ export function parseSireneLookup(
     rawData !== null &&
     typeof rawData === 'object' &&
     'sirene_lookup_failed' in rawData &&
-    (rawData as SireneManualEntryData).sirene_lookup_failed === true;
+    rawData.sirene_lookup_failed === true;
 
   const manualEntryRequired =
     sireneFailed || code === 'SIRENE_MANUAL_ENTRY_REQUIRED';
