@@ -2,6 +2,60 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.17.0] - 2026-05-25
+
+### Added
+
+- **`InitialsPosition`** — Nouvelle interface exportee representant la position
+  d'un paraphe sur une page specifique du document. Champs :
+  `page` (1-indexe), `x`, `y`, `unit` (`'percent'` | `'pixel'`),
+  `page_width_px`, `page_height_px`, `font_size`, `color`, `bold`.
+  Chaque entree peut surcharger les valeurs par defaut du bloc parent.
+
+- **`InitialsBlock.positions?: InitialsPosition[]`** — Nouveau champ optionnel
+  sur `InitialsBlock` permettant de definir une position differente par page.
+  Si `positions` est fourni, il prend la priorite sur les champs legacy
+  `position` + `pages` cote backend. Format recommande pour les documents
+  multi-pages necessitant un placement precis des paraphes.
+
+- **`InitialsBlock.bold?: boolean`** — Nouveau champ optionnel au niveau du bloc.
+  Sert de valeur par defaut pour toutes les positions ; peut etre surcharge
+  individuellement via `InitialsPosition.bold`.
+
+### Details
+
+Le format legacy (`position` + `pages`) reste entierement supporte et fonctionnel.
+Aucun changement breaking. Les consommateurs existants n'ont rien a modifier.
+
+Format recommande (v2.17.0) — une position differente par page :
+
+```typescript
+const initials: InitialsBlock = {
+  enabled: true,
+  mode: 'auto',
+  source: 'signer_name',
+  font_size: 10,
+  color: '#1a1a1a',
+  bold: false,
+  positions: [
+    { page: 1, x: 5,  y: 88, unit: 'percent' },
+    { page: 2, x: 5,  y: 90, unit: 'percent', color: '#0055aa' },
+    { page: 3, x: 92, y: 90, unit: 'percent', font_size: 8, bold: true },
+  ],
+};
+```
+
+Format legacy (toujours supporte) — une position commune :
+
+```typescript
+const initials: InitialsBlock = {
+  enabled: true,
+  pages: 'except_last',
+  position: { x: 5, y: 90, unit: 'percent' },
+  font_size: 10,
+};
+```
+
 ## [2.14.0] - 2026-05-24
 
 ### Added

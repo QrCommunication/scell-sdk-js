@@ -1,6 +1,8 @@
 {
   "name": "@scell/sdk",
-  "version": "2.16.6",
+
+  "version": "2.17.0",
+
   "description": "Official TypeScript SDK for Scell.io - Electronic invoicing (Factur-X) and signatures (eIDAS) API",
   "author": "Scell.io <contact@scell.io>",
   "license": "MIT",

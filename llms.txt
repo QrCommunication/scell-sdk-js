@@ -4228,3 +4228,90 @@ const allInvoices = await fetchAllPages(page =>
 | `ScellWebhooks` | `verifySignature()`, `verifySignatureSync()`, `parsePayload()`, `constructTestEvent()` |
 | `withRetry` | `withRetry(fn, options?)` |
 | `createRetryWrapper` | `createRetryWrapper(options?)` |
+
+---
+
+## Signature blocks (v2.17.0 — paraphe multi-page, mentions, date)
+
+`client.signatures.create()` accepts 3 optional fields: `initials_block`,
+`mentions`, `date_block`. All use snake_case (matches the API payload).
+
+### Multi-page initials (v2.17.0)
+
+Two formats supported. The new `positions[]` (one entry per page) wins over
+legacy `position + pages` if both are provided.
+
+```typescript
+import type {
+  CreateSignatureInput,
+  InitialsBlock,
+  InitialsPosition,
+} from '@scell/sdk';
+
+// NEW (v2.17.0) — positions[] with per-page overrides
+const initialsBlock: InitialsBlock = {
+  enabled: true,
+  mode: 'auto',
+  source: 'signer_name',
+  font_size: 10,
+  color: '#000000',
+  bold: false,
+  positions: [
+    { page: 1, x: 90, y: 90, unit: 'percent' },
+    { page: 2, x: 88, y: 92, unit: 'percent', font_size: 12 },
+    { page: 3, x: 85, y: 90, unit: 'percent', color: '#AA0000' },
+  ],
+};
+
+// LEGACY — still supported
+const legacyBlock: InitialsBlock = {
+  enabled: true,
+  mode: 'auto',
+  source: 'signer_name',
+  pages: 'except_last',  // 'all' | 'except_last' | number[]
+  position: { x: 90, y: 95, unit: 'percent' },
+  font_size: 10,
+  color: '#333333',
+};
+
+await client.signatures.create({
+  title: 'Contrat',
+  document: base64Pdf,
+  document_name: 'contract.pdf',
+  signers: [{ first_name: 'Jean', last_name: 'Dupont', email: 'jean@example.com', auth_method: 'email' }],
+  initials_block: initialsBlock,
+});
+```
+
+### Mentions + Date
+
+```typescript
+import type { Mention, DateBlock } from '@scell/sdk';
+
+const mentions: Mention[] = [{
+  label: 'Lu et approuvé',
+  required: true,
+  signer_index: 0,
+  position: { page: 1, x: 10, y: 80, unit: 'percent' },
+}];
+
+const dateBlock: DateBlock = {
+  enabled: true,
+  format: 'dd/MM/yyyy',
+  timezone: 'Europe/Paris',
+  position: { page: 'last', x: 80, y: 10, unit: 'percent' },
+};
+
+await client.signatures.create({
+  // ... signers, document ...
+  mentions,
+  date_block: dateBlock,
+});
+```
+
+Types exposés depuis `@scell/sdk` :
+- `InitialsBlock` — bloc paraphe (accepte positions[] + legacy)
+- `InitialsPosition` — **NEW v2.17.0** position individuelle
+- `SignatureBlockPosition` — position générique (legacy initials, sans page)
+- `Mention` + `MentionPosition` — mention juridique
+- `DateBlock` + `DateBlockPosition` — bloc date (supporte page: 'last')

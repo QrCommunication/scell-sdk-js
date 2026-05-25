@@ -89,6 +89,7 @@ export type {
   DateBlock,
   DateBlockPosition,
   InitialsBlock,
+  InitialsPosition,
   Mention,
   MentionPosition,
   Signature,

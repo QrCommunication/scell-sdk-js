@@ -23,9 +23,105 @@ export interface SignatureBlockPosition {
 }
 
 /**
- * Bloc de paraphe (initiales) — appose automatiquement sur chaque page selectionnee.
+ * Position d'un paraphe sur une page specifique du document.
+ *
+ * Utilise dans `InitialsBlock.positions[]` pour definir une position
+ * differente par page. Prend la priorite sur les champs legacy
+ * `position` + `pages` si le tableau `positions` est fourni.
  *
  * @example
+ * ```typescript
+ * const pos: InitialsPosition = {
+ *   page: 1,
+ *   x: 5,
+ *   y: 90,
+ *   unit: 'percent',
+ *   font_size: 9,
+ *   color: '#0055aa',
+ *   bold: true,
+ * };
+ * ```
+ */
+export interface InitialsPosition {
+  /**
+   * Numero de page ciblee (1-indexe).
+   * Valeur acceptee : 1 a 500.
+   */
+  page: number;
+  /**
+   * Coordonnee X sur la page.
+   * Valeur acceptee : 0 a 5000 (selon `unit`).
+   */
+  x: number;
+  /**
+   * Coordonnee Y sur la page.
+   * Valeur acceptee : 0 a 5000 (selon `unit`).
+   */
+  y: number;
+  /**
+   * Unite des coordonnees x et y.
+   * - `'percent'` (defaut) : pourcentage de la dimension de la page (0-100).
+   * - `'pixel'` : pixels absolus @72dpi.
+   */
+  unit?: 'percent' | 'pixel' | undefined;
+  /**
+   * Largeur de la page en pixels @72dpi.
+   * Requis quand `unit === 'pixel'` si la detection automatique
+   * via le parser PDF n'est pas disponible.
+   */
+  page_width_px?: number | undefined;
+  /**
+   * Hauteur de la page en pixels @72dpi.
+   * Requis quand `unit === 'pixel'` si la detection automatique
+   * via le parser PDF n'est pas disponible.
+   */
+  page_height_px?: number | undefined;
+  /**
+   * Taille de la police en points pour cette page specifiquement.
+   * Override le champ `font_size` du bloc parent.
+   * Valeur acceptee : 6 a 20.
+   */
+  font_size?: number | undefined;
+  /**
+   * Couleur du texte en hexadecimal (`#RRGGBB`) pour cette page specifiquement.
+   * Override le champ `color` du bloc parent.
+   */
+  color?: string | undefined;
+  /**
+   * Affichage en gras pour cette page specifiquement.
+   * Override le champ `bold` du bloc parent.
+   */
+  bold?: boolean | undefined;
+}
+
+/**
+ * Bloc de paraphe (initiales) — appose automatiquement sur les pages selectionnees.
+ *
+ * ### Format recommande — `positions[]` (depuis v2.17.0)
+ *
+ * Permet de definir une position differente par page. Si `positions` est fourni,
+ * il prend la priorite sur les champs legacy `position` + `pages` cote backend.
+ *
+ * ```typescript
+ * const initials: InitialsBlock = {
+ *   enabled: true,
+ *   mode: 'auto',
+ *   source: 'signer_name',
+ *   font_size: 10,
+ *   color: '#1a1a1a',
+ *   bold: false,
+ *   positions: [
+ *     { page: 1, x: 5,  y: 88, unit: 'percent' },
+ *     { page: 2, x: 5,  y: 90, unit: 'percent', color: '#0055aa' },
+ *     { page: 3, x: 92, y: 90, unit: 'percent', font_size: 8 },
+ *   ],
+ * };
+ * ```
+ *
+ * ### Format legacy — `position` + `pages` (toujours supporte)
+ *
+ * Une seule position commune appliquee aux pages selectionnees.
+ *
  * ```typescript
  * const initials: InitialsBlock = {
  *   enabled: true,
@@ -64,19 +160,46 @@ export interface InitialsBlock {
    */
   custom_text?: string | undefined;
   /**
-   * Pages sur lesquelles apposer le bloc.
+   * Pages sur lesquelles apposer le bloc (format legacy).
+   * Ignore si `positions[]` est fourni.
    * - `'all'` : toutes les pages.
-   * - `'except_last'` : toutes sauf la derniere (la signature principale occupant la derniere page).
+   * - `'except_last'` : toutes sauf la derniere.
    * - `number[]` : liste de numeros de page (1-indexes).
    * @default 'all'
    */
   pages?: 'all' | 'except_last' | number[] | undefined;
-  /** Position du bloc sur chaque page concernee. */
+  /**
+   * Position commune appliquee a toutes les pages (format legacy).
+   * Ignoree si `positions[]` est fourni.
+   */
   position?: SignatureBlockPosition | undefined;
-  /** Taille de la police en points. */
+  /**
+   * Liste de positions, une par page (format recommande depuis v2.17.0).
+   *
+   * Si ce tableau est fourni, il prend la priorite sur les champs
+   * `position` et `pages`. Permet de placer le paraphe a un endroit
+   * different sur chaque page du document.
+   *
+   * Chaque entree peut surcharger `font_size`, `color` et `bold`
+   * independamment des valeurs par defaut du bloc parent.
+   */
+  positions?: InitialsPosition[] | undefined;
+  /**
+   * Taille de la police en points (defaut pour toutes les positions).
+   * Peut etre surchargee par `InitialsPosition.font_size`.
+   */
   font_size?: number | undefined;
-  /** Couleur du texte en hexadecimal (`#RRGGBB`). */
+  /**
+   * Couleur du texte en hexadecimal (`#RRGGBB`) (defaut pour toutes les positions).
+   * Peut etre surchargee par `InitialsPosition.color`.
+   */
   color?: string | undefined;
+  /**
+   * Affichage en gras (defaut pour toutes les positions).
+   * Peut etre surchargee par `InitialsPosition.bold`.
+   * @default false
+   */
+  bold?: boolean | undefined;
 }
 
 /**

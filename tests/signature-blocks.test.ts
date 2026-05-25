@@ -1,5 +1,5 @@
 /**
- * Signature Blocks Tests (v2.11.0)
+ * Signature Blocks Tests (v2.11.0 + v2.17.0)
  *
  * Covers:
  *  - Type-check: InitialsBlock, Mention, DateBlock are optional on CreateSignatureInput
@@ -7,6 +7,9 @@
  *  - Optional fields: all new fields can be omitted (backward compat)
  *  - Full example: all three blocks together in a single create() call
  *  - Resource pass-through: SignaturesResource.create() forwards the blocks as-is
+ *  - v2.17.0 — InitialsPosition: positions[] per-page format (new)
+ *  - v2.17.0 — InitialsPosition: legacy position+pages still accepted (backward compat)
+ *  - v2.17.0 — InitialsPosition: per-page overrides (font_size, color, bold)
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -15,6 +18,7 @@ import type {
   CreateSignatureInput,
   DateBlock,
   InitialsBlock,
+  InitialsPosition,
   Mention,
 } from '../src/index.js';
 
@@ -222,5 +226,161 @@ describe('SignaturesResource.create — snake_case serialization', () => {
     expect(body).not.toHaveProperty('initials_block');
     expect(body).not.toHaveProperty('mentions');
     expect(body).not.toHaveProperty('date_block');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// v2.17.0 — InitialsPosition : positions[] par page
+// ---------------------------------------------------------------------------
+
+describe('InitialsBlock.positions[] — v2.17.0 (format recommande)', () => {
+  beforeEach(() => {
+    mockFetch.mockReset();
+  });
+
+  it('type-check : positions[] avec page, x, y est valide TypeScript', () => {
+    const positions: InitialsPosition[] = [
+      { page: 1, x: 5, y: 88, unit: 'percent' },
+      { page: 2, x: 5, y: 90, unit: 'percent', color: '#0055aa' },
+      { page: 3, x: 92, y: 90, unit: 'percent', font_size: 8, bold: true },
+    ];
+    const block: InitialsBlock = {
+      enabled: true,
+      mode: 'auto',
+      source: 'signer_name',
+      font_size: 10,
+      color: '#1a1a1a',
+      bold: false,
+      positions,
+    };
+    const input: CreateSignatureInput = { ...BASE_PAYLOAD, initials_block: block };
+
+    expect(input.initials_block?.positions).toHaveLength(3);
+    expect(input.initials_block?.positions?.[0]?.page).toBe(1);
+    expect(input.initials_block?.positions?.[1]?.color).toBe('#0055aa');
+    expect(input.initials_block?.positions?.[2]?.bold).toBe(true);
+  });
+
+  it('positions[] est transmis tel quel dans le body HTTP (snake_case preserve)', async () => {
+    mockFetch.mockResolvedValueOnce(
+      jsonResponse(201, {
+        message: 'Signature created.',
+        data: { id: SIGNATURE_ID, status: 'waiting_signers', signers: [] },
+      })
+    );
+
+    const client = new ScellApiClient('sk_test_xxx');
+    await client.signatures.create({
+      ...BASE_PAYLOAD,
+      initials_block: {
+        enabled: true,
+        mode: 'auto',
+        source: 'signer_name',
+        font_size: 10,
+        color: '#111111',
+        bold: false,
+        positions: [
+          { page: 1, x: 5, y: 88, unit: 'percent' },
+          { page: 2, x: 5, y: 90, unit: 'percent', font_size: 8, color: '#0055aa', bold: true },
+        ],
+      },
+    });
+
+    expect(mockFetch).toHaveBeenCalledOnce();
+    const [, init] = mockFetch.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(init.body as string) as Record<string, unknown>;
+
+    const ib = body['initials_block'] as Record<string, unknown>;
+    expect(ib).toHaveProperty('positions');
+
+    const posList = ib['positions'] as Array<Record<string, unknown>>;
+    expect(posList).toHaveLength(2);
+
+    // Premiere entree
+    expect(posList[0]?.['page']).toBe(1);
+    expect(posList[0]?.['x']).toBe(5);
+    expect(posList[0]?.['y']).toBe(88);
+    expect(posList[0]?.['unit']).toBe('percent');
+
+    // Deuxieme entree avec overrides
+    expect(posList[1]?.['page']).toBe(2);
+    expect(posList[1]?.['font_size']).toBe(8);
+    expect(posList[1]?.['color']).toBe('#0055aa');
+    expect(posList[1]?.['bold']).toBe(true);
+
+    // Champs bloc-level preserts
+    expect(ib['font_size']).toBe(10);
+    expect(ib['bold']).toBe(false);
+  });
+
+  it('format legacy (position + pages) fonctionne toujours sans positions[]', async () => {
+    mockFetch.mockResolvedValueOnce(
+      jsonResponse(201, {
+        message: 'Signature created.',
+        data: { id: SIGNATURE_ID, status: 'waiting_signers', signers: [] },
+      })
+    );
+
+    const client = new ScellApiClient('sk_test_xxx');
+    await client.signatures.create({
+      ...BASE_PAYLOAD,
+      initials_block: {
+        enabled: true,
+        mode: 'auto',
+        source: 'signer_name',
+        pages: 'except_last',
+        position: { x: 5, y: 90, unit: 'percent' },
+        font_size: 10,
+        color: '#000000',
+      },
+    });
+
+    expect(mockFetch).toHaveBeenCalledOnce();
+    const [, init] = mockFetch.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(init.body as string) as Record<string, unknown>;
+
+    const ib = body['initials_block'] as Record<string, unknown>;
+    expect(ib['pages']).toBe('except_last');
+    expect(ib).toHaveProperty('position');
+    expect(ib).not.toHaveProperty('positions');
+
+    const pos = ib['position'] as Record<string, unknown>;
+    expect(pos['x']).toBe(5);
+    expect(pos['unit']).toBe('percent');
+  });
+
+  it('InitialsPosition accepte unit pixel avec page_width_px et page_height_px', () => {
+    const pos: InitialsPosition = {
+      page: 1,
+      x: 30,
+      y: 750,
+      unit: 'pixel',
+      page_width_px: 595,
+      page_height_px: 842,
+      font_size: 9,
+      color: '#333333',
+      bold: false,
+    };
+    const block: InitialsBlock = { positions: [pos] };
+    const input: CreateSignatureInput = { ...BASE_PAYLOAD, initials_block: block };
+
+    expect(input.initials_block?.positions?.[0]?.unit).toBe('pixel');
+    expect(input.initials_block?.positions?.[0]?.page_width_px).toBe(595);
+    expect(input.initials_block?.positions?.[0]?.page_height_px).toBe(842);
+  });
+
+  it('InitialsBlock.bold est optionnel au niveau du bloc (champ defaut v2.17.0)', () => {
+    // Sans bold => champ absent (undefined), compatible avec le comportement pre-2.17
+    const block: InitialsBlock = {
+      enabled: true,
+      mode: 'auto',
+      pages: 'all',
+      position: { x: 5, y: 90 },
+    };
+    expect(block.bold).toBeUndefined();
+
+    // Avec bold explicite
+    const blockWithBold: InitialsBlock = { ...block, bold: true };
+    expect(blockWithBold.bold).toBe(true);
   });
 });
