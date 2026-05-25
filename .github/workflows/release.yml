@@ -1,62 +1,58 @@
 name: Release
-
-on:
+true:
   push:
     tags:
-      - 'v*'
-
+    - v*
 jobs:
   build:
     name: Build and Test
-    runs-on: [self-hosted, linux, x64, hetzner, qrcom]
+    runs-on:
+    - self-hosted
+    - linux
+    - x64
+    - hetzner
+    - qrcom
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run lint
-        run: npm run lint
-
-      - name: Run type check
-        run: npm run typecheck
-
-      - name: Run tests
-        run: npm run test
-
-      - name: Build
-        run: npm run build
-
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '24'
+        cache: npm
+    - name: Install dependencies
+      run: npm ci
+    - name: Run lint
+      run: npm run lint
+    - name: Run type check
+      run: npm run typecheck
+    - name: Run tests
+      run: npm run test
+    - name: Build
+      run: npm run build
   publish:
     name: Publish to npm
     needs: build
-    runs-on: [self-hosted, linux, x64, hetzner, qrcom]
+    runs-on:
+    - self-hosted
+    - linux
+    - x64
+    - hetzner
+    - qrcom
     permissions:
       contents: read
+      id-token: write
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '24'
-          registry-url: 'https://registry.npmjs.org'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build
-        run: npm run build
-
-      # OIDC Trusted Publishing - requires npm 11.5.1+
-      # Provenance is generated automatically
-      - name: Publish to npm
-        run: npm publish --access public --provenance=false
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '24'
+        registry-url: https://registry.npmjs.org
+    - name: Install dependencies
+      run: npm ci
+    - name: Build
+      run: npm run build
+    - name: Publish to npm
+      run: npm publish --access public --provenance=false
