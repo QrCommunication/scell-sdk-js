@@ -179,7 +179,7 @@ const { data: signature } = await apiClient.signatures.create({
     { page: 1, x: 70, y: 85, width: 20, height: 5, unit: 'percent' },
   ],
   ui_config: {
-    // White-label : 21 champs conformes spec OpenAPI.com EU-SES v1.0.17
+    // White-label : 21 champs alignés sur la spec EU-SES certifiée
     sidebar_logo: 'https://mycompany.com/logo.png',
     sidebar_background_color: '#3b82f6',
     sidebar_title_color: '#ffffff',

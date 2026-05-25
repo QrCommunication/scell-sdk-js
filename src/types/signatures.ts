@@ -376,7 +376,7 @@ export interface SignaturePosition {
 
 /**
  * Personnalisation visuelle de la page de signature.
- * Conforme a la spec OpenAPI.com EU-SES v1.0.17 (21 champs).
+ * Conforme à la spec EU-SES (eIDAS certifiée, 21 champs).
  * Toutes les couleurs sont en hexadecimal #RRGGBB.
  */
 export interface SignatureUIConfig {
@@ -523,7 +523,7 @@ export interface CreateSignatureInput {
   signers: SignerInput[];
   /** Signature positions on the document */
   signature_positions?: SignaturePosition[] | undefined;
-  /** White-label UI customization (21 champs conformes OpenAPI.com EU-SES v1.0.17) */
+  /** White-label UI customization (21 champs alignés sur la spec EU-SES certifiée) */
   ui_config?: SignatureUIConfig | undefined;
   /** Comportement non-UI (mode signature, lecture forcee, timezone, editabilite des donnees) */
   signature_options?: SignatureOptions | undefined;

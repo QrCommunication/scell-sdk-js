@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.17.1] - 2026-05-25
+
+### Changed
+
+- Documentation: rewording générique des mentions du fournisseur de signature partenaire (aucun changement de surface publique).
+
 ## [2.17.0] - 2026-05-25
 
 ### Added
@@ -443,8 +449,8 @@ the backend's new wrapper page.
 
 When `signatures.create()` returns, each signer's `signing_url` now
 points to `https://sign.scell.io/sign/{sig}/{signer}?expires=…&signature=HMAC`
-instead of OpenAPI.com directly. The wrapper page embeds the upstream
-OpenAPI.com signing flow inside an iframe with default Scell.io
+instead of the upstream signing provider directly. The wrapper page
+embeds the EU-SES signing flow inside an iframe with default Scell.io
 branding. If the request omits `ui_config`, the backend fills the 16
 visual fields automatically. Per-field overrides are preserved.
 `iframe_ancestors` is auto-extended with `https://sign.scell.io` and
@@ -753,7 +759,7 @@ await scell.invoiceTemplates.markDefault(templateId);
 
 ### Added
 
-- `SignatureUIConfig` : 21 champs de personnalisation UI conformes spec OpenAPI.com EU-SES v1.0.17 (sidebar_*, header_*, footer_*, button_*, sign_button_*, hide_*, iframe_ancestors).
+- `SignatureUIConfig` : 21 champs de personnalisation UI alignés sur la spec EU-SES certifiée (sidebar_*, header_*, footer_*, button_*, sign_button_*, hide_*, iframe_ancestors).
 - `SignatureOptions` (nouveau) : signature_mode, signer_must_read, user_editable_data, timezone.
 - `SignerInput.message` : message custom par signataire avec placeholder `{OTP}` (max 500 chars).
 - `SignaturePosition.unit` : `'percent'` (defaut) ou `'pixel'`.
@@ -764,7 +770,7 @@ await scell.invoiceTemplates.markDefault(templateId);
 
 - `SignatureUIConfig.logo_url` -> utiliser `sidebar_logo`.
 - `SignatureUIConfig.primary_color` -> utiliser `sidebar_background_color`.
-- `SignatureUIConfig.company_name` -> pas d'equivalent (non supporte par OpenAPI.com).
+- `SignatureUIConfig.company_name` -> pas d'equivalent (non supporté par la spec EU-SES).
 
 ### Notes
 
