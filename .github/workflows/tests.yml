@@ -11,7 +11,7 @@ on:
 jobs:
   lint:
     name: Lint
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, hetzner, qrcom]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -30,7 +30,7 @@ jobs:
 
   typecheck:
     name: Type Check
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, hetzner, qrcom]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -49,7 +49,7 @@ jobs:
 
   test:
     name: Test (Node ${{ matrix.node-version }})
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, hetzner, qrcom]
     strategy:
       matrix:
         node-version: [18, 20, 22]
