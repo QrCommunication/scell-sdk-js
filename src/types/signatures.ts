@@ -44,6 +44,11 @@ export interface SignatureBlockPosition {
  */
 export interface InitialsPosition {
   /**
+   * Index du document cible (0 = principal, 1..N = attachments).
+   * Defaut: 0. Utilise uniquement quand le payload contient des `attachments`.
+   */
+  document_index?: number | undefined;
+  /**
    * Numero de page ciblee (1-indexe).
    * Valeur acceptee : 1 a 500.
    */
@@ -206,6 +211,11 @@ export interface InitialsBlock {
  * Position d'une mention legale sur une page du document.
  */
 export interface MentionPosition {
+  /**
+   * Index du document cible (0 = principal, 1..N = attachments).
+   * Defaut: 0. Utilise uniquement quand le payload contient des `attachments`.
+   */
+  document_index?: number | undefined;
   /** Numero de page (1-indexe). */
   page: number;
   /** Coordonnee X. */
@@ -356,6 +366,11 @@ export type SignaturePositionUnit = 'percent' | 'pixel';
  * Signature position on document
  */
 export interface SignaturePosition {
+  /**
+   * Index du document cible (0 = principal, 1..N = attachments).
+   * Defaut: 0. Utilise uniquement quand le payload contient des `attachments`.
+   */
+  document_index?: number | undefined;
   /** Numero de page (1-indexe). */
   page: number;
   /** Coordonnee X. Unite definie par `unit`. */
@@ -499,6 +514,41 @@ export interface SignerInput {
 }
 
 /**
+ * Document attache (PJ) en plus du document principal.
+ *
+ * Le backend Scell.io merge automatiquement le document principal et tous
+ * les attachments en un seul PDF avant submission a l'autorite de signature.
+ * Les positions de signature, paraphes et mentions peuvent referencer un
+ * document via `document_index` (0 = principal, 1..N = attachments dans
+ * l'ordre du tableau).
+ *
+ * Limites : 10 attachments max, 20 Mo total cumule (principal + PJ).
+ *
+ * @example
+ * ```typescript
+ * const sig = await client.signatures.create({
+ *   document: mainPdfBase64,
+ *   document_name: 'contrat.pdf',
+ *   attachments: [
+ *     { document: annexAPdfBase64, document_name: 'annexe-A.pdf' },
+ *     { document: annexBPdfBase64, document_name: 'annexe-B.pdf' },
+ *   ],
+ *   signature_positions: [
+ *     { document_index: 0, page: 1, x: 10, y: 80 }, // sur le contrat
+ *     { document_index: 2, page: 1, x: 10, y: 80 }, // sur annexe-B
+ *   ],
+ *   ...
+ * });
+ * ```
+ */
+export interface SignatureAttachment {
+  /** Contenu du document en base64. */
+  document: string;
+  /** Nom de fichier (avec extension `.pdf`). */
+  document_name: string;
+}
+
+/**
  * Signature creation input
  */
 export interface CreateSignatureInput {
@@ -519,6 +569,25 @@ export interface CreateSignatureInput {
   document: string;
   /** Document filename */
   document_name: string;
+  /**
+   * Documents attaches (PJ) — facultatif.
+   *
+   * Le backend merge automatiquement le document principal + les attachments
+   * en un seul PDF avant submission. Les `signature_positions`, paraphes et
+   * mentions peuvent cibler un document via `document_index` (0 = principal,
+   * 1..N = index dans le tableau `attachments`).
+   *
+   * Limites : 10 attachments max, 20 Mo total cumule (principal + PJ).
+   *
+   * @example
+   * ```typescript
+   * attachments: [
+   *   { document: annexAPdfBase64, document_name: 'annexe-A.pdf' },
+   *   { document: annexBPdfBase64, document_name: 'annexe-B.pdf' },
+   * ]
+   * ```
+   */
+  attachments?: SignatureAttachment[] | undefined;
   /** List of signers (1-10) */
   signers: SignerInput[];
   /** Signature positions on the document */

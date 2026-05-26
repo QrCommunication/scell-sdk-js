@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.18.0] - 2026-05-26
+
+### Added
+
+- `attachments[]` field on `CreateSignatureInput` for multi-document signatures (up to 10 PJs).
+- `document_index` field on `SignaturePosition`, `MentionPosition`, `InitialsPosition` to target a specific document in a multi-doc bundle.
+- New `SignatureAttachment` type.
+
 ## [2.17.1] - 2026-05-25
 
 ### Changed

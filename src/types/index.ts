@@ -93,6 +93,7 @@ export type {
   Mention,
   MentionPosition,
   Signature,
+  SignatureAttachment,
   SignatureBlockPosition,
   SignatureBlockUnit,
   SignatureDownloadResponse,
