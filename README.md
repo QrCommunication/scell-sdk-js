@@ -120,6 +120,87 @@ const { data: invoice } = await apiClient.invoices.create({
 
 > **Note:** For intra-community B2B transactions (e.g. FR -> BE, FR -> DE), VAT rate is typically 0% under the reverse charge mechanism. The buyer accounts for VAT in their own country.
 
+### VAT Context Resolution (since v2.20.0)
+
+The `buyers.vatContext()` method resolves the correct TVA rate and EN16931 regime for a buyer + line combination, following French CGI rules (reverse-charge, art. 259-A, out-of-scope).
+
+#### Mode 1 — Registered buyer (recommended)
+
+```typescript
+import { ScellApiClient } from '@scell/sdk';
+
+const client = new ScellApiClient('sk_live_xxx');
+
+// Resolve the VAT context for a registered buyer
+const vat = await client.buyers.vatContext(
+  '019cb416-b6db-730c-b3a5-f8b7a4512eb1', // buyer UUID from registry
+  { category: 'STANDARD' }                  // desired starting category (optional)
+);
+
+console.log(vat.resolution.rate);       // 0 (if DE B2B with valid VAT)
+console.log(vat.resolution.category);  // 'REVERSE_CHARGE'
+console.log(vat.resolution.en16931_code); // 'AE'
+console.log(vat.resolution.justification);
+// "Auto-liquidation intracommunautaire (art. 283-2 CGI) — TVA due par l'acheteur assujetti."
+
+// Apply to invoice line
+await client.invoices.create({
+  // ...
+  lines: [{ description: 'Conseil', quantity: 1, unit_price: 1000, tax_rate: vat.resolution.rate }],
+});
+```
+
+#### Mode 2 — Inline buyer context (quote preview / one-off)
+
+```typescript
+// No registry lookup — pass buyer details inline
+const vat = await client.buyers.vatContext(
+  {
+    country: 'DE',
+    is_individual: false,
+    vat_number: 'DE123456789',
+    vat_number_valid: true,
+  },
+  {
+    category: 'STANDARD',
+    place_of_supply: 'FR',    // art. 259-A CGI override (digital services)
+    service_nature: 'digital_service',
+  }
+);
+```
+
+#### Fluent line builder (since v2.20.0)
+
+```typescript
+import { createInvoiceLine, VAT_DEFAULT_RATES } from '@scell/sdk';
+
+// Resolve via API, then build the line with the correct rate
+const vat = await client.buyers.vatContext(buyerId, { category: 'STANDARD' });
+
+const line = createInvoiceLine({ category: vat.resolution.category })
+  .description('Conseil en stratégie')
+  .unitPrice(1000)
+  .quantity(2)
+  .placeOfSupply('DE')          // forwarded in Factur-X BT-157
+  .build();
+// → {
+//     description: 'Conseil en stratégie', unit_price: 1000, quantity: 2,
+//     tax_rate: 0, total_ht: 2000, total_tax: 0, total_ttc: 2000,
+//     metadata: { category: 'REVERSE_CHARGE', exemption_reason: 'reverse_charge', place_of_supply: 'DE' }
+//   }
+
+// Override the resolved rate if needed (e.g. partial SUPER_REDUCED regime)
+const customLine = createInvoiceLine()
+  .description('Médicaments remboursables')
+  .unitPrice(50)
+  .taxRate(vat.resolution.rate)   // exact rate from server
+  .build();
+```
+
+> **Available VAT categories:** `STANDARD` (20%), `INTERMEDIATE` (10%), `REDUCED` (5.5%), `SUPER_REDUCED` (2.1%), `ZERO_RATED` (0%), `EXEMPT` (0%), `REVERSE_CHARGE` (0%), `OUT_OF_SCOPE` (0%).
+>
+> Warnings (non-blocking) are returned alongside the resolution for UI display.
+
 #### Invoice with UK Buyer (Non-EU)
 
 For non-EU buyers, use `buyer_legal_id` and `buyer_legal_id_scheme` in addition to the VAT number:

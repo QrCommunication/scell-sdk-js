@@ -321,3 +321,20 @@ export {
 
 // Re-export all types
 export * from './types/index.js';
+
+// Re-export VAT types (since v2.20.0)
+export { VAT_DEFAULT_RATES } from './types/vat.js';
+export type {
+  VatCategory,
+  VatEn16931Code,
+  VatExemptionReason,
+  VatResolution,
+  LineVatContext,
+  VatBuyerContext,
+  VatWarning,
+  VatContextResponse,
+} from './types/vat.js';
+
+// Re-export invoice line builder (since v2.20.0)
+export { createInvoiceLine, InvoiceLineBuilder } from './builders/invoice-line-builder.js';
+export type { InvoiceLineInputWithMeta } from './builders/invoice-line-builder.js';

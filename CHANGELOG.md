@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.20.0] - 2026-05-26
+
+### Added
+
+- **`buyers.vatContext()`** — New method on `BuyersResource` that resolves the applicable TVA rate and EN16931 regime for a buyer + invoice line combination. Supports two overloads:
+  - Mode 1: `vatContext(buyerId: string, line?, options?)` — registry lookup (recommended for registered buyers).
+  - Mode 2: `vatContext(buyer: VatBuyerContext, line?, options?)` — inline buyer context (no registry required, useful for quotes or one-off invoices).
+  - Backend endpoint: `POST /api/v1/tenant/buyers/vat-context`.
+  - Covers FR→FR standard 20%, FR→EU B2B reverse-charge (art. 283-2 CGI, code AE), FR→non-EU out-of-scope (code O), and art. 259-A CGI override via `line.place_of_supply`.
+
+- **`VatCategory`** type — Union of 8 TVA category identifiers: `'STANDARD'` | `'INTERMEDIATE'` | `'REDUCED'` | `'SUPER_REDUCED'` | `'ZERO_RATED'` | `'EXEMPT'` | `'REVERSE_CHARGE'` | `'OUT_OF_SCOPE'`.
+
+- **`VAT_DEFAULT_RATES`** — `Record<VatCategory, number>` constant mapping each category to its default French TVA rate (%), e.g. `STANDARD → 20`, `REDUCED → 5.5`, `REVERSE_CHARGE → 0`.
+
+- **`VatResolution`**, **`LineVatContext`**, **`VatBuyerContext`**, **`VatWarning`**, **`VatContextResponse`**, **`VatEn16931Code`**, **`VatExemptionReason`** types — all exported from `@scell/sdk`.
+
+- **`createInvoiceLine()`** factory function + **`InvoiceLineBuilder`** class — Fluent builder for `InvoiceLineInput` objects with embedded VAT context. Auto-computes `total_ht`, `total_tax`, `total_ttc` from `quantity × unit_price` and `tax_rate` (rounded to 2 decimal places). Chainable setters: `description()`, `quantity()`, `unitPrice()`, `category()`, `taxRate()`, `placeOfSupply()`, `meta()`.
+
+- **`InvoiceLineInputWithMeta`** type — Extended `InvoiceLineInput` with an optional `metadata` object carrying `category`, `exemption_reason`, `place_of_supply`, and arbitrary application fields.
+
 ## [2.19.0] - 2026-05-26
 
 ### Security
