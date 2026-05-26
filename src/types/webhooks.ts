@@ -47,6 +47,7 @@ export interface Webhook {
   last_success_at: DateTimeString | null;
   last_failure_at: DateTimeString | null;
   created_at: DateTimeString;
+  secret_last4?: string | null;
 }
 
 /**
