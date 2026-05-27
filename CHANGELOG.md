@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.21.0] - 2026-05-27
+
+### Added
+
+- **`CreateInvoiceInput.parent_quote_id?: UUID`** — Optional field on `invoices.create()` that links a freshly-created **standard** invoice to a source quote.
+  - Backend endpoint: `POST /api/v1/invoices` (Scell.io API 2026-05-27).
+  - Only accepted when `invoice_type` is `'standard'` (or omitted, which defaults to standard). For `'deposit'` / `'balance'` invoices, keep using `quotes.convertToDeposit()` / `quotes.convertToBalance()` — passing `parent_quote_id` with a non-standard `invoice_type` results in HTTP 422.
+  - Anti-IDOR: the server returns HTTP 404 if the quote UUID does not belong to the caller's tenant (and matching sub-tenant scope when applicable).
+  - The returned `Invoice` exposes the resolved `parent_quote_id` for read access (the field already existed for deposit/balance invoices; its JSDoc was updated to reflect that it is now also populated on quote-linked standard invoices).
+
+```typescript
+const { data: invoice } = await client.invoices.create({
+  direction: 'outgoing',
+  output_format: 'facturx',
+  issue_date: '2026-05-27',
+  // ...seller / buyer / lines
+  parent_quote_id: '019d8a7b-0000-7000-a000-000000000001',
+});
+```
+
 ## [2.20.0] - 2026-05-26
 
 ### Added

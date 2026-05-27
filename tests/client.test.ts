@@ -204,6 +204,78 @@ describe('ScellApiClient', () => {
         );
       }
     });
+
+    it('should forward parent_quote_id when linking a standard invoice to a quote', async () => {
+      const quoteId = '019d8a7b-0000-7000-a000-000000000001';
+      const mockResponse = {
+        message: 'Facture creee avec succes',
+        data: {
+          id: 'invoice-uuid',
+          invoice_number: 'FACT-2026-042',
+          status: 'draft',
+          invoice_type: 'standard',
+          parent_quote_id: quoteId,
+        },
+      };
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'Content-Type': 'application/json' }),
+        json: () => Promise.resolve(mockResponse),
+      });
+
+      const client = new ScellApiClient('api-key');
+      const result = await client.invoices.create({
+        direction: 'outgoing',
+        output_format: 'facturx',
+        issue_date: '2026-05-27',
+        total_ht: 100,
+        total_tax: 20,
+        total_ttc: 120,
+        seller_siret: '12345678901234',
+        seller_country: 'FR',
+        seller_name: 'My Company',
+        seller_address: {
+          line1: '1 Rue Test',
+          postal_code: '75001',
+          city: 'Paris',
+          country: 'FR',
+        },
+        buyer_siret: '98765432109876',
+        buyer_country: 'FR',
+        buyer_name: 'Client',
+        buyer_address: {
+          line1: '2 Rue Client',
+          postal_code: '75002',
+          city: 'Paris',
+          country: 'FR',
+        },
+        lines: [
+          {
+            description: 'Service',
+            quantity: 1,
+            unit_price: 100,
+            tax_rate: 20,
+            total_ht: 100,
+            total_tax: 20,
+            total_ttc: 120,
+          },
+        ],
+        parent_quote_id: quoteId,
+      });
+
+      expect(result.data.parent_quote_id).toBe(quoteId);
+
+      // Verify the field is included in the POST body sent to the server.
+      const fetchCall = mockFetch.mock.calls[0];
+      expect(fetchCall[0]).toContain('/invoices');
+      const requestInit = fetchCall[1] as RequestInit;
+      expect(requestInit.method).toBe('POST');
+      const body = JSON.parse(requestInit.body as string) as {
+        parent_quote_id?: string;
+      };
+      expect(body.parent_quote_id).toBe(quoteId);
+    });
   });
 
   describe('signatures.create', () => {

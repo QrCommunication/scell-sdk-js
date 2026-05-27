@@ -103,7 +103,12 @@ export interface Invoice {
   invoice_type?: InvoiceType | undefined;
   /**
    * UUID of the parent quote this invoice was generated from.
-   * Only set on `deposit` and `balance` invoice types.
+   *
+   * Populated on:
+   *  - `deposit` invoices created via `quotes.convertToDeposit()`
+   *  - `balance` invoices created via `quotes.convertToBalance()`
+   *  - `standard` invoices created via `invoices.create({ parent_quote_id })`
+   *    (available since SDK 2.21.0)
    */
   parent_quote_id?: string | undefined;
   /**
@@ -410,6 +415,22 @@ export interface CreateInvoiceInput {
    * reference, etc.). Max 500 characters. Available since SDK 2.15.0.
    */
   deposit_reference_text?: string | undefined;
+  /**
+   * UUID of a quote to link this standard invoice to.
+   *
+   * Only accepted when `invoice_type` is `'standard'` (or omitted, which
+   * defaults to standard). For `'deposit'` / `'balance'` invoices, use the
+   * dedicated `quotes.convertToDeposit()` / `quotes.convertToBalance()`
+   * endpoints instead — passing `parent_quote_id` with a non-standard
+   * `invoice_type` results in HTTP 422.
+   *
+   * Anti-IDOR: the quote must belong to the current tenant (and matching
+   * sub-tenant scope when applicable). The server returns HTTP 404 if the
+   * quote UUID does not resolve under the caller's scope.
+   *
+   * Available since SDK 2.21.0 (API 2026-05-27).
+   */
+  parent_quote_id?: UUID | undefined;
 }
 
 /**
