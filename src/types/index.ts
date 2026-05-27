@@ -347,3 +347,34 @@ export type {
   BrandingLogoUploadUrlResponse,
   UpdateBrandingInput,
 } from './branding.js';
+
+// ---------------------------------------------------------------------------
+// Consolidated enum surface (since v2.23.0)
+//
+// Every union exposed here mirrors a PHP backend enum / DB CHECK constraint.
+// See ./enums.ts for the full inventory + canonical aliases (which re-export
+// pre-existing unions under their `App\Enums\*` canonical names).
+//
+// NOTE: types already exported from their domain file above (InvoiceType,
+// QuoteStatus, QuoteActorType, SignatureStatus, CompanyStatus, VatCategory)
+// are NOT re-listed here — duplicating them would trigger TS2300. They stay
+// reachable via the canonical re-exports declared in `./enums.ts`.
+// ---------------------------------------------------------------------------
+export type {
+  // Canonical aliases (only those that introduce a NEW name).
+  PaymentScheduleLineAmountType,
+  PaymentScheduleLineStatus,
+  SubTenantOnboardingStatus,
+  TenantTransactionType,
+  // New literal unions introduced in v2.23.0.
+  ApiKeyStatus,
+  CreditNoteStatus,
+  CreditNoteType,
+  InvoiceArchiveStatus,
+  InvoiceTemplateKind,
+  OnboardingSessionStatus,
+  QuoteAuditAction,
+  SignatureArchiveStatus,
+  TenantInvoiceStatus,
+  TenantKybStatus,
+} from './enums.js';
