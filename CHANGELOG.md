@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.22.0] - 2026-05-27
+
+### Added
+
+- **`InvoiceStatus`** extended to mirror the new PostgreSQL `invoices_status_check` constraint on the Scell.io API (2026-05-27):
+  - `'refunded'` — full refund: the cumulative amount of attached credit notes (status `sent` or beyond) covers `total_ttc` within 0.01 EUR tolerance.
+  - `'partially_refunded'` — partial refund: at least one credit note is attached but the cumulative amount is strictly below `total_ttc`.
+  - `'validating'`, `'converting'`, `'transmitting'`, `'received'`, `'completed'` — intermediate processing states already accepted by the server, now exposed in the union literal to remove `as InvoiceStatus` casts in user code.
+  - Both refund transitions are driven server-side by `CreditNoteObserver::recomputeRefundStatus()` and do NOT bypass ISCA immutability (status is not part of `IMMUTABLE_FISCAL_FIELDS`).
+
+- **`RefundStatus`** type — Union `'none' | 'partial' | 'full'` exposed from `@scell/sdk` and consumed by the new `Invoice.refund_status` field. Read-only aggregate computed server-side from the linked credit notes.
+
+- **`Invoice.refund_status?: RefundStatus`** — Optional read-only field on the `Invoice` payload mirroring the new refund workflow. `undefined` on responses returned by API versions older than 2026-05-27.
+
+- **`Invoice.total_refunded?: number`** — Optional read-only field carrying the cumulative `total_ttc` of attached credit notes. Defaults to `0` server-side when no credit note is attached. Equivalent in value to the pre-existing `credited_amount` but exposed under a refund-oriented name for the new `refunded` / `partially_refunded` workflow.
+
+```typescript
+const { data: invoice } = await client.invoices.get('019d…');
+
+if (invoice.refund_status === 'full') {
+  console.log(`Invoice refunded: ${invoice.total_refunded} ${invoice.currency}`);
+} else if (invoice.status === 'partially_refunded') {
+  // legacy fallback: read `credited_amount` if the server is older than 2026-05-27
+  const refunded = invoice.total_refunded ?? invoice.credited_amount ?? 0;
+  console.log(`Partial refund: ${refunded} / ${invoice.total_ttc}`);
+}
+```
+
 ## [2.21.0] - 2026-05-27
 
 ### Added

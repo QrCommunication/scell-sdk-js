@@ -48,6 +48,7 @@ export type {
   InvoiceStatus,
   InvoiceType,
   MarkPaidInput,
+  RefundStatus,
   RejectInvoiceInput,
   RejectionCode,
   // Invoice email delivery (since v2.13.0)

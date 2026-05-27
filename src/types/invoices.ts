@@ -20,19 +20,51 @@ export type InvoiceFormat = 'facturx' | 'ubl' | 'cii';
 
 /**
  * Invoice status
+ *
+ * Mirrors the PostgreSQL `invoices_status_check` constraint on the server.
+ *
+ * Statuses introduced in API 2026-05-27 (SDK v2.22.0):
+ *  - `'refunded'`           : full refund — sum of validated credit notes covers `total_ttc`.
+ *  - `'partially_refunded'` : partial refund — at least one credit note attached but
+ *                              the cumulative amount is strictly below `total_ttc`.
+ *
+ * Both transitions are driven server-side by `CreditNoteObserver::recomputeRefundStatus()`
+ * and do NOT bypass ISCA immutability (status is not part of `IMMUTABLE_FISCAL_FIELDS`).
+ *
+ * Note: `pending` and `cancelled` are SDK-only convenience values kept for backward
+ * compatibility; the server uses `validating` / `received` instead.
  */
 export type InvoiceStatus =
   | 'draft'
   | 'pending'
+  | 'validating'
   | 'validated'
+  | 'converting'
   | 'converted'
+  | 'transmitting'
   | 'transmitted'
   | 'accepted'
   | 'rejected'
-  | 'paid'
   | 'disputed'
+  | 'paid'
+  | 'received'
+  | 'completed'
   | 'cancelled'
-  | 'error';
+  | 'error'
+  | 'refunded'
+  | 'partially_refunded';
+
+/**
+ * Refund status — read-only aggregate computed server-side from the linked
+ * credit notes (status='sent' or beyond).
+ *
+ * Available since SDK 2.22.0 (API 2026-05-27).
+ *
+ *  - `'none'`    : no validated credit note attached.
+ *  - `'partial'` : at least one credit note covers part of `total_ttc`.
+ *  - `'full'`    : the cumulative credit covers `total_ttc` (within 0.01 EUR tolerance).
+ */
+export type RefundStatus = 'none' | 'partial' | 'full';
 
 /**
  * Invoice download file type
@@ -164,6 +196,28 @@ export interface Invoice {
     status: string;
     created_at: DateTimeString;
   }> | null;
+  /**
+   * Aggregate refund status — server-side rollup of attached credit notes.
+   *
+   * - `'none'`    : no validated credit note attached.
+   * - `'partial'` : at least one credit note, cumulative amount < `total_ttc`.
+   * - `'full'`    : cumulative credit covers `total_ttc` (within 0.01 EUR).
+   *
+   * Mirrors the invoice `status` transition to `'partially_refunded'` /
+   * `'refunded'` posed by `CreditNoteObserver::recomputeRefundStatus()`.
+   * Available since SDK 2.22.0 (API 2026-05-27).
+   */
+  refund_status?: RefundStatus | undefined;
+  /**
+   * Total amount already refunded via attached credit notes (sum of
+   * `total_ttc` of credit notes with status='sent' or beyond).
+   *
+   * Defaults to `0` when no credit note is attached. Equivalent in value to
+   * `credited_amount` but exposed under a refund-oriented name for the new
+   * refunded/partially_refunded workflow.
+   * Available since SDK 2.22.0 (API 2026-05-27).
+   */
+  total_refunded?: number | undefined;
   /**
    * UUID of the payment schedule line that triggered the generation of this
    * deposit invoice. Available since SDK 2.13.0.
