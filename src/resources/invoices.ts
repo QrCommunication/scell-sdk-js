@@ -442,37 +442,60 @@ export class InvoicesResource {
   }
 
   /**
-   * Mark an incoming invoice as paid
+   * Mark an invoice as paid.
    *
-   * This is a mandatory step in the French e-invoicing lifecycle for incoming invoices.
-   * Once marked as paid, the invoice status changes to 'paid' and payment details are recorded.
+   * This is a mandatory step in the French e-invoicing lifecycle. Once
+   * marked as paid, the invoice status changes to `'paid'`, payment
+   * details are recorded, and the Factur-X document is enriched with
+   * the BT-81 / BT-82 payment means metadata.
    *
-   * @param id - Invoice UUID
-   * @param data - Optional payment details (reference, date, note)
-   * @param requestOptions - Request options
+   * **Breaking change in v2.25.0** : `payment_means_code` is now
+   * required (matches the server `MarkPaidRequest::rules()` since
+   * API 2026-05-28). Omitting it triggers HTTP 422
+   * `payment_means_code.required`. Pre-fill the dropdown with a sane
+   * default — `'58'` (SEPA credit transfer) for B2B France, `'30'`
+   * (credit transfer) for international.
+   *
+   * @param invoiceId - Invoice UUID
+   * @param opts - Payment details (payment_means_code is required)
+   * @param requestOptions - Per-request options
    * @returns Updated invoice with payment information
    *
    * @example
    * ```typescript
-   * // Mark as paid with payment details
+   * // SEPA credit transfer (most common in B2B France)
    * const { data: invoice } = await client.invoices.markPaid('invoice-uuid', {
+   *   payment_means_code: '58',
+   *   payment_means_text: 'BNP Paribas',
    *   payment_reference: 'VIR-2026-0124',
    *   paid_at: '2026-01-24T10:30:00Z',
-   *   note: 'Payment received via bank transfer'
+   *   note: 'Payment received via bank transfer',
    * });
    *
-   * // Simple mark as paid (uses current date/time)
-   * await client.invoices.markPaid('invoice-uuid');
+   * // Bank card payment via Stripe
+   * await client.invoices.markPaid('invoice-uuid', {
+   *   payment_means_code: '48',
+   *   payment_means_text: 'Stripe',
+   *   payment_reference: 'pi_3OqGZ2K...',
+   * });
+   *
+   * // Cheque
+   * await client.invoices.markPaid('invoice-uuid', {
+   *   payment_means_code: '20',
+   *   payment_reference: 'CHQ-001234',
+   * });
    * ```
+   *
+   * @since 2.25.0 — `opts.payment_means_code` is now required.
    */
   async markPaid(
-    id: string,
-    data?: MarkPaidInput,
+    invoiceId: string,
+    opts: MarkPaidInput,
     requestOptions?: RequestOptions
   ): Promise<SingleResponse<Invoice>> {
     return this.http.post<SingleResponse<Invoice>>(
-      `/invoices/${id}/mark-paid`,
-      data,
+      `/invoices/${invoiceId}/mark-paid`,
+      opts,
       requestOptions
     );
   }

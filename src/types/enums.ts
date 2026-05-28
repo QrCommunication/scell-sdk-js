@@ -236,3 +236,115 @@ export type OnboardingSessionStatus =
   | 'completed'
   | 'failed'
   | 'expired';
+
+// ---------------------------------------------------------------------------
+// PaymentMeansCode (UN/ECE 4461 — Factur-X BT-81)
+// Added in v2.25.0
+// ---------------------------------------------------------------------------
+
+/**
+ * Payment means code — subset of UN/ECE Recommendation 16 / Code List 4461.
+ *
+ * Mirrors the PHP backend enum `App\Enums\Invoice\PaymentMeansCode` and the
+ * `payment_means_code` column on `invoices` / `credit_notes`. Used as the
+ * Factur-X BT-81 value (`UNTDID_4461_*` in horstoeko/zugferd) and now
+ * **required** on `POST /v1/invoices/{id}/mark-paid` (API 2026-05-28).
+ *
+ * Only the subset relevant to B2B France is exposed. The literal values
+ * follow the UN/ECE numeric codes verbatim (as strings) so they can be
+ * forwarded as-is to the Factur-X generator.
+ *
+ * | Code  | Label (FR)              | Usage                              |
+ * | ----- | ----------------------- | ---------------------------------- |
+ * | `'1'` | Non spécifié            | Fallback générique (BR-CO-27)      |
+ * | `'10'`| Espèces                 | Cash                                |
+ * | `'20'`| Chèque                  | Cheque                              |
+ * | `'30'`| Virement                | International credit transfer       |
+ * | `'42'`| Versement bancaire      | Bank account transfer (sans IBAN)   |
+ * | `'48'`| Carte bancaire          | Bank card                           |
+ * | `'49'`| Prélèvement             | Direct debit                        |
+ * | `'57'`| Accord permanent        | Standing agreement (mandat)         |
+ * | `'58'`| Virement SEPA           | SEPA credit transfer (privilégié)   |
+ * | `'59'`| Prélèvement SEPA        | SEPA direct debit                   |
+ * | `'97'`| Compensation            | Clearing between partners           |
+ *
+ * @see {@link PAYMENT_MEANS_LABELS_FR} — French labels (UI dashboard)
+ * @see {@link PAYMENT_MEANS_LABELS_EN} — English labels (i18n)
+ * @see {@link commonB2bFrance} — Most common codes for B2B France
+ * @since 2.25.0
+ */
+export type PaymentMeansCode =
+  | '1'
+  | '10'
+  | '20'
+  | '30'
+  | '42'
+  | '48'
+  | '49'
+  | '57'
+  | '58'
+  | '59'
+  | '97';
+
+/**
+ * Human-readable French labels for every {@link PaymentMeansCode}.
+ *
+ * Mirrors `App\Enums\Invoice\PaymentMeansCode::label()` server-side.
+ * Useful for dashboard `<select>` rendering, invoice payment cards, and
+ * any user-facing translation of the BT-81 value.
+ *
+ * @since 2.25.0
+ */
+export const PAYMENT_MEANS_LABELS_FR: Readonly<Record<PaymentMeansCode, string>> = Object.freeze({
+  '1': 'Non spécifié',
+  '10': 'Espèces',
+  '20': 'Chèque',
+  '30': 'Virement',
+  '42': 'Versement bancaire',
+  '48': 'Carte bancaire',
+  '49': 'Prélèvement',
+  '57': 'Accord permanent',
+  '58': 'Virement SEPA',
+  '59': 'Prélèvement SEPA',
+  '97': 'Compensation',
+});
+
+/**
+ * Human-readable English labels for every {@link PaymentMeansCode}.
+ *
+ * Mirrors `App\Enums\Invoice\PaymentMeansCode::labelEn()` server-side.
+ *
+ * @since 2.25.0
+ */
+export const PAYMENT_MEANS_LABELS_EN: Readonly<Record<PaymentMeansCode, string>> = Object.freeze({
+  '1': 'Unspecified',
+  '10': 'Cash',
+  '20': 'Cheque',
+  '30': 'Credit transfer',
+  '42': 'Bank account transfer',
+  '48': 'Bank card',
+  '49': 'Direct debit',
+  '57': 'Standing agreement',
+  '58': 'SEPA credit transfer',
+  '59': 'SEPA direct debit',
+  '97': 'Clearing between partners',
+});
+
+/**
+ * Most common payment means codes in French B2B context, in recommended
+ * UI display order.
+ *
+ * Mirrors `App\Enums\Invoice\PaymentMeansCode::commonB2bFrance()`. Ideal
+ * for ordering the top of a `<select>` dropdown (the rest of the codes
+ * can be displayed after a separator).
+ *
+ * @since 2.25.0
+ */
+export const commonB2bFrance: readonly PaymentMeansCode[] = Object.freeze([
+  '58', // SEPA credit transfer
+  '30', // Credit transfer
+  '20', // Cheque
+  '48', // Bank card
+  '59', // SEPA direct debit
+  '10', // Cash
+]);

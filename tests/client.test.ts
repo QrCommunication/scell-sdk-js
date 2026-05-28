@@ -435,6 +435,7 @@ describe('invoices.markPaid', () => {
 
     const client = new ScellApiClient('api-key');
     const result = await client.invoices.markPaid('invoice-uuid', {
+      payment_means_code: '58',
       payment_reference: 'VIR-2026-0124',
       paid_at: '2026-01-24T10:30:00Z',
       note: 'Payment received via bank transfer',
@@ -454,7 +455,9 @@ describe('invoices.markPaid', () => {
     );
   });
 
-  it('should mark invoice as paid without payment details', async () => {
+  it('should mark invoice as paid with minimal payload (payment_means_code only)', async () => {
+    // Since v2.25.0, payment_means_code is required by the backend
+    // (MarkPaidRequest::rules()) — paid_at defaults to now() server-side.
     const mockResponse = {
       data: {
         id: 'invoice-uuid',
@@ -463,6 +466,7 @@ describe('invoices.markPaid', () => {
         paid_at: '2026-01-24T12:00:00Z',
         payment_reference: null,
         payment_note: null,
+        payment_means_code: '30',
       },
     };
 
@@ -473,7 +477,9 @@ describe('invoices.markPaid', () => {
     });
 
     const client = new ScellApiClient('api-key');
-    const result = await client.invoices.markPaid('invoice-uuid');
+    const result = await client.invoices.markPaid('invoice-uuid', {
+      payment_means_code: '30',
+    });
 
     expect(result.data.status).toBe('paid');
     expect(result.data.paid_at).toBeDefined();

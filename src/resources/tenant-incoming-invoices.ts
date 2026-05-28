@@ -19,6 +19,7 @@ import type {
   TenantInvoiceFilters,
 } from '../types/tenant-invoices.js';
 import type { RejectionCode } from '../types/invoices.js';
+import type { PaymentMeansCode } from '../types/enums.js';
 
 /**
  * Input for accepting an incoming invoice
@@ -41,14 +42,33 @@ export interface RejectIncomingInvoiceInput {
 }
 
 /**
- * Input for marking an invoice as paid
+ * Input for marking an incoming invoice as paid.
+ *
+ * Since v2.25.0 (API 2026-05-28), `payment_means_code` is **REQUIRED**
+ * by the backend. Server returns HTTP 422 if omitted.
+ *
+ * @see {@link PaymentMeansCode} for allowed UN/ECE 4461 values.
  */
 export interface MarkPaidIncomingInvoiceInput {
-  /** Payment reference (bank transfer ID, check number, etc.) */
+  /**
+   * Payment means code (UN/ECE 4461 — Factur-X BT-81).
+   * **REQUIRED** since API 2026-05-28.
+   *
+   * @since 2.25.0
+   */
+  payment_means_code: PaymentMeansCode;
+  /**
+   * Optional free-text label for the payment means (Factur-X BT-82).
+   * Max 100 characters.
+   *
+   * @since 2.25.0
+   */
+  payment_means_text?: string | undefined;
+  /** Payment reference (bank transfer ID, check number, etc.) — max 100 chars. */
   payment_reference?: string | undefined;
   /** Payment date (ISO 8601) - defaults to current date/time */
   paid_at?: string | undefined;
-  /** Optional note about the payment */
+  /** Optional note about the payment — max 500 chars. */
   note?: string | undefined;
 }
 
@@ -335,43 +355,48 @@ export class TenantIncomingInvoicesResource {
   }
 
   /**
-   * Mark an incoming invoice as paid
+   * Mark an incoming invoice as paid.
    *
-   * Records payment information for an accepted invoice.
-   * This is a mandatory step in the French e-invoicing lifecycle.
+   * Records payment information for an accepted invoice. This is a
+   * mandatory step in the French e-invoicing lifecycle.
+   *
+   * **Breaking change in v2.25.0** : `payment_means_code` is now
+   * required (matches the server `MarkPaidRequest::rules()` since
+   * API 2026-05-28). Omitting it triggers HTTP 422
+   * `payment_means_code.required`.
    *
    * @param invoiceId - Invoice UUID
-   * @param input - Optional payment details
+   * @param opts - Payment details (payment_means_code is required)
    * @param requestOptions - Optional request configuration
    * @returns Updated invoice with payment information
    *
    * @example
    * ```typescript
-   * // Mark as paid with details
    * const { data: invoice } = await client.incomingInvoices.markPaid(
    *   'invoice-uuid',
    *   {
+   *     payment_means_code: '58',
+   *     payment_means_text: 'BNP Paribas',
    *     payment_reference: 'VIR-2026-0150',
    *     paid_at: '2026-02-14T14:30:00Z',
-   *     note: 'Payment via bank transfer'
+   *     note: 'Payment via bank transfer',
    *   }
    * );
    *
    * console.log('Invoice paid:', invoice.status); // 'paid'
-   * console.log('Payment ref:', invoice.payment_reference);
-   *
-   * // Simple mark as paid (current date)
-   * await client.incomingInvoices.markPaid('invoice-uuid');
+   * console.log('Means:', invoice.payment_reference);
    * ```
+   *
+   * @since 2.25.0 — `opts.payment_means_code` is now required.
    */
   async markPaid(
     invoiceId: string,
-    input?: MarkPaidIncomingInvoiceInput,
+    opts: MarkPaidIncomingInvoiceInput,
     requestOptions?: RequestOptions
   ): Promise<SingleResponse<TenantInvoice>> {
     return this.http.post<SingleResponse<TenantInvoice>>(
       `/tenant/incoming-invoices/${invoiceId}/mark-paid`,
-      input,
+      opts,
       requestOptions
     );
   }

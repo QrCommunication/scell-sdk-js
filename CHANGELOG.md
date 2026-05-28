@@ -2,6 +2,105 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.25.0] - 2026-05-28
+
+A targeted release that closes the Factur-X BT-81 / BT-82 gap : the SDK now
+exposes the `PaymentMeansCode` union (UN/ECE 4461 subset for B2B France) and
+threads it through every `markPaid()` surface plus the `Invoice` / `CreditNote`
+read payloads.
+
+This is a **soft breaking change** for `invoices.markPaid()` and
+`incomingInvoices.markPaid()` : `payment_means_code` is now required to mirror
+the server `MarkPaidRequest::rules()` shipped on 2026-05-28. Calls that omit
+it were already silently failing with HTTP 422 against the live API.
+
+### Added
+
+- **`PaymentMeansCode`** — Literal union mirroring `App\Enums\Invoice\PaymentMeansCode`:
+  `'1' | '10' | '20' | '30' | '42' | '48' | '49' | '57' | '58' | '59' | '97'`.
+  Drives the Factur-X BT-81 (`<ram:TypeCode>`) value emitted under
+  `<ram:SpecifiedTradeSettlementPaymentMeans>`. Subset retained covers every
+  payment means actually used in B2B France (cash, cheque, credit transfer,
+  SEPA credit/direct debit, bank card, clearing, standing agreement).
+
+- **`PAYMENT_MEANS_LABELS_FR`** — `Readonly<Record<PaymentMeansCode, string>>`
+  frozen at runtime, mirrors `PaymentMeansCode::label()`. Ready to feed an
+  Antd `<Select>` dashboard dropdown.
+
+- **`PAYMENT_MEANS_LABELS_EN`** — Same shape, English labels
+  (mirrors `PaymentMeansCode::labelEn()`).
+
+- **`commonB2bFrance`** — `readonly PaymentMeansCode[]` frozen at runtime,
+  mirrors `PaymentMeansCode::commonB2bFrance()`. Suggested ordering for the
+  top of a payment-means dropdown : SEPA credit transfer, credit transfer,
+  cheque, bank card, SEPA direct debit, cash.
+
+- **`Invoice.payment_means_code?: PaymentMeansCode | null`** — Read-only field
+  populated when `markPaid()` has been called. `null` on unpaid invoices or
+  invoices marked paid prior to API 2026-05-28.
+
+- **`Invoice.payment_means_text?: string | null`** — Optional free-text label
+  (Factur-X BT-82, max 100 chars). Use to disambiguate a generic code, e.g.
+  `'BNP Paribas'` for code `'58'`, `'Stripe checkout'` for code `'48'`.
+
+- **`CreditNote.payment_means_code?: PaymentMeansCode | null`** + 
+  **`CreditNote.payment_means_text?: string | null`** — Inherited from the
+  source invoice when the credit note refunds a paid invoice.
+
+### Changed
+
+- **`MarkPaidInput.payment_means_code` is now required** (breaking on the
+  TypeScript surface, soft on the runtime — calls already failed with
+  HTTP 422 against the live API). Same goes for
+  `MarkPaidIncomingInvoiceInput.payment_means_code`.
+
+- **`InvoicesResource.markPaid()`** — Signature changed from
+  `markPaid(id, data?: MarkPaidInput)` to
+  `markPaid(invoiceId, opts: MarkPaidInput)` (second arg required).
+
+- **`IncomingInvoicesResource.markPaid()` / `TenantIncomingInvoicesResource.markPaid()`** — 
+  Same signature change. Resource lives on both `ScellApiClient.incomingInvoices`
+  (alias) and `ScellTenantClient.incomingInvoices`.
+
+### Migration
+
+```typescript
+// BEFORE (v2.24.0 and earlier)
+await client.invoices.markPaid('invoice-uuid', {
+  payment_reference: 'VIR-2026-0124',
+  paid_at: '2026-01-24T10:30:00Z',
+});
+
+// AFTER (v2.25.0) — payment_means_code is required
+await client.invoices.markPaid('invoice-uuid', {
+  payment_means_code: '58',          // SEPA credit transfer (B2B FR default)
+  payment_means_text: 'BNP Paribas', // optional Factur-X BT-82
+  payment_reference: 'VIR-2026-0124',
+  paid_at: '2026-01-24T10:30:00Z',
+});
+```
+
+```typescript
+// UI dropdown — use the frozen helpers
+import {
+  PAYMENT_MEANS_LABELS_FR,
+  commonB2bFrance,
+  type PaymentMeansCode,
+} from '@scell/sdk';
+
+const options = commonB2bFrance.map((code) => ({
+  value: code,
+  label: PAYMENT_MEANS_LABELS_FR[code],
+}));
+// → [{ value: '58', label: 'Virement SEPA' }, { value: '30', label: 'Virement' }, …]
+```
+
+### Backend reference
+
+- Enum source : `backend/app/Enums/Invoice/PaymentMeansCode.php`
+- Validation : `backend/app/Http/Requests/Invoice/MarkPaidRequest.php` (`payment_means_code` rule `required + Rule::enum(PaymentMeansCode::class)`)
+- Backend commit : `a48c241` (Scell.io API 2026-05-28)
+
 ## [2.24.0] - 2026-05-28
 
 A consolidation release that closes the long-standing gap between the source

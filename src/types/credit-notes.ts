@@ -10,6 +10,7 @@ import type {
   PaginationOptions,
   UUID,
 } from './common.js';
+import type { PaymentMeansCode } from './enums.js';
 
 /**
  * Credit note item
@@ -37,6 +38,24 @@ export interface CreditNote {
   items: CreditNoteItem[];
   created_at: DateTimeString;
   updated_at: DateTimeString;
+  /**
+   * Payment means code inherited from the source invoice when the
+   * credit note refunds a fully paid invoice (Factur-X BT-81).
+   *
+   * `null` on credit notes issued against unpaid invoices or created
+   * prior to API 2026-05-28.
+   *
+   * @see {@link PaymentMeansCode}
+   * @since 2.25.0
+   */
+  payment_means_code?: PaymentMeansCode | null | undefined;
+  /**
+   * Optional free-text label for the payment means (Factur-X BT-82),
+   * inherited from the source invoice. Max 100 characters.
+   *
+   * @since 2.25.0
+   */
+  payment_means_text?: string | null | undefined;
 }
 
 /**

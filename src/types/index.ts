@@ -393,4 +393,13 @@ export type {
   SignatureArchiveStatus,
   TenantInvoiceStatus,
   TenantKybStatus,
+  // New literal union introduced in v2.25.0 (Factur-X BT-81).
+  PaymentMeansCode,
+} from './enums.js';
+
+// Payment means runtime helpers (since v2.25.0 — UN/ECE 4461 / Factur-X BT-81).
+export {
+  PAYMENT_MEANS_LABELS_FR,
+  PAYMENT_MEANS_LABELS_EN,
+  commonB2bFrance,
 } from './enums.js';

@@ -7,6 +7,7 @@ import type {
   Siret,
   UUID,
 } from './common.js';
+import type { PaymentMeansCode } from './enums.js';
 
 /**
  * Invoice direction
@@ -173,6 +174,29 @@ export interface Invoice {
   payment_reference: string | null;
   /** Optional note about the payment */
   payment_note: string | null;
+  /**
+   * Payment means code (UN/ECE 4461 — Factur-X BT-81).
+   *
+   * Populated when the invoice has been marked as paid via
+   * `markPaid()`. `null` otherwise (invoice not yet paid, or marked
+   * paid prior to API 2026-05-28). Drives the `<ram:TypeCode>` value
+   * emitted under `<ram:SpecifiedTradeSettlementPaymentMeans>` in the
+   * generated Factur-X / UBL / CII document.
+   *
+   * @see {@link PaymentMeansCode}
+   * @since 2.25.0
+   */
+  payment_means_code?: PaymentMeansCode | null | undefined;
+  /**
+   * Optional free-text label for the payment means (Factur-X BT-82).
+   *
+   * Use to disambiguate a generic code: e.g. `'BNP Paribas'` for code
+   * `'58'` (SEPA credit transfer), `'Stripe checkout'` for code `'48'`
+   * (bank card). Capped at 100 characters server-side.
+   *
+   * @since 2.25.0
+   */
+  payment_means_text?: string | null | undefined;
   /**
    * Number of credit notes issued against this invoice (partial or total).
    * Available since SDK 1.16.0 (API 2026-05-04).
@@ -605,14 +629,45 @@ export interface DisputeInvoiceInput {
 }
 
 /**
- * Input for marking an incoming invoice as paid
+ * Input for marking an invoice (incoming or outgoing) as paid.
+ *
+ * Since v2.25.0 (API 2026-05-28), `payment_means_code` is **REQUIRED**
+ * by the backend (`MarkPaidRequest::rules()`). The server returns
+ * HTTP 422 with the validation error `payment_means_code.required` if
+ * the field is omitted.
+ *
+ * Frontends should pre-fill the dropdown with a sensible default (most
+ * commonly `'30'` — credit transfer, or `'58'` — SEPA credit transfer
+ * for French B2B) to avoid friction.
+ *
+ * @see {@link PaymentMeansCode} for the allowed UN/ECE 4461 values.
  */
 export interface MarkPaidInput {
-  /** Payment reference (bank transfer ID, check number, etc.) */
+  /**
+   * Payment means code (UN/ECE 4461 — Factur-X BT-81).
+   *
+   * **REQUIRED** since API 2026-05-28. Common B2B France values:
+   *  - `'58'` — SEPA credit transfer (preferred)
+   *  - `'30'` — Generic credit transfer
+   *  - `'20'` — Cheque
+   *  - `'48'` — Bank card
+   *
+   * @since 2.25.0
+   */
+  payment_means_code: PaymentMeansCode;
+  /**
+   * Optional free-text label for the payment means (Factur-X BT-82).
+   * Max 100 characters. Use to disambiguate a generic code (e.g.
+   * `'BNP Paribas'` for code `'58'`).
+   *
+   * @since 2.25.0
+   */
+  payment_means_text?: string | undefined;
+  /** Payment reference (bank transfer ID, check number, etc.) — max 100 chars. */
   payment_reference?: string | undefined;
   /** Payment date (ISO 8601) - defaults to current date/time if not provided */
   paid_at?: DateTimeString | undefined;
-  /** Optional note about the payment */
+  /** Optional note about the payment — max 500 chars. */
   note?: string | undefined;
 }
 
