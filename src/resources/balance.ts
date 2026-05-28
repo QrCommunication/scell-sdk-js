@@ -20,42 +20,35 @@ import type {
 } from '../types/balance.js';
 
 /**
- * Balance API resource
+ * Balance API resource.
  *
- * @example
- * ```typescript
- * // Check balance
- * const balance = await client.balance.get();
- * console.log(`Current balance: ${balance.amount} ${balance.currency}`);
+ * @deprecated Since v2.24.0. The legacy `/balance/*` endpoints have been
+ *   removed server-side (Wave B3 refactor, 2026-05-10). Any call against
+ *   this resource will return HTTP 404 in production. The replacement
+ *   surface lives on `ScellApiClient.billing` ({@link BillingResource}) :
  *
- * // Reload balance
- * await client.balance.reload({ amount: 100 });
+ *   - `client.balance.get()`             -> `client.billing.usage()`
+ *   - `client.balance.reload({...})`     -> `client.billing.topUp({...})`
+ *   - `client.balance.updateSettings()`  -> Use the dashboard UI; the
+ *     auto-reload settings now live on the tenant profile, not the
+ *     balance ledger.
+ *   - `client.balance.transactions()`    -> `client.billing.transactions()`
  *
- * // View transactions
- * const transactions = await client.balance.transactions({
- *   type: 'debit',
- *   service: 'invoice'
- * });
- * ```
+ *   The class is kept exported solely for backward compatibility and will
+ *   be removed in v3.0.0.
  */
 export class BalanceResource {
   constructor(private readonly http: HttpClient) {}
 
   /**
-   * Get current balance and settings
+   * Get current balance and settings.
+   *
+   * @deprecated Since v2.24.0 — backend endpoint `/balance` removed (404).
+   *   Use {@link BillingResource.usage} instead :
+   *   `await client.billing.usage()`.
    *
    * @param requestOptions - Request options
    * @returns Current balance details
-   *
-   * @example
-   * ```typescript
-   * const { data: balance } = await client.balance.get();
-   * console.log(`Balance: ${balance.amount} ${balance.currency}`);
-   *
-   * if (balance.amount < balance.low_balance_alert_threshold) {
-   *   console.log('Warning: Low balance!');
-   * }
-   * ```
    */
   async get(requestOptions?: RequestOptions): Promise<SingleResponse<Balance>> {
     return this.http.get<SingleResponse<Balance>>(
@@ -66,19 +59,17 @@ export class BalanceResource {
   }
 
   /**
-   * Reload balance
+   * Reload balance.
    *
-   * Note: This is a simulation endpoint. In production, use Stripe integration.
+   * @deprecated Since v2.24.0 — backend endpoint `/balance/reload` removed
+   *   (404). Use {@link BillingResource.topUp} instead :
+   *   `await client.billing.topUp({ amount: 100 })`. The Stripe flow now
+   *   returns a Payment Intent client secret that must be confirmed
+   *   client-side.
    *
    * @param input - Reload amount (10-10000 EUR)
    * @param requestOptions - Request options
    * @returns Reload transaction details
-   *
-   * @example
-   * ```typescript
-   * const { transaction } = await client.balance.reload({ amount: 100 });
-   * console.log(`New balance: ${transaction.balance_after}`);
-   * ```
    */
   async reload(
     input: ReloadBalanceInput,
@@ -92,24 +83,17 @@ export class BalanceResource {
   }
 
   /**
-   * Update balance settings
+   * Update balance settings.
    *
-   * Configure auto-reload and alert thresholds.
+   * @deprecated Since v2.24.0 — backend endpoint `/balance/settings`
+   *   removed (404). The auto-reload + alert threshold configuration now
+   *   lives on the tenant profile. Manage it through the dashboard UI or
+   *   via the (forthcoming) admin SDK ; there is no public REST equivalent
+   *   for partner SDKs at this time.
    *
    * @param input - Settings to update
    * @param requestOptions - Request options
    * @returns Updated settings
-   *
-   * @example
-   * ```typescript
-   * await client.balance.updateSettings({
-   *   auto_reload_enabled: true,
-   *   auto_reload_threshold: 50,
-   *   auto_reload_amount: 200,
-   *   low_balance_alert_threshold: 100,
-   *   critical_balance_alert_threshold: 25
-   * });
-   * ```
    */
   async updateSettings(
     input: UpdateBalanceSettingsInput,
@@ -123,26 +107,15 @@ export class BalanceResource {
   }
 
   /**
-   * List balance transactions
+   * List balance transactions.
+   *
+   * @deprecated Since v2.24.0 — backend endpoint `/balance/transactions`
+   *   removed (404). Use {@link BillingResource.transactions} instead :
+   *   `await client.billing.transactions({ type: 'debit' })`.
    *
    * @param options - Filter and pagination options
    * @param requestOptions - Request options
    * @returns Paginated list of transactions
-   *
-   * @example
-   * ```typescript
-   * // List all invoice debits
-   * const { data, meta } = await client.balance.transactions({
-   *   type: 'debit',
-   *   service: 'invoice',
-   *   from: '2024-01-01',
-   *   to: '2024-01-31'
-   * });
-   *
-   * data.forEach(tx => {
-   *   console.log(`${tx.description}: -${tx.amount} EUR`);
-   * });
-   * ```
    */
   async transactions(
     options: TransactionListOptions = {},

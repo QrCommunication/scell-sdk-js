@@ -2,6 +2,141 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.24.0] - 2026-05-28
+
+A consolidation release that closes the long-standing gap between the source
+tree and the public surface : the orphan `InvoiceTemplatesResource` is now
+wired on both clients, the four removed `/balance/*` endpoints are flagged
+`@deprecated` (no more silent 404s in user code), the three broken
+`http.get`-based PDF download doublons on `FiscalResource` are pruned in
+favour of the typed `getRaw` versions, and two new public surfaces (the
+`GET /version` helper and the `CreditPacksResource`) land alongside.
+
+Backward compat is preserved : every deprecation is JSDoc-only, no runtime
+symbol is removed. v3.0.0 will physically delete the deprecated classes /
+aliases.
+
+### Added
+
+- **`InvoiceTemplatesResource` wired on both clients** — `client.invoiceTemplates`
+  is now available on `ScellClient` (Bearer) and `ScellApiClient` (X-API-Key).
+  The resource itself shipped in v1.15.0 (`src/resources/invoice-templates.ts`)
+  but had never been instantiated — every consumer that wanted to manage
+  templates had to import the class directly and pass the internal `HttpClient`.
+  Now :
+
+  ```typescript
+  import { ScellApiClient } from '@scell/sdk';
+
+  const client = new ScellApiClient('sk_live_xxx');
+
+  const { data } = await client.invoiceTemplates.list({ scope: 'tenant' });
+  const created = await client.invoiceTemplates.create({
+    scope: 'tenant',
+    name: 'Mon template',
+    primary_color: '#1A73E8',
+    footer_text: 'Footer custom',
+  });
+  await client.invoiceTemplates.uploadLogo(created.id, logoBuffer, 'logo.png');
+  await client.invoiceTemplates.markDefault(created.id);
+  ```
+
+  The seven existing methods (`list`, `get`, `create`, `update`, `delete`,
+  `markDefault`, `uploadLogo`) and their input / output types
+  (`InvoiceTemplate`, `CreateInvoiceTemplateInput`, `UpdateInvoiceTemplateInput`,
+  `InvoiceTemplateListOptions`, `InvoiceTemplateScope`,
+  `InvoiceTemplateLogoPosition`) are now re-exported from the package root.
+
+- **`client.version()` helper** — Top-level method on both `ScellClient` and
+  `ScellApiClient` that calls the public `GET /api/v1/version` endpoint
+  (no authentication required) and returns the deployed API manifest :
+
+  ```typescript
+  const v = await client.version();
+  console.log(`API ${v.version} (commit ${v.commit_short}, ${v.environment})`);
+  ```
+
+  The returned shape (new `ApiVersionInfo` type) carries `version`,
+  `commit_sha`, `commit_short`, `committed_at`, `environment`,
+  `php_version`, `laravel_version`, and `resolved_at`. Designed for drift
+  detection (compare deployed `version` vs the SDK `package.json` version)
+  and for health-check dashboards that surface build metadata.
+
+- **`CreditPacksResource` (public read-only)** — Lists the prepaid credit
+  bundles published in the Scell.io public catalogue
+  (`GET /api/v1/packs/public`). Exposed on both clients as
+  `client.creditPacks` :
+
+  ```typescript
+  const packs = await client.creditPacks.list();
+  for (const pack of packs) {
+    console.log(`${pack.name}: ${pack.amount_euros} EUR (+${pack.bonus_percent}%)`);
+  }
+
+  const pro = await client.creditPacks.get('pro');
+  ```
+
+  The new `CreditPack` interface carries the dual-aliased `*_eur` /
+  `*_euros` fields exposed by the backend (the second variant is
+  preferred in new code), the `bonus_percent` ratio, the
+  `is_recommended` flag, and the `position` ordering key. Purchasing
+  flow stays on `client.billing.checkoutPack(slug)` (Stripe checkout) —
+  this resource only exposes the catalogue.
+
+### Deprecated
+
+- **`BalanceResource` (the whole class + all four methods)** — The legacy
+  `/api/v1/balance/*` endpoints were removed server-side in Wave B3
+  (refactor 2026-05-10). Any call against `client.balance.*` will now
+  return HTTP 404 in production. The class is kept exported solely for
+  backward compatibility and will be physically removed in v3.0.0. The
+  JSDoc on each method now points to its replacement on
+  `BillingResource` :
+
+  | Old (404 in prod) | New |
+  |---|---|
+  | `client.balance.get()` | `client.billing.usage()` |
+  | `client.balance.reload({...})` | `client.billing.topUp({...})` |
+  | `client.balance.transactions({...})` | `client.billing.transactions({...})` |
+  | `client.balance.updateSettings({...})` | Dashboard UI (no public REST equivalent) |
+
+- **`TenantDirectInvoicesResource.validate()` and `.send()` aliases** —
+  Both now carry `@deprecated` JSDoc pointing to the canonical `submit()`
+  (which already exists and does exactly the same thing). The behaviour
+  is unchanged ; the deprecation only signals that v3.0.0 will keep a
+  single canonical name across `InvoicesResource.submit` and
+  `TenantDirectInvoicesResource.submit`.
+
+### Removed
+
+- **3 broken doublons on `FiscalResource`** — `downloadMeasuresRegister()`,
+  `downloadTechnicalDossier()`, and `downloadSelfAttestation()` used the
+  generic `http.get` (which always parses JSON) for endpoints returning
+  binary PDF — calling them would have either thrown a JSON parse error
+  or returned a corrupted payload. They were superseded by the
+  `isca*Download` family (`iscaMeasuresRegisterDownload`,
+  `iscaTechnicalDossierDownload`, `iscaSelfAttestationDownload`) which
+  uses `http.getRaw` and returns a proper `ArrayBuffer`. Since the
+  doublons were never functional, no consumer can have a working
+  integration relying on them — the removal is treated as a bugfix
+  rather than a breaking change.
+
+### Implementation notes
+
+- 15 new tests across 3 files (`tests/invoice-templates.test.ts`,
+  `tests/credit-packs.test.ts`, `tests/version.test.ts`) lock the
+  wiring, the new endpoints, and the deprecation status of
+  `BalanceResource` at unit-test level.
+- The total test suite grows from 118 to 133 tests across 12 files,
+  all passing on `vitest run`.
+- The deprecated `BalanceResource` keeps all its existing types
+  (`Balance`, `Transaction`, `ReloadBalanceInput`, etc.) — these
+  types are still exported from the package root for any code that
+  references them as data shapes.
+- No runtime dependency added (preserves the zero-deps property).
+- Bundle size : 145 KB → 160 KB CJS / 160 KB ESM (mostly new types
+  + the two new resources + JSDoc-only deprecation comments).
+
 ## [2.23.0] - 2026-05-27
 
 ### Added

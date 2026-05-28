@@ -29,7 +29,7 @@
  */
 
 // Client
-import { HttpClient, type ClientConfig } from './client.js';
+import { HttpClient, type ClientConfig, type RequestOptions } from './client.js';
 
 // Tenant Client
 import { ScellTenantClient } from './tenant-client.js';
@@ -42,7 +42,9 @@ import { BillingResource } from './resources/billing.js';
 import { BuyersResource } from './resources/buyers.js';
 import { CompaniesResource } from './resources/companies.js';
 import { CreditNotesResource } from './resources/credit-notes.js';
+import { CreditPacksResource } from './resources/credit-packs.js';
 import { FiscalResource } from './resources/fiscal.js';
+import { InvoiceTemplatesResource } from './resources/invoice-templates.js';
 import { InvoicesResource } from './resources/invoices.js';
 import { SignaturesResource } from './resources/signatures.js';
 import { StatsResource } from './resources/stats.js';
@@ -120,6 +122,25 @@ export class ScellClient {
    * ```
    */
   public readonly branding: BrandingResource;
+  /**
+   * Invoice template management (CRUD + logo upload + default selection).
+   *
+   * Templates personnalisent l'apparence des factures (logo, couleurs,
+   * mentions, footer). Cascade de resolution : explicit > sub_tenant default
+   * > tenant default > system default.
+   *
+   * @since 2.24.0
+   */
+  public readonly invoiceTemplates: InvoiceTemplatesResource;
+  /**
+   * Credit packs catalogue (public read-only).
+   *
+   * Exposes the prepaid credit packs available for purchase by tenants.
+   * Purchasing flow goes through Stripe + webhook (see backend docs).
+   *
+   * @since 2.24.0
+   */
+  public readonly creditPacks: CreditPacksResource;
 
   /**
    * Create a new Scell Dashboard Client
@@ -150,6 +171,30 @@ export class ScellClient {
     this.creditNotes = new CreditNotesResource(this.http);
     this.quotes = new QuotesResource(this.http);
     this.branding = new BrandingResource(this.http);
+    this.invoiceTemplates = new InvoiceTemplatesResource(this.http);
+    this.creditPacks = new CreditPacksResource(this.http);
+  }
+
+  /**
+   * Retrieve the deployed API version, commit SHA, and runtime info.
+   *
+   * Public endpoint (no auth required). Useful for drift detection between
+   * the SDK version and the live API, and for surfacing build metadata in
+   * health dashboards / monitoring tools.
+   *
+   * @returns Deployed version manifest (version, commit_sha, environment,
+   *          php_version, laravel_version, etc.)
+   *
+   * @since 2.24.0
+   *
+   * @example
+   * ```typescript
+   * const v = await client.version();
+   * console.log(`API ${v.version} (commit ${v.commit_short}, ${v.environment})`);
+   * ```
+   */
+  async version(requestOptions?: RequestOptions): Promise<ApiVersionInfo> {
+    return this.http.get<ApiVersionInfo>('/version', undefined, requestOptions);
   }
 }
 
@@ -229,6 +274,25 @@ export class ScellApiClient {
    * ```
    */
   public readonly branding: BrandingResource;
+  /**
+   * Invoice template management (CRUD + logo upload + default selection).
+   *
+   * Templates personnalisent l'apparence des factures (logo, couleurs,
+   * mentions, footer). Cascade de resolution : explicit > sub_tenant default
+   * > tenant default > system default.
+   *
+   * @since 2.24.0
+   */
+  public readonly invoiceTemplates: InvoiceTemplatesResource;
+  /**
+   * Credit packs catalogue (public read-only).
+   *
+   * Exposes the prepaid credit packs available for purchase by tenants.
+   * Purchasing flow goes through Stripe + webhook (see backend docs).
+   *
+   * @since 2.24.0
+   */
+  public readonly creditPacks: CreditPacksResource;
 
   /**
    * Create a new Scell API Client
@@ -264,6 +328,22 @@ export class ScellApiClient {
     this.buyers = new BuyersResource(this.http);
     this.quotes = new QuotesResource(this.http);
     this.branding = new BrandingResource(this.http);
+    this.invoiceTemplates = new InvoiceTemplatesResource(this.http);
+    this.creditPacks = new CreditPacksResource(this.http);
+  }
+
+  /**
+   * Retrieve the deployed API version, commit SHA, and runtime info.
+   *
+   * Public endpoint (no auth required). Useful for drift detection between
+   * the SDK version and the live API.
+   *
+   * @returns Deployed version manifest
+   *
+   * @since 2.24.0
+   */
+  async version(requestOptions?: RequestOptions): Promise<ApiVersionInfo> {
+    return this.http.get<ApiVersionInfo>('/version', undefined, requestOptions);
   }
 }
 
@@ -294,6 +374,13 @@ export type {
 // Re-export new resources (since v2.13.0)
 export { PaymentScheduleResource } from './resources/payment-schedule.js';
 export { BrandingResource } from './resources/branding.js';
+
+// Re-export new resources (since v2.24.0)
+export { InvoiceTemplatesResource } from './resources/invoice-templates.js';
+export { CreditPacksResource } from './resources/credit-packs.js';
+
+// Local import (ApiVersionInfo is re-exported via `export * from ./types/index.js`)
+import type { ApiVersionInfo } from './types/version.js';
 
 // Re-export errors
 export {

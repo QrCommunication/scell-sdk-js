@@ -348,6 +348,22 @@ export type {
   UpdateBrandingInput,
 } from './branding.js';
 
+// Invoice template types (resource wired in clients since v2.24.0)
+export type {
+  CreateInvoiceTemplateInput,
+  InvoiceTemplate,
+  InvoiceTemplateListOptions,
+  InvoiceTemplateLogoPosition,
+  InvoiceTemplateScope,
+  UpdateInvoiceTemplateInput,
+} from './invoice-templates.js';
+
+// Credit pack types (since v2.24.0)
+export type { CreditPack } from './credit-packs.js';
+
+// Version metadata (since v2.24.0)
+export type { ApiVersionInfo } from './version.js';
+
 // ---------------------------------------------------------------------------
 // Consolidated enum surface (since v2.23.0)
 //

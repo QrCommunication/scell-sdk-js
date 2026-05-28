@@ -368,7 +368,11 @@ export class TenantDirectInvoicesResource {
   }
 
   /**
-   * Alias for submit() — validate and send the invoice
+   * Alias for {@link submit} — validate and send the invoice.
+   *
+   * @deprecated Since v2.24.0. Use {@link submit} (canonical name) for
+   *   consistency with `InvoicesResource.submit`. Kept for backward
+   *   compatibility ; slated for removal in v3.0.0.
    *
    * @param invoiceId - Invoice UUID
    * @param requestOptions - Optional request configuration
@@ -382,7 +386,11 @@ export class TenantDirectInvoicesResource {
   }
 
   /**
-   * Alias for submit() — send the invoice to the buyer
+   * Alias for {@link submit} — send the invoice to the buyer.
+   *
+   * @deprecated Since v2.24.0. Use {@link submit} (canonical name) for
+   *   consistency with `InvoicesResource.submit`. Kept for backward
+   *   compatibility ; slated for removal in v3.0.0.
    *
    * @param invoiceId - Invoice UUID
    * @param requestOptions - Optional request configuration

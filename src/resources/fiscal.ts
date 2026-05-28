@@ -182,19 +182,4 @@ export class FiscalResource {
   async forensicExport(options: FiscalForensicExportOptions, requestOptions?: RequestOptions): Promise<SingleResponse<Record<string, unknown>>> {
     return this.http.get<SingleResponse<Record<string, unknown>>>('/tenant/fiscal/forensic-export', options as unknown as Record<string, string | number | boolean | undefined>, requestOptions);
   }
-
-  /** Download the ISCA measures register as PDF */
-  async downloadMeasuresRegister(): Promise<Blob | ArrayBuffer> {
-    return this.http.get('tenant/fiscal/isca/measures-register/download');
-  }
-
-  /** Download the ISCA technical dossier as PDF */
-  async downloadTechnicalDossier(): Promise<Blob | ArrayBuffer> {
-    return this.http.get('tenant/fiscal/isca/technical-dossier/download');
-  }
-
-  /** Download the ISCA self-attestation as PDF */
-  async downloadSelfAttestation(): Promise<Blob | ArrayBuffer> {
-    return this.http.get('tenant/fiscal/isca/self-attestation/download');
-  }
 }
