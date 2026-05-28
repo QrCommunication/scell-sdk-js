@@ -32,12 +32,12 @@ export type InvoiceFormat = 'facturx' | 'ubl' | 'cii';
  * Both transitions are driven server-side by `CreditNoteObserver::recomputeRefundStatus()`
  * and do NOT bypass ISCA immutability (status is not part of `IMMUTABLE_FISCAL_FIELDS`).
  *
- * Note: `pending` and `cancelled` are SDK-only convenience values kept for backward
- * compatibility; the server uses `validating` / `received` instead.
+ * Aligné sur le check constraint PostgreSQL `invoices_status_check` (16 statuts).
+ * Les anciennes valeurs `pending` et `cancelled` ont été retirées : le serveur
+ * ne les émet jamais (il utilise `validating` / `received`).
  */
 export type InvoiceStatus =
   | 'draft'
-  | 'pending'
   | 'validating'
   | 'validated'
   | 'converting'
@@ -50,7 +50,6 @@ export type InvoiceStatus =
   | 'paid'
   | 'received'
   | 'completed'
-  | 'cancelled'
   | 'error'
   | 'refunded'
   | 'partially_refunded';

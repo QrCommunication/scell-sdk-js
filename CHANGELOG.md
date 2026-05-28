@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.27.1] - 2026-05-28
+
+### Fixed
+- `InvoiceStatus` aligné sur les **16 statuts canoniques** du backend
+  (`invoices_status_check`). Retrait de `pending` et `cancelled`, jamais émis
+  par le serveur (qui utilise `validating` / `received`).
+
 ## [2.27.0] - 2026-05-28
 
 Adds per-signer targeting and multi-position support to electronic signature
