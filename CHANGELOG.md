@@ -2,6 +2,52 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.27.0] - 2026-05-28
+
+Adds per-signer targeting and multi-position support to electronic signature
+requests. Each `signature_positions[]` entry can now reference a specific signer
+via `signer_index`, and a single signer may be assigned multiple positions
+(EU-SES capability). Fully backward compatible — the field is optional and a
+position without `signer_index` is assigned to the first signer (index 0).
+
+### Added
+
+- **`SignaturePosition.signer_index`** — Optional `number` (0-based; `0` =
+  first signer) on each `signature_positions[]` entry of
+  `CreateSignatureInput`. When omitted, the position is assigned to the first
+  signer. Repeating the same `signer_index` across multiple entries assigns
+  several signature positions to the same signer (EU-SES multi-position
+  capability). JSDoc and inline `create()` examples updated to demonstrate
+  multi-signer / multi-position payloads.
+
+## [2.26.0] - 2026-05-28
+
+Adds the **Suppliers** registry, a mirror of the existing Buyers registry for
+vendors. Suppliers are scoped per `(tenant, sub_tenant)` and reuse the same
+identity + billing-address shape. Buyer-only concepts — shipping address,
+dedicated billing email, and VAT-context resolution — are intentionally **not**
+mirrored, as they do not apply to suppliers.
+
+### Added
+
+- **`SuppliersResource`** — Exposed as `suppliers` on both `ScellClient`
+  (Bearer) and `ScellApiClient` (X-API-Key), mirroring `buyers`. Methods:
+  - `list(params?)` — `GET /suppliers` (filters: `q`, `is_individual`,
+    `per_page`, `page`), returns a `PaginatedResponse<Supplier>`.
+  - `get(id)` — `GET /suppliers/{id}`.
+  - `create(input)` — `POST /suppliers`.
+  - `update(id, input)` — `PATCH /suppliers/{id}`.
+  - `delete(id)` — `DELETE /suppliers/{id}`.
+
+- **`Supplier`** — Read payload: `id`, `tenant_id`, `sub_tenant_id`, `name`,
+  `is_individual`, `siret`, `vat_number`, `legal_id`, `legal_id_scheme`,
+  `email`, `phone`, `country`, `billing_address`, `metadata`, `notes`,
+  `created_at`, `updated_at`.
+
+- **`CreateSupplierInput`** / **`UpdateSupplierInput`** (`Partial<CreateSupplierInput>`)
+  / **`ListSuppliersInput`** — Mirror the buyer input shapes minus the
+  buyer-only `shipping_address` and `billing_email` fields.
+
 ## [2.25.0] - 2026-05-28
 
 A targeted release that closes the Factur-X BT-81 / BT-82 gap : the SDK now

@@ -84,6 +84,14 @@ export type {
   UpdateBuyerInput,
 } from './buyers.js';
 
+// Supplier types
+export type {
+  Supplier,
+  CreateSupplierInput,
+  ListSuppliersInput,
+  UpdateSupplierInput,
+} from './suppliers.js';
+
 // Signature types
 export type {
   CreateSignatureInput,

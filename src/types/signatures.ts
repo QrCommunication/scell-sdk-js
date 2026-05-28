@@ -363,7 +363,26 @@ export type SignatureDownloadType = 'original' | 'signed' | 'audit_trail';
 export type SignaturePositionUnit = 'percent' | 'pixel';
 
 /**
- * Signature position on document
+ * Signature position on document.
+ *
+ * ### Cibler un signataire precis — `signer_index` (depuis v2.27.0)
+ *
+ * Par defaut, une position sans `signer_index` est affectee au premier
+ * signataire (index 0). Pour une signature multi-signataires, renseignez
+ * `signer_index` (0-base) afin d'affecter chaque position au bon signataire.
+ *
+ * Un meme signataire peut avoir **plusieurs positions** : il suffit de
+ * repeter le meme `signer_index` sur plusieurs entrees (capacite EU-SES).
+ *
+ * @example
+ * ```typescript
+ * // Deux signataires, le premier signe sur 2 emplacements distincts.
+ * const positions: SignaturePosition[] = [
+ *   { signer_index: 0, page: 1, x: 10, y: 80 }, // signataire 0 — page 1
+ *   { signer_index: 0, page: 3, x: 10, y: 80 }, // signataire 0 — page 3
+ *   { signer_index: 1, page: 3, x: 60, y: 80 }, // signataire 1 — page 3
+ * ];
+ * ```
  */
 export interface SignaturePosition {
   /**
@@ -371,6 +390,14 @@ export interface SignaturePosition {
    * Defaut: 0. Utilise uniquement quand le payload contient des `attachments`.
    */
   document_index?: number | undefined;
+  /**
+   * Index du signataire cible (0-base ; 0 = premier signataire).
+   *
+   * Si absent, la position est affectee au premier signataire (index 0).
+   * Plusieurs positions peuvent partager le meme `signer_index` : un signataire
+   * peut ainsi disposer de N emplacements de signature (capacite EU-SES).
+   */
+  signer_index?: number | undefined;
   /** Numero de page (1-indexe). */
   page: number;
   /** Coordonnee X. Unite definie par `unit`. */
@@ -590,7 +617,23 @@ export interface CreateSignatureInput {
   attachments?: SignatureAttachment[] | undefined;
   /** List of signers (1-10) */
   signers: SignerInput[];
-  /** Signature positions on the document */
+  /**
+   * Signature positions on the document.
+   *
+   * Chaque position peut cibler un signataire precis via `signer_index`
+   * (0-base ; 0 = premier signataire). Une position sans `signer_index`
+   * est affectee au premier signataire. Un meme signataire peut disposer
+   * de **plusieurs positions** en repetant son `signer_index` (capacite EU-SES).
+   *
+   * @example
+   * ```typescript
+   * signature_positions: [
+   *   { signer_index: 0, page: 1, x: 10, y: 80 }, // signataire 0 — emplacement 1
+   *   { signer_index: 0, page: 3, x: 10, y: 80 }, // signataire 0 — emplacement 2
+   *   { signer_index: 1, page: 3, x: 60, y: 80 }, // signataire 1
+   * ]
+   * ```
+   */
   signature_positions?: SignaturePosition[] | undefined;
   /** White-label UI customization (21 champs alignés sur la spec EU-SES certifiée) */
   ui_config?: SignatureUIConfig | undefined;

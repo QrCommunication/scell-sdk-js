@@ -256,8 +256,12 @@ const { data: signature } = await apiClient.signatures.create({
       auth_method: 'sms',
     },
   ],
+  // signer_index (0-base) cible chaque position au bon signataire.
+  // Un signataire peut avoir plusieurs positions (capacite EU-SES).
   signature_positions: [
-    { page: 1, x: 70, y: 85, width: 20, height: 5, unit: 'percent' },
+    { signer_index: 0, page: 1, x: 70, y: 85, width: 20, height: 5, unit: 'percent' }, // John — page 1
+    { signer_index: 0, page: 2, x: 70, y: 85, width: 20, height: 5, unit: 'percent' }, // John — page 2
+    { signer_index: 1, page: 2, x: 20, y: 85, width: 20, height: 5, unit: 'percent' }, // Jane — page 2
   ],
   ui_config: {
     // White-label : 21 champs alignés sur la spec EU-SES certifiée

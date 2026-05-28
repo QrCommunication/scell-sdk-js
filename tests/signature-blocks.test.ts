@@ -20,6 +20,7 @@ import type {
   InitialsBlock,
   InitialsPosition,
   Mention,
+  SignaturePosition,
 } from '../src/index.js';
 
 const mockFetch = vi.fn();
@@ -382,5 +383,113 @@ describe('InitialsBlock.positions[] — v2.17.0 (format recommande)', () => {
     // Avec bold explicite
     const blockWithBold: InitialsBlock = { ...block, bold: true };
     expect(blockWithBold.bold).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// v2.27.0 — SignaturePosition.signer_index + multi-positions par signataire
+// ---------------------------------------------------------------------------
+
+describe('SignaturePosition.signer_index — v2.27.0 (per-signer targeting)', () => {
+  beforeEach(() => {
+    mockFetch.mockReset();
+  });
+
+  it('signer_index est optionnel (backward compat : position sans signer_index reste valide)', () => {
+    const pos: SignaturePosition = { page: 1, x: 70, y: 85, unit: 'percent' };
+    const input: CreateSignatureInput = {
+      ...BASE_PAYLOAD,
+      signature_positions: [pos],
+    };
+    expect(input.signature_positions?.[0]?.signer_index).toBeUndefined();
+    expect(input.signature_positions?.[0]?.page).toBe(1);
+  });
+
+  it('type-check : signer_index 0-base affecte une position a un signataire precis', () => {
+    const positions: SignaturePosition[] = [
+      { signer_index: 0, page: 1, x: 10, y: 80, unit: 'percent' },
+      { signer_index: 1, page: 1, x: 60, y: 80, unit: 'percent' },
+    ];
+    const input: CreateSignatureInput = {
+      ...BASE_PAYLOAD,
+      signature_positions: positions,
+    };
+    expect(input.signature_positions).toHaveLength(2);
+    expect(input.signature_positions?.[0]?.signer_index).toBe(0);
+    expect(input.signature_positions?.[1]?.signer_index).toBe(1);
+  });
+
+  it('un meme signataire peut avoir plusieurs positions (multi-position EU-SES)', () => {
+    const positions: SignaturePosition[] = [
+      { signer_index: 0, page: 1, x: 10, y: 80 },
+      { signer_index: 0, page: 3, x: 10, y: 80 },
+      { signer_index: 0, page: 5, x: 10, y: 80 },
+    ];
+    const input: CreateSignatureInput = {
+      ...BASE_PAYLOAD,
+      signature_positions: positions,
+    };
+    const signer0Positions = input.signature_positions?.filter(
+      (p) => p.signer_index === 0,
+    );
+    expect(signer0Positions).toHaveLength(3);
+    expect(signer0Positions?.map((p) => p.page)).toEqual([1, 3, 5]);
+  });
+
+  it('signer_index est transmis tel quel dans le body HTTP (snake_case preserve)', async () => {
+    mockFetch.mockResolvedValueOnce(
+      jsonResponse(201, {
+        message: 'Signature created.',
+        data: { id: SIGNATURE_ID, status: 'waiting_signers', signers: [] },
+      })
+    );
+
+    const client = new ScellApiClient('sk_test_xxx');
+    await client.signatures.create({
+      ...BASE_PAYLOAD,
+      signers: [
+        { first_name: 'Alice', last_name: 'Durand', email: 'alice@example.com', auth_method: 'email' },
+        { first_name: 'Bob', last_name: 'Jones', email: 'bob@example.com', auth_method: 'email' },
+      ],
+      signature_positions: [
+        { signer_index: 0, page: 1, x: 70, y: 85, width: 20, height: 5, unit: 'percent' },
+        { signer_index: 0, page: 2, x: 70, y: 85, width: 20, height: 5, unit: 'percent' },
+        { signer_index: 1, page: 2, x: 20, y: 85, width: 20, height: 5, unit: 'percent' },
+      ],
+    });
+
+    expect(mockFetch).toHaveBeenCalledOnce();
+    const [, init] = mockFetch.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(init.body as string) as Record<string, unknown>;
+
+    const posList = body['signature_positions'] as Array<Record<string, unknown>>;
+    expect(posList).toHaveLength(3);
+
+    expect(posList[0]?.['signer_index']).toBe(0);
+    expect(posList[0]?.['page']).toBe(1);
+    expect(posList[1]?.['signer_index']).toBe(0);
+    expect(posList[1]?.['page']).toBe(2);
+    expect(posList[2]?.['signer_index']).toBe(1);
+    expect(posList[2]?.['page']).toBe(2);
+  });
+
+  it('omet signer_index quand non fourni (pas de pollution de cle)', async () => {
+    mockFetch.mockResolvedValueOnce(
+      jsonResponse(201, {
+        message: 'Signature created.',
+        data: { id: SIGNATURE_ID, status: 'waiting_signers', signers: [] },
+      })
+    );
+
+    const client = new ScellApiClient('sk_test_xxx');
+    await client.signatures.create({
+      ...BASE_PAYLOAD,
+      signature_positions: [{ page: 1, x: 70, y: 85, unit: 'percent' }],
+    });
+
+    const [, init] = mockFetch.mock.calls[0] as [string, RequestInit];
+    const body = JSON.parse(init.body as string) as Record<string, unknown>;
+    const posList = body['signature_positions'] as Array<Record<string, unknown>>;
+    expect(posList[0]).not.toHaveProperty('signer_index');
   });
 });

@@ -48,6 +48,7 @@ import { InvoiceTemplatesResource } from './resources/invoice-templates.js';
 import { InvoicesResource } from './resources/invoices.js';
 import { SignaturesResource } from './resources/signatures.js';
 import { StatsResource } from './resources/stats.js';
+import { SuppliersResource } from './resources/suppliers.js';
 import { SubTenantsResource } from './resources/sub-tenants.js';
 import { TenantCreditNotesResource } from './resources/tenant-credit-notes.js';
 import { TenantDirectInvoicesResource } from './resources/tenant-direct-invoices.js';
@@ -94,6 +95,8 @@ export class ScellClient {
   public readonly companies: CompaniesResource;
   /** Buyer registry (scoped tenant + sub_tenant) */
   public readonly buyers: BuyersResource;
+  /** Supplier registry (scoped tenant + sub_tenant) */
+  public readonly suppliers: SuppliersResource;
   /** API key management */
   public readonly apiKeys: ApiKeysResource;
   /** Balance and transactions */
@@ -163,6 +166,7 @@ export class ScellClient {
     this.auth = new AuthResource(this.http);
     this.companies = new CompaniesResource(this.http);
     this.buyers = new BuyersResource(this.http);
+    this.suppliers = new SuppliersResource(this.http);
     this.apiKeys = new ApiKeysResource(this.http);
     this.balance = new BalanceResource(this.http);
     this.webhooks = new WebhooksResource(this.http);
@@ -255,6 +259,8 @@ export class ScellApiClient {
   public readonly onboarding: OnboardingResource;
   /** Buyer registry (scoped tenant + sub_tenant) */
   public readonly buyers: BuyersResource;
+  /** Supplier registry (scoped tenant + sub_tenant) */
+  public readonly suppliers: SuppliersResource;
   /** Quote management (create, send, accept, convert to deposit / balance) */
   public readonly quotes: QuotesResource;
   /**
@@ -326,6 +332,7 @@ export class ScellApiClient {
     this.incomingInvoices = new TenantIncomingInvoicesResource(this.http);
     this.onboarding = new OnboardingResource(this.http);
     this.buyers = new BuyersResource(this.http);
+    this.suppliers = new SuppliersResource(this.http);
     this.quotes = new QuotesResource(this.http);
     this.branding = new BrandingResource(this.http);
     this.invoiceTemplates = new InvoiceTemplatesResource(this.http);
