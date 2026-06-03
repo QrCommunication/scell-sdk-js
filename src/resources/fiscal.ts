@@ -24,6 +24,7 @@ import type {
   FiscalIntegrityOptions,
   FiscalIntegrityReport,
   FiscalKillSwitchActivateInput,
+  FiscalKillSwitchDeactivateInput,
   FiscalKillSwitchStatus,
   FiscalReplayRulesInput,
   FiscalRule,
@@ -139,12 +140,25 @@ export class FiscalResource {
     return this.http.get<SingleResponse<FiscalKillSwitchStatus>>('/tenant/fiscal/kill-switch/status', undefined, requestOptions);
   }
 
+  /**
+   * Activate the fiscal kill-switch (emergency halt). Requires the `fiscal:admin`
+   * scope (fail-closed). `input.reason` must be **>= 20 characters**. In
+   * production, the first call returns `403` `OOB_CONFIRMATION_REQUIRED` and
+   * emails a `confirmation_token` to the tenant contact — re-call with
+   * `input.confirmation_token` to apply.
+   */
   async killSwitchActivate(input: FiscalKillSwitchActivateInput, requestOptions?: RequestOptions): Promise<MessageResponse> {
     return this.http.post<MessageResponse>('/tenant/fiscal/kill-switch/activate', input, requestOptions);
   }
 
-  async killSwitchDeactivate(requestOptions?: RequestOptions): Promise<MessageResponse> {
-    return this.http.post<MessageResponse>('/tenant/fiscal/kill-switch/deactivate', undefined, requestOptions);
+  /**
+   * Deactivate the fiscal kill-switch. Same step-up contract as activation:
+   * `input.reason` must be **>= 20 characters**, and in production an out-of-band
+   * `input.confirmation_token` is required (first call returns `403`
+   * `OOB_CONFIRMATION_REQUIRED` and emails the token).
+   */
+  async killSwitchDeactivate(input: FiscalKillSwitchDeactivateInput, requestOptions?: RequestOptions): Promise<MessageResponse> {
+    return this.http.post<MessageResponse>('/tenant/fiscal/kill-switch/deactivate', input, requestOptions);
   }
 
   async anchors(options: FiscalAnchorsOptions = {}, requestOptions?: RequestOptions): Promise<PaginatedResponse<FiscalAnchor>> {

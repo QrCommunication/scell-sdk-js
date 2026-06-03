@@ -250,7 +250,30 @@ export interface FiscalKillSwitch {
 }
 
 export interface FiscalKillSwitchActivateInput {
+  /** Detailed reason, **>= 20 characters**, recorded in the immutable ledger. */
   reason: string;
+  /**
+   * Out-of-band (OOB) confirmation token, required in **production** to finalise
+   * the step-up. The first call (without it) returns `403`
+   * `OOB_CONFIRMATION_REQUIRED` and emails the token to the tenant contact;
+   * re-submit with this field to apply. Omit in sandbox.
+   */
+  confirmation_token?: string;
+}
+
+/**
+ * Deactivation shares the same step-up contract as activation: a `reason`
+ * (>= 20 chars) and, in production, an out-of-band `confirmation_token`.
+ */
+export interface FiscalKillSwitchDeactivateInput {
+  /** Detailed reason, **>= 20 characters**, recorded in the immutable ledger. */
+  reason: string;
+  /**
+   * Out-of-band (OOB) confirmation token, required in **production**. The first
+   * call returns `403` `OOB_CONFIRMATION_REQUIRED` and emails the token; re-submit
+   * with this field to apply. Omit in sandbox.
+   */
+  confirmation_token?: string;
 }
 
 // ── Anchors ─────────────────────────────────────────────────

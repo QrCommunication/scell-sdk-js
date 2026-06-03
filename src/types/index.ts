@@ -243,6 +243,7 @@ export type {
   FiscalIntegrityReport,
   FiscalKillSwitch,
   FiscalKillSwitchActivateInput,
+  FiscalKillSwitchDeactivateInput,
   FiscalKillSwitchStatus,
   FiscalReplayRulesInput,
   FiscalRule,
