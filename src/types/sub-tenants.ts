@@ -297,3 +297,23 @@ export interface FiscalStatusResponse {
   message: string;
   disclaimer: string;
 }
+
+/**
+ * Body for `POST /tenant/sub-tenants/{id}/thresholds/simulate` (since v2.31.0).
+ *
+ * Projects threshold gauges AS IF a hypothetical `amount` (net/HT) invoice were
+ * issued in `category`. Read-only — never records an alert or fires a webhook.
+ */
+export interface SimulateThresholdInput {
+  /** Net (HT) amount of the hypothetical invoice. */
+  amount: number;
+  category: RevenueCategory;
+}
+
+/** Response from `simulateThresholds()`. @since 2.31.0 */
+export interface ThresholdSimulationResponse {
+  /** Projected report — gauge `level`/`actionable` reflect the POST-invoice state. */
+  data: ThresholdReport;
+  simulated: { amount: number; category: RevenueCategory };
+  disclaimer: string;
+}

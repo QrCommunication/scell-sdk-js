@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.31.0] - 2026-06-04
+
+### Added
+- **Pre-issuance threshold simulator** (`client.subTenants.simulateThresholds(id, { amount, category })`):
+  projects the micro-entrepreneur threshold gauges AS IF a hypothetical invoice of
+  `amount` (net/HT) were issued in `category`. The returned gauge `level`/`actionable`
+  reflect the POST-invoice state, so an integration can warn the user BEFORE issuing
+  whether it crosses a VAT-franchise or micro-regime threshold. Read-only (records
+  nothing). New types `SimulateThresholdInput`, `ThresholdSimulationResponse`.
+
 ## [2.30.0] - 2026-06-04
 
 ### Added

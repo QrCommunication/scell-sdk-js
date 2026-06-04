@@ -10,11 +10,13 @@ import type {
   DeleteSubTenantOptions,
   DeleteSubTenantResponse,
   FiscalStatusResponse,
+  SimulateThresholdInput,
   SubTenant,
   SubTenantListOptions,
   SubTenantResumeUrlResponse,
   SubTenantStatusResponse,
   SubTenantSuperPDPAuthorizeResponse,
+  ThresholdSimulationResponse,
   ThresholdsResponse,
   UpdateFiscalStatusInput,
   UpdateSubTenantInput,
@@ -267,6 +269,33 @@ export class SubTenantsResource {
   ): Promise<FiscalStatusResponse> {
     return this.http.patch<FiscalStatusResponse>(
       `/tenant/sub-tenants/${id}/fiscal-status`,
+      input,
+      requestOptions
+    );
+  }
+
+  /**
+   * Pre-issuance simulator: project the threshold gauges AS IF a hypothetical
+   * invoice of `input.amount` (net/HT) were issued in `input.category`
+   * (since v2.31.0). The returned gauge `level`/`actionable` reflect the
+   * POST-invoice state, letting the micro-entrepreneur check whether issuing
+   * would cross a threshold BEFORE doing so. Read-only — records nothing.
+   *
+   * @example
+   * ```typescript
+   * const { data } = await client.subTenants.simulateThresholds(subTenantId, {
+   *   amount: 5000, category: 'service',
+   * });
+   * const crosses = data.gauges.some((g) => g.actionable);
+   * ```
+   */
+  async simulateThresholds(
+    id: string,
+    input: SimulateThresholdInput,
+    requestOptions?: RequestOptions
+  ): Promise<ThresholdSimulationResponse> {
+    return this.http.post<ThresholdSimulationResponse>(
+      `/tenant/sub-tenants/${id}/thresholds/simulate`,
       input,
       requestOptions
     );

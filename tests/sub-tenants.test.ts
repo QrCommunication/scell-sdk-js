@@ -285,3 +285,30 @@ describe('FiscalResource closings download (v2.30.0)', () => {
     expect(init.method).toBe('GET');
   });
 });
+
+describe('SubTenantsResource.simulateThresholds (v2.31.0)', () => {
+  beforeEach(() => { mockFetch.mockReset(); });
+
+  it('POSTs the simulate endpoint with amount + category', async () => {
+    mockFetch.mockResolvedValueOnce(
+      jsonResponse(200, {
+        data: { sub_tenant_id: SUB_TENANT_ID, fiscal_year: 2026, gauges: [], new_alerts: [] },
+        simulated: { amount: 5000, category: 'service' },
+        disclaimer: 'Information non contractuelle...',
+      })
+    );
+
+    const client = new ScellApiClient('sk_test_xxx');
+    const res = await client.subTenants.simulateThresholds(SUB_TENANT_ID, {
+      amount: 5000, category: 'service',
+    });
+
+    expect(res.simulated.amount).toBe(5000);
+    const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(
+      `https://api.scell.io/api/v1/tenant/sub-tenants/${SUB_TENANT_ID}/thresholds/simulate`
+    );
+    expect(init.method).toBe('POST');
+    expect(JSON.parse(init.body as string)).toEqual({ amount: 5000, category: 'service' });
+  });
+});
