@@ -145,7 +145,7 @@ export class ScellClient {
    * @since 2.24.0
    */
   public readonly creditPacks: CreditPacksResource;
-  /** Country company reference (public): VAT, national ID, legal forms. @since 2.29.0 */
+  /** Country company reference (authenticated): VAT, national ID, legal forms. @since 2.29.0 */
   public readonly reference: ReferenceResource;
 
   /**
@@ -303,7 +303,7 @@ export class ScellApiClient {
    * @since 2.24.0
    */
   public readonly creditPacks: CreditPacksResource;
-  /** Country company reference (public): VAT, national ID, legal forms. @since 2.29.0 */
+  /** Country company reference (authenticated): VAT, national ID, legal forms. @since 2.29.0 */
   public readonly reference: ReferenceResource;
 
   /**

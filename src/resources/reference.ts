@@ -1,5 +1,5 @@
 /**
- * Country company reference resource (public, read-only, no auth).
+ * Country company reference resource (authenticated, read-only).
  *
  * Exposes, per country, the VAT number, the national company-registration
  * identifier (register + format) and the known legal forms, so integrations

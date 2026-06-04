@@ -1,7 +1,7 @@
 /**
  * Country company reference types.
  *
- * Served by `GET /api/v1/reference/countries[/{code}]` (public, no auth).
+ * Served by `GET /api/v1/reference/countries[/{code}]` (authenticated — Sanctum or sk_/pk_ API key).
  *
  * @since 2.29.0
  */

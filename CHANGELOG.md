@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.29.1] - 2026-06-04
+
+### Fixed
+- Docs: the country reference endpoint (`client.reference`) requires
+  authentication (Sanctum or `sk_*`/`pk_*` API key) — corrected the JSDoc that
+  wrongly described it as public. No behaviour change (the SDK always
+  authenticates).
+
 ## [2.29.0] - 2026-06-04
 
 ### Added
