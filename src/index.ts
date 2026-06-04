@@ -46,6 +46,7 @@ import { CreditPacksResource } from './resources/credit-packs.js';
 import { FiscalResource } from './resources/fiscal.js';
 import { InvoiceTemplatesResource } from './resources/invoice-templates.js';
 import { InvoicesResource } from './resources/invoices.js';
+import { ReferenceResource } from './resources/reference.js';
 import { SignaturesResource } from './resources/signatures.js';
 import { StatsResource } from './resources/stats.js';
 import { SuppliersResource } from './resources/suppliers.js';
@@ -144,6 +145,8 @@ export class ScellClient {
    * @since 2.24.0
    */
   public readonly creditPacks: CreditPacksResource;
+  /** Country company reference (public): VAT, national ID, legal forms. @since 2.29.0 */
+  public readonly reference: ReferenceResource;
 
   /**
    * Create a new Scell Dashboard Client
@@ -177,6 +180,7 @@ export class ScellClient {
     this.branding = new BrandingResource(this.http);
     this.invoiceTemplates = new InvoiceTemplatesResource(this.http);
     this.creditPacks = new CreditPacksResource(this.http);
+    this.reference = new ReferenceResource(this.http);
   }
 
   /**
@@ -299,6 +303,8 @@ export class ScellApiClient {
    * @since 2.24.0
    */
   public readonly creditPacks: CreditPacksResource;
+  /** Country company reference (public): VAT, national ID, legal forms. @since 2.29.0 */
+  public readonly reference: ReferenceResource;
 
   /**
    * Create a new Scell API Client
@@ -337,6 +343,7 @@ export class ScellApiClient {
     this.branding = new BrandingResource(this.http);
     this.invoiceTemplates = new InvoiceTemplatesResource(this.http);
     this.creditPacks = new CreditPacksResource(this.http);
+    this.reference = new ReferenceResource(this.http);
   }
 
   /**
@@ -385,6 +392,15 @@ export { BrandingResource } from './resources/branding.js';
 // Re-export new resources (since v2.24.0)
 export { InvoiceTemplatesResource } from './resources/invoice-templates.js';
 export { CreditPacksResource } from './resources/credit-packs.js';
+
+// Re-export country reference (since v2.29.0)
+export { ReferenceResource } from './resources/reference.js';
+export type {
+  CountryReference,
+  CountryNationalIdInfo,
+  CountryVatInfo,
+  LegalForm,
+} from './types/reference.js';
 
 // Local import (ApiVersionInfo is re-exported via `export * from ./types/index.js`)
 import type { ApiVersionInfo } from './types/version.js';

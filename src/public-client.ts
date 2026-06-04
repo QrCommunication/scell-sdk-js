@@ -9,6 +9,7 @@
 
 import { HttpClient, type ClientConfig } from './client.js';
 import { OnboardingResource } from './resources/onboarding.js';
+import { ReferenceResource } from './resources/reference.js';
 
 /**
  * Scell Public Client
@@ -44,6 +45,9 @@ export class ScellPublicClient {
   /** Onboarding resource (SuperPDP OAuth2 flow) */
   public readonly onboarding: OnboardingResource;
 
+  /** Country company reference (VAT, national ID, legal forms). @since 2.29.0 */
+  public readonly reference: ReferenceResource;
+
   /**
    * Create a new Scell Public Client
    *
@@ -53,5 +57,6 @@ export class ScellPublicClient {
   constructor(publishableKey: string, config: ClientConfig = {}) {
     this.http = new HttpClient('publishable-key', publishableKey, config);
     this.onboarding = new OnboardingResource(this.http);
+    this.reference = new ReferenceResource(this.http);
   }
 }
