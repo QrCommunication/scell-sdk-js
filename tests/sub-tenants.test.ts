@@ -177,3 +177,111 @@ describe('SubTenantsResource.refreshSuperPDPStatus error mapping', () => {
     }
   });
 });
+
+describe('SubTenantsResource thresholds + fiscal status (v2.30.0)', () => {
+  beforeEach(() => {
+    mockFetch.mockReset();
+  });
+
+  it('getThresholds GETs the thresholds endpoint and returns the report', async () => {
+    mockFetch.mockResolvedValueOnce(
+      jsonResponse(200, {
+        data: {
+          sub_tenant_id: SUB_TENANT_ID,
+          tenant_id: '00000000-0000-0000-0000-0000000000aa',
+          fiscal_year: 2026,
+          generated_at: '2026-06-04T10:00:00+00:00',
+          gauges: [
+            {
+              category: 'service',
+              kind: 'vat_franchise_base',
+              revenue: 30000,
+              threshold: 37500,
+              percent: 80,
+              level: 'warning_80',
+              actionable: false,
+              projected_crossing_date: '2026-11-01',
+            },
+          ],
+          new_alerts: [],
+        },
+        disclaimer: 'Information non contractuelle...',
+      })
+    );
+
+    const client = new ScellApiClient('sk_test_xxx');
+    const res = await client.subTenants.getThresholds(SUB_TENANT_ID);
+
+    expect(res.data.gauges[0]?.category).toBe('service');
+    expect(res.data.gauges[0]?.level).toBe('warning_80');
+    expect(res.disclaimer).toContain('non contractuelle');
+
+    const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(
+      `https://api.scell.io/api/v1/tenant/sub-tenants/${SUB_TENANT_ID}/thresholds`
+    );
+    expect(init.method).toBe('GET');
+  });
+
+  it('updateFiscalStatus PATCHes the fiscal-status endpoint with the body', async () => {
+    mockFetch.mockResolvedValueOnce(
+      jsonResponse(200, {
+        data: { id: SUB_TENANT_ID, vat_status: 'liable' },
+        message: 'Statut mis a jour : les prochaines factures porteront la TVA.',
+        disclaimer: 'Information non contractuelle...',
+      })
+    );
+
+    const client = new ScellApiClient('sk_test_xxx');
+    const res = await client.subTenants.updateFiscalStatus(SUB_TENANT_ID, {
+      vat_status: 'liable',
+      vat_number: 'FR12345678901',
+    });
+
+    expect(res.message).toContain('TVA');
+
+    const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(
+      `https://api.scell.io/api/v1/tenant/sub-tenants/${SUB_TENANT_ID}/fiscal-status`
+    );
+    expect(init.method).toBe('PATCH');
+    expect(JSON.parse(init.body as string)).toEqual({
+      vat_status: 'liable',
+      vat_number: 'FR12345678901',
+    });
+  });
+});
+
+describe('FiscalResource closings download (v2.30.0)', () => {
+  beforeEach(() => {
+    mockFetch.mockReset();
+  });
+
+  it('closings forwards closing_type + sub_tenant_id as query params', async () => {
+    mockFetch.mockResolvedValueOnce(jsonResponse(200, { success: true, data: [] }));
+
+    const client = new ScellApiClient('sk_test_xxx');
+    await client.fiscal.closings({ closing_type: 'monthly', sub_tenant_id: SUB_TENANT_ID });
+
+    const [url] = mockFetch.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain('closing_type=monthly');
+    expect(url).toContain(`sub_tenant_id=${SUB_TENANT_ID}`);
+  });
+
+  it('downloadClosing GETs the raw CSV download endpoint', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: new Headers({ 'Content-Type': 'text/csv; charset=utf-8' }),
+      arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)),
+    });
+
+    const client = new ScellApiClient('sk_test_xxx');
+    const buf = await client.fiscal.downloadClosing('closing-123');
+
+    expect(buf).toBeInstanceOf(ArrayBuffer);
+    const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('https://api.scell.io/api/v1/tenant/fiscal/closings/closing-123/download');
+    expect(init.method).toBe('GET');
+  });
+});

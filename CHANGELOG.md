@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.30.0] - 2026-06-04
+
+### Added
+- **Micro-entrepreneur threshold monitoring** (`client.subTenants.getThresholds(id)`):
+  returns the French micro-entrepreneur threshold gauges (VAT franchise
+  base/majored + micro-regime ceiling) with cumulative HT revenue per category,
+  reached alert level (`warning_80` … `micro_ceiling_exceeded`) and a projected
+  crossing date. Backed by dated fiscal rules (loi 2025-1044). Purely
+  informational (`disclaimer` field, not tax advice). New types `ThresholdReport`,
+  `ThresholdGauge`, `ThresholdsResponse`, `RevenueCategory`, `ThresholdKind`,
+  `ThresholdAlertLevel`.
+- **Declared fiscal status** (`client.subTenants.updateFiscalStatus(id, input)`):
+  update a sub-tenant's regime / VAT status / activity type / activity start
+  date / VAT number. Switching `vat_status` to `'liable'` flips Scell.io billing
+  to charge VAT (subsequent invoices carry VAT, drop the art. 293 B franchise
+  mention); a `vat_number` becomes required. New types `UpdateFiscalStatusInput`,
+  `FiscalStatusResponse`, `FiscalRegime`, `VatStatus`, `ActivityType`.
+- **Closing CSV download** (`client.fiscal.downloadClosing(closingId)`): download a
+  daily/monthly/annual closing CSV (market format) as raw bytes, tenant-scoped.
+- `client.fiscal.closings()` now accepts `closing_type` (`daily|monthly|annual`)
+  and `sub_tenant_id` filters; each returned closing carries a `download_url`.
+- `FiscalFecExportOptions.sub_tenant_id` to restrict a FEC export to a single
+  sub-tenant's ISCA chain.
+
 ## [2.29.1] - 2026-06-04
 
 ### Fixed

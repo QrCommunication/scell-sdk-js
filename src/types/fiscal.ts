@@ -165,9 +165,20 @@ export interface FiscalClosing {
 
   metadata?: Record<string, unknown> | null;
   created_at?: string;
+
+  /**
+   * Authenticated API URL to download this closing's CSV
+   * (`GET /tenant/fiscal/closings/{id}/download`). Present on items
+   * returned by `closings()` since v2.30.0.
+   */
+  download_url?: string;
 }
 
 export interface FiscalClosingsOptions {
+  /** Closing period type. Defaults to `daily` server-side (since v2.30.0). */
+  closing_type?: 'daily' | 'monthly' | 'annual';
+  /** Restrict to a single sub-tenant's closings (UUID). Anti-IDOR enforced (since v2.30.0). */
+  sub_tenant_id?: string;
   limit?: number;
 }
 
@@ -182,6 +193,8 @@ export interface FiscalFecExportOptions {
   end_date: string;
   format?: 'pipe' | 'tab';
   download?: boolean;
+  /** Restrict the FEC to a single sub-tenant's ISCA chain (UUID). */
+  sub_tenant_id?: string;
 }
 
 export interface FiscalFecExportResult {

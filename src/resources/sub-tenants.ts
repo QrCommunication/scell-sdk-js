@@ -9,11 +9,14 @@ import type {
   CreateSubTenantInput,
   DeleteSubTenantOptions,
   DeleteSubTenantResponse,
+  FiscalStatusResponse,
   SubTenant,
   SubTenantListOptions,
   SubTenantResumeUrlResponse,
   SubTenantStatusResponse,
   SubTenantSuperPDPAuthorizeResponse,
+  ThresholdsResponse,
+  UpdateFiscalStatusInput,
   UpdateSubTenantInput,
 } from '../types/sub-tenants.js';
 import {
@@ -202,6 +205,69 @@ export class SubTenantsResource {
     return this.http.post<SubTenantSuperPDPAuthorizeResponse>(
       `/tenant/sub-tenants/${id}/superpdp-authorize`,
       undefined,
+      requestOptions
+    );
+  }
+
+  // ==========================================================================
+  // Micro-entrepreneur thresholds + fiscal status (since v2.30.0)
+  // ==========================================================================
+
+  /**
+   * Get the French micro-entrepreneur threshold gauges for a sub-tenant
+   * (VAT franchise base/majored + micro-regime ceiling), with cumulative
+   * HT revenue per category, the reached alert level and a projected
+   * crossing date. The thresholds are dated rules (loi 2025-1044) resolved
+   * server-side for the current fiscal year.
+   *
+   * The report is purely informational (not tax advice) — see `disclaimer`.
+   *
+   * @example
+   * ```typescript
+   * const { data, disclaimer } = await client.subTenants.getThresholds(subTenantId);
+   * for (const g of data.gauges) {
+   *   console.log(`${g.category}/${g.kind}: ${g.percent}% (${g.level ?? 'ok'})`);
+   * }
+   * ```
+   */
+  async getThresholds(
+    id: string,
+    requestOptions?: RequestOptions
+  ): Promise<ThresholdsResponse> {
+    return this.http.get<ThresholdsResponse>(
+      `/tenant/sub-tenants/${id}/thresholds`,
+      undefined,
+      requestOptions
+    );
+  }
+
+  /**
+   * Update a sub-tenant's declared fiscal profile (regime, VAT status,
+   * activity type, activity start date, VAT number).
+   *
+   * Switching `vat_status` to `'liable'` flips Scell.io billing to charge
+   * VAT: subsequent invoices carry VAT and drop the art. 293 B franchise
+   * mention. A `vat_number` is required when becoming liable (in the payload
+   * or already on the sub-tenant), otherwise the API responds 422. The
+   * administrative VAT registration (URSSAF / guichet unique INPI) remains
+   * the micro-entrepreneur's responsibility.
+   *
+   * @example
+   * ```typescript
+   * const { data, message } = await client.subTenants.updateFiscalStatus(subTenantId, {
+   *   vat_status: 'liable',
+   *   vat_number: 'FR12345678901',
+   * });
+   * ```
+   */
+  async updateFiscalStatus(
+    id: string,
+    input: UpdateFiscalStatusInput,
+    requestOptions?: RequestOptions
+  ): Promise<FiscalStatusResponse> {
+    return this.http.patch<FiscalStatusResponse>(
+      `/tenant/sub-tenants/${id}/fiscal-status`,
+      input,
       requestOptions
     );
   }

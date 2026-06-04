@@ -55,6 +55,24 @@ export class FiscalResource {
     return this.http.get<PaginatedResponse<FiscalClosing>>('/tenant/fiscal/closings', options as unknown as Record<string, string | number | boolean | undefined>, requestOptions);
   }
 
+  /**
+   * Download a closing's CSV (market format) as raw bytes (since v2.30.0).
+   *
+   * Tenant-scoped: a closing belonging to another tenant returns 404.
+   * Works for daily, monthly and annual closings — including a
+   * sub-tenant's isolated chain.
+   *
+   * @example
+   * ```typescript
+   * const { data } = await client.fiscal.closings({ closing_type: 'monthly', sub_tenant_id });
+   * const csv = await client.fiscal.downloadClosing(data[0].id);
+   * writeFileSync('closing.csv', Buffer.from(csv));
+   * ```
+   */
+  async downloadClosing(closingId: string, requestOptions?: RequestOptions): Promise<ArrayBuffer> {
+    return this.http.getRaw(`/tenant/fiscal/closings/${closingId}/download`, undefined, requestOptions);
+  }
+
   async performDailyClosing(input: FiscalDailyClosingInput = {}, requestOptions?: RequestOptions): Promise<MessageResponse> {
     return this.http.post<MessageResponse>('/tenant/fiscal/closings/daily', input, requestOptions);
   }
