@@ -1,5 +1,82 @@
 # @scell/sdk — JavaScript/TypeScript SDK for Scell.io
-> Version: 2.10.0 | License: MIT | Node.js >= 18.0.0 | TypeScript >= 5.0.0
+> Version: 2.33.0 | License: MIT | Node.js >= 18.0.0 | TypeScript >= 5.0.0
+
+## v2.33.0 (2026-06-04) — Recurring invoices (subscriptions / retainers)
+
+New `client.recurringInvoices` resource on **both** `ScellClient` (Bearer) and
+`ScellApiClient` (X-API-Key). A recurring invoice **profile** bundles a buyer,
+line items and a recurrence schedule; the platform emits invoices automatically
+on the cadence. Each run is tracked as an **occurrence** linking to the
+generated invoice. Mutating a profile only affects future runs — already-emitted
+invoices stay immutable (ISCA).
+
+### Methods (`client.recurringInvoices`)
+
+| Method | HTTP | Returns |
+|--------|------|---------|
+| `list(options?)` | `GET /recurring-invoices?status&sub_tenant_id&per_page` | `PaginatedResponse<RecurringInvoiceProfile>` |
+| `get(id)` | `GET /recurring-invoices/{id}` | `RecurringInvoiceProfile` |
+| `create(input)` | `POST /recurring-invoices` | `RecurringInvoiceProfile` (201) |
+| `update(id, input)` | `PUT /recurring-invoices/{id}` | `RecurringInvoiceProfile` |
+| `delete(id)` | `DELETE /recurring-invoices/{id}` | `MessageResponse` |
+| `occurrences(id, options?)` | `GET /recurring-invoices/{id}/occurrences?per_page` | `PaginatedResponse<RecurringInvoiceOccurrence>` |
+| `pause(id)` | `POST /recurring-invoices/{id}/pause` | `RecurringInvoiceProfile` |
+| `activate(id)` | `POST /recurring-invoices/{id}/activate` | `RecurringInvoiceProfile` |
+| `cancel(id)` | `POST /recurring-invoices/{id}/cancel` | `RecurringInvoiceProfile` |
+| `runNow(id)` | `POST /recurring-invoices/{id}/run-now` | `MessageResponse` (202) |
+
+### Enums
+
+```typescript
+type RecurrenceIntervalUnit  = 'day' | 'week' | 'month' | 'year';
+type RecurrenceEndMode       = 'never' | 'on_date' | 'after_occurrences';
+type RecurringEmissionMode   = 'draft' | 'auto_send';
+type RecurringProfileStatus  = 'active' | 'paused' | 'completed' | 'cancelled';
+type RecurringOccurrenceStatus = 'pending' | 'emitted' | 'failed' | 'skipped';
+```
+
+### Create a monthly subscription profile
+
+```typescript
+const profile = await client.recurringInvoices.create({
+  title: 'Abonnement mensuel — Acme',
+  buyer_id: buyer.id,            // registry shortcut (snapshot per emission)
+  currency: 'EUR',              // default 'EUR'
+  output_format: 'facturx',     // 'facturx' | 'ubl' | 'cii'
+  lines: [
+    { description: 'Licence SaaS', quantity: 1, unit_price: 49, vat_rate: 20 },
+  ],
+  recurrence: { interval_unit: 'month', interval_count: 1, day_of_month: 1 },
+  start_date: '2026-07-01',
+  end_mode: 'never',
+  emission_mode: 'auto_send',   // emit + send each run; 'draft' to stage only
+  notify_before_days: 3,
+});
+
+console.log(profile.next_run_at);       // next scheduled emission
+console.log(profile.recurrence.human);  // "Tous les mois le 1er"
+```
+
+### Inspect occurrences, control the lifecycle
+
+```typescript
+const { data: runs } = await client.recurringInvoices.occurrences(profile.id);
+for (const run of runs) {
+  console.log(run.occurrence_number, run.status, run.invoice_number);
+}
+
+await client.recurringInvoices.pause(profile.id);     // halt
+await client.recurringInvoices.activate(profile.id);  // resume
+await client.recurringInvoices.runNow(profile.id);    // emit out-of-band (202)
+await client.recurringInvoices.cancel(profile.id);    // permanent stop
+```
+
+### Buyer resolution
+
+Provide the buyer via `buyer_id` (recommended — the registry's current state is
+snapshotted onto each emission) **or** inline `buyer_*` fields (`buyer_name`,
+`buyer_country`, `buyer_is_individual`, `buyer_siret`, `buyer_vat_number`,
+`buyer_email`, `buyer_address`, `buyer_shipping_address`).
 
 ## v2.10.0 (2026-05-15) — Fix 500 on fiscal/closings + `ots_proof_base64`
 

@@ -46,6 +46,7 @@ import { CreditPacksResource } from './resources/credit-packs.js';
 import { FiscalResource } from './resources/fiscal.js';
 import { InvoiceTemplatesResource } from './resources/invoice-templates.js';
 import { InvoicesResource } from './resources/invoices.js';
+import { RecurringInvoicesResource } from './resources/recurring-invoices.js';
 import { ReferenceResource } from './resources/reference.js';
 import { SignaturesResource } from './resources/signatures.js';
 import { StatsResource } from './resources/stats.js';
@@ -106,6 +107,13 @@ export class ScellClient {
   public readonly webhooks: WebhooksResource;
   /** Invoice listing (read-only via dashboard) */
   public readonly invoices: InvoicesResource;
+  /**
+   * Recurring invoice profiles (subscriptions / retainers) — CRUD + lifecycle
+   * (pause / activate / cancel) + manual run.
+   *
+   * @since 2.33.0
+   */
+  public readonly recurringInvoices: RecurringInvoicesResource;
   /** Signature listing (read-only via dashboard) */
   public readonly signatures: SignaturesResource;
   /** Credit notes management */
@@ -174,6 +182,7 @@ export class ScellClient {
     this.balance = new BalanceResource(this.http);
     this.webhooks = new WebhooksResource(this.http);
     this.invoices = new InvoicesResource(this.http);
+    this.recurringInvoices = new RecurringInvoicesResource(this.http);
     this.signatures = new SignaturesResource(this.http);
     this.creditNotes = new CreditNotesResource(this.http);
     this.quotes = new QuotesResource(this.http);
@@ -241,6 +250,13 @@ export class ScellApiClient {
 
   /** Invoice operations (create, download, convert) */
   public readonly invoices: InvoicesResource;
+  /**
+   * Recurring invoice profiles (subscriptions / retainers) — CRUD + lifecycle
+   * (pause / activate / cancel) + manual run.
+   *
+   * @since 2.33.0
+   */
+  public readonly recurringInvoices: RecurringInvoicesResource;
   /** Signature operations (create, download, remind, cancel) */
   public readonly signatures: SignaturesResource;
   /** Sub-tenant management (provision, update, list) */
@@ -327,6 +343,7 @@ export class ScellApiClient {
     this.http = new HttpClient('api-key', apiKey, config);
 
     this.invoices = new InvoicesResource(this.http);
+    this.recurringInvoices = new RecurringInvoicesResource(this.http);
     this.signatures = new SignaturesResource(this.http);
     this.subTenants = new SubTenantsResource(this.http);
     this.fiscal = new FiscalResource(this.http);
@@ -393,6 +410,9 @@ export { BrandingResource } from './resources/branding.js';
 export { InvoiceTemplatesResource } from './resources/invoice-templates.js';
 export { CreditPacksResource } from './resources/credit-packs.js';
 
+// Re-export recurring invoices resource (since v2.33.0)
+export { RecurringInvoicesResource } from './resources/recurring-invoices.js';
+
 // Re-export country reference (since v2.29.0)
 export { ReferenceResource } from './resources/reference.js';
 export type {
@@ -427,6 +447,8 @@ export {
   // Invoice email delivery errors (since v2.13.0)
   BuyerHasNoEmailError,
   InvoiceBrandingIncompleteError,
+  // VAT autoliquidation correction (since v2.33.0)
+  VatCorrectionRequiredError,
 } from './errors.js';
 
 // Re-export all types
@@ -439,6 +461,7 @@ export type {
   VatEn16931Code,
   VatExemptionReason,
   VatResolution,
+  VatCorrection,
   LineVatContext,
   VatBuyerContext,
   VatWarning,

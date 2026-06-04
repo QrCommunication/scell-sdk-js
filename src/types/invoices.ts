@@ -358,7 +358,15 @@ export interface SendInvoiceByEmailResponse {
 }
 
 /**
- * Invoice line input for creation
+ * Invoice line input for creation.
+ *
+ * The optional VAT-control fields (`vat_category`, `supply_type`,
+ * `place_of_supply`, `vat_override_reason`) drive the server-side authoritative
+ * VAT resolution. When the submitted `tax_rate` is inconsistent with the
+ * seller/buyer context (e.g. 20 % on an intra-EU B2B sale to a VAT-registered
+ * buyer) **and** no `vat_override_reason` is given, the API replies
+ * `409 VAT_CORRECTION_REQUIRED` ({@link VatCorrectionRequiredError}) instead of
+ * persisting the invoice.
  */
 export interface InvoiceLineInput {
   description: string;
@@ -368,6 +376,31 @@ export interface InvoiceLineInput {
   total_ht: number;
   total_tax: number;
   total_ttc: number;
+  /**
+   * Explicit VAT category. When omitted, the server resolves it from the
+   * seller/buyer context (recommended: let the server decide, or use
+   * {@link createInvoiceLine}).
+   */
+  vat_category?: import('./vat.js').VatCategory | undefined;
+  /**
+   * Supply nature — DISCRIMINATES intra-EU/export exemption:
+   * goods → `INTRACOM_GOODS` (K) / `EXPORT` (G); services → `REVERSE_CHARGE`
+   * (AE) / `OUT_OF_SCOPE` (O). Defaults to `services`.
+   */
+  supply_type?: 'goods' | 'services' | undefined;
+  /**
+   * ISO 3166-1 alpha-2 country where the supply is effectively delivered
+   * (art. 259-A CGI override).
+   */
+  place_of_supply?: string | undefined;
+  /**
+   * Justification to keep a divergent tax rate (avoids the
+   * `409 VAT_CORRECTION_REQUIRED`, recorded for the fiscal audit trail).
+   * Max 500 chars.
+   */
+  vat_override_reason?: string | undefined;
+  /** Arbitrary application-specific metadata forwarded as-is. */
+  metadata?: Record<string, unknown> | undefined;
 }
 
 /**

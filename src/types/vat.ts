@@ -38,7 +38,15 @@ export type VatCategory =
   | 'ZERO_RATED'
   | 'EXEMPT'
   | 'REVERSE_CHARGE'
-  | 'OUT_OF_SCOPE';
+  | 'OUT_OF_SCOPE'
+  /** Intra-community supply of **goods** — EN16931 `K`, art. 262 ter I CGI. */
+  | 'INTRACOM_GOODS'
+  /** Export of **goods** outside the EU — EN16931 `G`, art. 262 I CGI. */
+  | 'EXPORT'
+  /** Small-business franchise (auto-entrepreneur) — EN16931 `E`, art. 293 B CGI. */
+  | 'FRANCHISE_BASE'
+  /** VAT-exempt vocational training — EN16931 `E`, art. 261-4-4°a CGI. */
+  | 'EXEMPT_TRAINING';
 
 /**
  * Default TVA rates (%) associated with each {@link VatCategory}.
@@ -65,6 +73,10 @@ export const VAT_DEFAULT_RATES: Record<VatCategory, number> = {
   EXEMPT: 0,
   REVERSE_CHARGE: 0,
   OUT_OF_SCOPE: 0,
+  INTRACOM_GOODS: 0,
+  EXPORT: 0,
+  FRANCHISE_BASE: 0,
+  EXEMPT_TRAINING: 0,
 } as const;
 
 /**
@@ -73,23 +85,38 @@ export const VAT_DEFAULT_RATES: Record<VatCategory, number> = {
  * | Code | Meaning |
  * |------|---------|
  * | `S`  | Standard rate |
- * | `AE` | VAT Reverse Charge (auto-liquidation) |
+ * | `AE` | VAT Reverse Charge — services intra-EU (auto-liquidation) |
+ * | `K`  | VAT exempt intra-Community supply of **goods** |
+ * | `G`  | Free export of **goods**, VAT not charged |
  * | `O`  | Services Outside Scope of Tax |
- * | `Z`  | Zero-rated (exports) |
+ * | `Z`  | Zero-rated |
  * | `E`  | Exempt from tax |
  */
-export type VatEn16931Code = 'S' | 'AE' | 'O' | 'Z' | 'E';
+export type VatEn16931Code = 'S' | 'AE' | 'K' | 'G' | 'O' | 'Z' | 'E';
 
 /**
  * Why the resolved rate differs from the standard rate.
  *
- * | Reason           | When applied                                                 |
- * |------------------|--------------------------------------------------------------|
- * | `reverse_charge` | B2B buyer in an EU country with a valid intra-EU VAT number  |
- * | `out_of_scope`   | Buyer outside the EU or a non-taxable territory              |
- * | `null`           | Standard French regime — no exemption                        |
+ * | Reason            | When applied                                                  |
+ * |-------------------|---------------------------------------------------------------|
+ * | `reverse_charge`  | EU B2B **services** with a valid intra-EU VAT number (art. 283-2) |
+ * | `intracom_goods`  | EU B2B **goods** supply (art. 262 ter I)                      |
+ * | `export`          | Export of **goods** outside the EU (art. 262 I)              |
+ * | `out_of_scope`    | Services to a recipient outside the EU (art. 259-1)         |
+ * | `exempt`          | Sector exemption (art. 261)                                  |
+ * | `franchise_base`  | Small-business franchise (art. 293 B)                        |
+ * | `exempt_training` | Vocational training exemption (art. 261-4-4°a)              |
+ * | `null`            | Standard regime — no exemption (or ZERO_RATED, no BT-120)    |
  */
-export type VatExemptionReason = 'reverse_charge' | 'out_of_scope' | null;
+export type VatExemptionReason =
+  | 'reverse_charge'
+  | 'intracom_goods'
+  | 'export'
+  | 'out_of_scope'
+  | 'exempt'
+  | 'franchise_base'
+  | 'exempt_training'
+  | null;
 
 /**
  * Fully resolved VAT context for an invoice line.
@@ -293,4 +320,33 @@ export interface VatContextByIdPayload {
 export interface VatContextByBuyerPayload {
   buyer: VatBuyerContext;
   line?: LineVatContext;
+}
+
+/**
+ * A single per-line correction proposed by the server when an invoice is
+ * rejected with `409 VAT_CORRECTION_REQUIRED` (the line's tax rate is
+ * inconsistent with the seller/buyer context and no `vat_override_reason`
+ * was provided). The invoice is **not** persisted.
+ *
+ * @see {@link VatCorrectionRequiredError}
+ */
+export interface VatCorrection {
+  /** 0-based index of the offending line in the submitted `lines` array. */
+  line_index: number;
+  /** Line description (echoed back for display). */
+  description: string | null;
+  /** The tax rate you submitted (may be `null` if omitted). */
+  provided_rate: number | null;
+  /** The tax rate the server resolved for this line. */
+  suggested_rate: number;
+  /** The applicative VAT category the server resolved (e.g. `'REVERSE_CHARGE'`). */
+  suggested_category: VatCategory;
+  /** EN16931 duty code for the resolved category (e.g. `'AE'`, `'K'`). */
+  en16931_code: VatEn16931Code;
+  /** Legal mention to print on the invoice for the resolved category (BT-120). */
+  mention: string | null;
+  /** Internal rule identifier that produced the suggestion (audit). */
+  rule: string | null;
+  /** Human-readable warning that triggered the correction. */
+  warning: string | null;
 }

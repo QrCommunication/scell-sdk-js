@@ -92,6 +92,21 @@ export type {
   UpdateSupplierInput,
 } from './suppliers.js';
 
+// Recurring invoice types (since v2.33.0)
+export type {
+  CreateRecurringInvoiceInput,
+  InvoiceFormatLine,
+  RecurrenceConfig,
+  RecurrenceConfigInput,
+  RecurringInvoiceLineInput,
+  RecurringInvoiceListOptions,
+  RecurringInvoiceOccurrence,
+  RecurringInvoiceOccurrenceListOptions,
+  RecurringInvoiceProfile,
+  RecurringInvoiceTotals,
+  UpdateRecurringInvoiceInput,
+} from './recurring-invoices.js';
+
 // Signature types
 export type {
   CreateSignatureInput,
@@ -404,6 +419,12 @@ export type {
   TenantKybStatus,
   // New literal union introduced in v2.25.0 (Factur-X BT-81).
   PaymentMeansCode,
+  // New literal unions introduced in v2.33.0 (recurring invoices).
+  RecurrenceEndMode,
+  RecurrenceIntervalUnit,
+  RecurringEmissionMode,
+  RecurringOccurrenceStatus,
+  RecurringProfileStatus,
 } from './enums.js';
 
 // Payment means runtime helpers (since v2.25.0 — UN/ECE 4461 / Factur-X BT-81).

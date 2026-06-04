@@ -348,3 +348,63 @@ export const commonB2bFrance: readonly PaymentMeansCode[] = Object.freeze([
   '59', // SEPA direct debit
   '10', // Cash
 ]);
+
+// ---------------------------------------------------------------------------
+// Recurring invoices (subscriptions / retainers)
+// Added in v2.33.0
+// ---------------------------------------------------------------------------
+
+/**
+ * Base cadence unit of a recurring invoice profile's schedule.
+ *
+ * Combined with `interval_count` (e.g. `'week'` + `2` → fortnightly) to derive
+ * the next emission date.
+ *
+ * @since 2.33.0
+ */
+export type RecurrenceIntervalUnit = 'day' | 'week' | 'month' | 'year';
+
+/**
+ * How a recurring invoice profile's schedule terminates.
+ *
+ * - `'never'`             — runs indefinitely until paused / cancelled.
+ * - `'on_date'`           — stops after `end_date` (inclusive).
+ * - `'after_occurrences'` — stops after `max_occurrences` emissions.
+ *
+ * @since 2.33.0
+ */
+export type RecurrenceEndMode = 'never' | 'on_date' | 'after_occurrences';
+
+/**
+ * What the platform does when a recurring occurrence is due.
+ *
+ * - `'draft'`     — generate the invoice as a draft (manual review / send).
+ * - `'auto_send'` — generate **and** transmit/send the invoice automatically.
+ *
+ * @since 2.33.0
+ */
+export type RecurringEmissionMode = 'draft' | 'auto_send';
+
+/**
+ * Lifecycle status of a recurring invoice **profile**.
+ *
+ * - `'active'`    — the schedule is running; `next_run_at` is set.
+ * - `'paused'`    — temporarily halted (resume with `activate`).
+ * - `'completed'` — the schedule reached its `end_mode` terminus.
+ * - `'cancelled'` — permanently stopped by the user.
+ *
+ * @since 2.33.0
+ */
+export type RecurringProfileStatus = 'active' | 'paused' | 'completed' | 'cancelled';
+
+/**
+ * Status of a single recurring invoice **occurrence** (one scheduled run).
+ *
+ * - `'pending'` — scheduled, not yet emitted.
+ * - `'emitted'` — an invoice was successfully generated (`invoice_id` set).
+ * - `'failed'`  — emission failed (`last_error` set); retried per backoff.
+ * - `'skipped'` — intentionally skipped (e.g. paused over the run date).
+ *
+ * @since 2.33.0
+ */
+export type RecurringOccurrenceStatus = 'pending' | 'emitted' | 'failed' | 'skipped';

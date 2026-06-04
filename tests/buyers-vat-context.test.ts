@@ -361,63 +361,85 @@ describe('InvoiceLineBuilder', () => {
       }
     });
 
-    it('sets metadata.category', () => {
+    // Depuis v2.33.0 : les champs de pilotage TVA sont TOP-LEVEL (lus par la
+    // résolution autoritaire serveur), plus dans metadata.* — c'est ce qui fait
+    // enfin émettre le code AE/K + la mention.
+    it('sets top-level vat_category', () => {
       const line = createInvoiceLine({ category: 'REVERSE_CHARGE' })
         .description('Test')
         .unitPrice(100)
         .build();
 
-      expect(line.metadata?.category).toBe('REVERSE_CHARGE');
+      expect(line.vat_category).toBe('REVERSE_CHARGE');
+      expect(line.metadata).toBeUndefined();
     });
 
-    it('sets metadata.exemption_reason for REVERSE_CHARGE', () => {
+    it('does NOT emit exemption_reason (server computes it)', () => {
       const line = createInvoiceLine({ category: 'REVERSE_CHARGE' })
         .description('Test')
         .unitPrice(100)
         .build();
 
-      expect(line.metadata?.exemption_reason).toBe('reverse_charge');
+      expect(line.vat_category).toBe('REVERSE_CHARGE');
+      expect(line.metadata).toBeUndefined();
     });
 
-    it('sets metadata.exemption_reason for OUT_OF_SCOPE', () => {
-      const line = createInvoiceLine({ category: 'OUT_OF_SCOPE' })
-        .description('Test')
+    it('supports the new goods/franchise/export categories', () => {
+      const goods = createInvoiceLine({ category: 'INTRACOM_GOODS' })
+        .description('Matériel')
+        .unitPrice(100)
+        .supplyType('goods')
+        .build();
+      expect(goods.vat_category).toBe('INTRACOM_GOODS');
+      expect(goods.supply_type).toBe('goods');
+      expect(goods.tax_rate).toBe(0);
+
+      const fr = createInvoiceLine({ category: 'FRANCHISE_BASE' })
+        .description('Prestation AE')
         .unitPrice(100)
         .build();
-
-      expect(line.metadata?.exemption_reason).toBe('out_of_scope');
-    });
-
-    it('sets metadata.exemption_reason to null for STANDARD', () => {
-      const line = createInvoiceLine({ category: 'STANDARD' })
-        .description('Test')
-        .unitPrice(100)
-        .build();
-
-      expect(line.metadata?.exemption_reason).toBeNull();
+      expect(fr.vat_category).toBe('FRANCHISE_BASE');
+      expect(fr.tax_rate).toBe(0);
     });
   });
 
-  describe('placeOfSupply() setter', () => {
-    it('sets metadata.place_of_supply', () => {
+  describe('placeOfSupply() / overrideReason() setters', () => {
+    it('sets top-level place_of_supply (uppercased)', () => {
       const line = createInvoiceLine({ category: 'STANDARD' })
         .description('Service numérique')
         .unitPrice(200)
-        .placeOfSupply('FR')
+        .placeOfSupply('fr')
         .build();
 
-      expect(line.metadata?.place_of_supply).toBe('FR');
+      expect(line.place_of_supply).toBe('FR');
+      expect(line.metadata).toBeUndefined();
     });
 
-    it('combines place_of_supply with category in metadata', () => {
+    it('combines place_of_supply with vat_category top-level', () => {
       const line = createInvoiceLine({ category: 'REVERSE_CHARGE' })
         .description('Conseil EU')
         .unitPrice(500)
+        .supplyType('services')
         .placeOfSupply('DE')
         .build();
 
-      expect(line.metadata?.category).toBe('REVERSE_CHARGE');
-      expect(line.metadata?.place_of_supply).toBe('DE');
+      expect(line.vat_category).toBe('REVERSE_CHARGE');
+      expect(line.supply_type).toBe('services');
+      expect(line.place_of_supply).toBe('DE');
+    });
+
+    it('overrideReason() sets top-level vat_override_reason', () => {
+      const line = createInvoiceLine()
+        .description('Prestation')
+        .unitPrice(1000)
+        .taxRate(20)
+        .overrideReason('Numéro TVA acheteur invalide à la date d\'émission')
+        .build();
+
+      expect(line.tax_rate).toBe(20);
+      expect(line.vat_override_reason).toBe(
+        'Numéro TVA acheteur invalide à la date d\'émission'
+      );
     });
   });
 

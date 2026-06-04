@@ -5,6 +5,7 @@
  */
 
 import type { ApiErrorResponse } from './types/common.js';
+import type { VatCorrection } from './types/vat.js';
 
 /**
  * Base error class for all Scell API errors
@@ -227,6 +228,57 @@ export class QuoteNotEditableError extends ScellError {
 }
 
 /**
+ * Error thrown when the server detects an invoice line whose tax rate is
+ * inconsistent with the seller/buyer VAT context (e.g. 20 % on an intra-EU B2B
+ * sale to a VAT-registered buyer, where reverse charge applies) **and** no
+ * `vat_override_reason` was provided on that line. The invoice is **not**
+ * persisted.
+ *
+ * HTTP 409 — code: `'VAT_CORRECTION_REQUIRED'`
+ *
+ * Two ways forward:
+ *  1. Re-submit with the suggested rate/category from {@link corrections}.
+ *  2. Keep your rate by setting `vat_override_reason` on the offending line
+ *     (see {@link InvoiceLineBuilder.overrideReason}).
+ *
+ * @example
+ * ```typescript
+ * import { VatCorrectionRequiredError } from '@scell/sdk';
+ *
+ * try {
+ *   await client.invoices.create(payload);
+ * } catch (e) {
+ *   if (e instanceof VatCorrectionRequiredError) {
+ *     for (const c of e.corrections) {
+ *       console.warn(
+ *         `Line ${c.line_index}: ${c.provided_rate}% → ${c.suggested_rate}% ` +
+ *         `(${c.suggested_category}) — ${c.mention ?? ''}`
+ *       );
+ *     }
+ *   }
+ * }
+ * ```
+ */
+export class VatCorrectionRequiredError extends ScellError {
+  /** Per-line corrections proposed by the server. */
+  public readonly corrections: VatCorrection[];
+  /** Server hint describing how to proceed. */
+  public readonly hint: string | undefined;
+
+  constructor(
+    message: string,
+    corrections: VatCorrection[] = [],
+    hint?: string,
+    body?: unknown
+  ) {
+    super(message, 409, 'VAT_CORRECTION_REQUIRED', body);
+    this.name = 'VatCorrectionRequiredError';
+    this.corrections = corrections;
+    this.hint = hint;
+  }
+}
+
+/**
  * Error thrown when attempting to convert or remove a payment schedule line
  * that has already been converted into a deposit invoice.
  *
@@ -440,12 +492,27 @@ export function parseApiError(
       throw new ScellAuthorizationError(message, body);
     case 404:
       throw new ScellNotFoundError(message, body);
-    case 409:
-      // Business-state conflicts — quote not editable (locked after acceptance)
-      if (code === 'QUOTE_NOT_EDITABLE') {
+    case 409: {
+      // Business-state conflicts. NOTE: some 409 bodies carry the code in the
+      // `error` field rather than `code` (e.g. VAT_CORRECTION_REQUIRED).
+      const conflict409 = errorBody as
+        | { error?: string; corrections?: VatCorrection[]; hint?: string }
+        | undefined;
+      const conflictCode = code ?? conflict409?.error;
+      if (conflictCode === 'VAT_CORRECTION_REQUIRED') {
+        throw new VatCorrectionRequiredError(
+          message,
+          conflict409?.corrections ?? [],
+          conflict409?.hint,
+          body
+        );
+      }
+      // Quote not editable (locked after acceptance)
+      if (conflictCode === 'QUOTE_NOT_EDITABLE') {
         throw new QuoteNotEditableError(message, body);
       }
-      throw new ScellError(message, status, code, body);
+      throw new ScellError(message, status, conflictCode, body);
+    }
     case 422: {
       // Sub-tenant specific codes (since v2.9.0). These extend ScellError,
       // not ScellValidationError, because they carry structured fields

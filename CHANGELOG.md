@@ -2,6 +2,53 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.33.0] - 2026-06-04
+
+### Added
+- **Recurring invoices** (`client.recurringInvoices.*` on `ScellClient` and
+  `ScellApiClient`): manage subscription / retainer invoice **profiles** that
+  the platform emits automatically on a cadence. CRUD (`list`, `get`, `create`,
+  `update`, `delete`), per-profile `occurrences(id)` listing, lifecycle controls
+  `pause(id)` / `activate(id)` / `cancel(id)`, and a manual `runNow(id)` that
+  triggers an out-of-band emission (202 Accepted).
+  - A profile carries the buyer (by `buyer_id` registry shortcut or inline
+    `buyer_*` fields), the line items, and a `recurrence` config
+    (`interval_unit` × `interval_count`, optional `day_of_month` / `day_of_week`).
+    The schedule terminates per `end_mode` (`'never'` | `'on_date'` |
+    `'after_occurrences'`), and each run emits an invoice as a draft or
+    auto-sends it (`emission_mode`). Mutating a profile only affects future
+    runs — already-emitted invoices stay immutable (ISCA).
+  - New types: `RecurringInvoiceProfile`, `RecurringInvoiceOccurrence`,
+    `CreateRecurringInvoiceInput`, `UpdateRecurringInvoiceInput`,
+    `RecurrenceConfig`, `RecurrenceConfigInput`, `RecurringInvoiceLineInput`,
+    `RecurringInvoiceTotals`, `InvoiceFormatLine`,
+    `RecurringInvoiceListOptions`, `RecurringInvoiceOccurrenceListOptions`.
+  - New enum unions: `RecurrenceIntervalUnit` (`'day'|'week'|'month'|'year'`),
+    `RecurrenceEndMode` (`'never'|'on_date'|'after_occurrences'`),
+    `RecurringEmissionMode` (`'draft'|'auto_send'`), `RecurringProfileStatus`
+    (`'active'|'paused'|'completed'|'cancelled'`), `RecurringOccurrenceStatus`
+    (`'pending'|'emitted'|'failed'|'skipped'`).
+
+### Added (autoliquidation TVA intra-UE — biens & services)
+- **`VatCategory`** : 4 nouvelles catégories alignées sur le backend —
+  `INTRACOM_GOODS` (K, livraison intracommunautaire de biens, art. 262 ter I),
+  `EXPORT` (G, exportation de biens hors UE, art. 262 I),
+  `FRANCHISE_BASE` (E, franchise en base auto-entrepreneur, art. 293 B),
+  `EXEMPT_TRAINING` (E, formation professionnelle continue, art. 261-4-4°a).
+  `VAT_DEFAULT_RATES` et `VatEn16931Code` (+`K`/`G`) mis à jour ;
+  `VatExemptionReason` étendu.
+- **`InvoiceLineInput`** : nouveaux champs optionnels **top-level**
+  `vat_category`, `supply_type` (`'goods'|'services'`), `place_of_supply`,
+  `vat_override_reason` — pilotent la résolution TVA autoritaire serveur.
+- **`InvoiceLineBuilder`** : setters `supplyType()` et `overrideReason()`.
+  `build()` émet désormais ces champs en **top-level** (et non dans `metadata`) —
+  c'est ce qui fait enfin émettre le code AE/K + la mention légale (auparavant
+  `metadata.category` était ignoré par le backend → 0 % sans mention).
+- **`VatCorrectionRequiredError`** (409, `VAT_CORRECTION_REQUIRED`) : levée quand
+  un taux est incohérent avec le contexte sans `vat_override_reason`. Expose
+  `corrections` (`VatCorrection[]` : taux/catégorie/mention suggérés par ligne)
+  et `hint`. La facture n'est PAS persistée. Nouveau type exporté `VatCorrection`.
+
 ## [2.32.0] - 2026-06-04
 
 ### Changed (corrige le contrat de création d'avoir)
