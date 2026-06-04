@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.32.0] - 2026-06-04
+
+### Changed (corrige le contrat de création d'avoir)
+- **`CreateCreditNoteInput`** : ajout du champ **requis `type`** (`'partial' | 'total'`)
+  et bascule de `items` vers `CreditNoteLineSelection[]`. Un avoir **partiel** exige
+  désormais de **sélectionner des lignes de la facture d'origine** via `invoice_line_id` ;
+  le prix unitaire et le **taux de TVA exact de chaque ligne** sont hérités (une facture
+  peut mêler 20 % / 5,5 % / exonéré 0 % — chaque ligne est créditée correctement).
+  Les anciens champs libres (`unit_price`/`tax_rate`/`total`) ne sont plus en entrée.
+- **`creditNotes.remainingCreditable(invoiceId)`** désormais **typé** (`RemainingCreditable`) :
+  retourne `items[]` avec `invoice_line_id`, `remaining_quantity`, `tax_rate`,
+  `remaining_amount_ht` + `can_be_credited`. C'est l'étape de découverte avant un avoir partiel.
+- Docstrings `create()` réécrites avec le workflow remainingCreditable → sélection de lignes.
+
+### Added
+- Types `CreditNoteLineSelection`, `RemainingCreditable`, `RemainingCreditableLine`.
+
 ## [2.31.0] - 2026-06-04
 
 ### Added

@@ -14,6 +14,7 @@ import type {
   CreditNote,
   CreateCreditNoteInput,
   CreditNoteListOptions,
+  RemainingCreditable,
 } from '../types/credit-notes.js';
 
 /**
@@ -86,20 +87,43 @@ export class CreditNotesResource {
   }
 
   /**
-   * Create a new credit note
+   * Create a credit note (avoir).
+   *
+   * A credit note ALWAYS targets an existing invoice and can never invent
+   * amounts. For a **partial** credit note you MUST select lines of the source
+   * invoice via `invoice_line_id` — the unit price and the EXACT per-line VAT
+   * rate are inherited from each line (so an invoice mixing 20 % / 5.5 % /
+   * VAT-exempt 0 % is credited correctly, line by line).
+   *
+   * Recommended flow: call {@link CreditNotesResource.remainingCreditable}
+   * first to know which lines (and quantities) can still be credited, then
+   * select among them.
    *
    * @param input - Credit note creation data
    * @param requestOptions - Request options
-   * @returns Created credit note
+   * @returns Created credit note (draft — call {@link CreditNotesResource.send} to validate)
    *
-   * @example
+   * @example Total credit note (all lines)
    * ```typescript
-   * const { data: creditNote } = await client.creditNotes.create({
+   * const { data } = await client.creditNotes.create({
    *   invoice_id: 'invoice-uuid',
-   *   reason: 'Product returned',
+   *   reason: 'Order fully cancelled',
+   *   type: 'total',
+   * });
+   * ```
+   *
+   * @example Partial credit note (select invoice lines)
+   * ```typescript
+   * // 1. Discover the creditable lines of the invoice
+   * const { data: creditable } = await client.creditNotes.remainingCreditable('invoice-uuid');
+   * // 2. Select the line(s) to credit — amounts + VAT are inherited per line
+   * const { data } = await client.creditNotes.create({
+   *   invoice_id: 'invoice-uuid',
+   *   reason: 'One item returned',
+   *   type: 'partial',
    *   items: [
-   *     { description: 'Item A', quantity: 1, unit_price: 100, tax_rate: 20, total: 120 }
-   *   ]
+   *     { invoice_line_id: creditable.items[0].invoice_line_id, quantity: 1 },
+   *   ],
    * });
    * ```
    */
@@ -218,23 +242,33 @@ export class CreditNotesResource {
   }
 
   /**
-   * Get remaining creditable amount for an invoice
+   * List the lines of an invoice that can STILL be credited (after previous
+   * credit notes), with the remaining quantity and exact VAT rate per line.
+   *
+   * This is the discovery step before creating a **partial** credit note:
+   * pick `invoice_line_id`(s) from `data.items[]` and pass them to
+   * {@link CreditNotesResource.create}.
    *
    * @param invoiceId - Invoice UUID
    * @param requestOptions - Request options
-   * @returns Remaining creditable information
+   * @returns Per-line remaining creditable amounts + `can_be_credited`
    *
    * @example
    * ```typescript
    * const { data } = await client.creditNotes.remainingCreditable('invoice-uuid');
-   * console.log('Remaining:', data);
+   * if (!data.can_be_credited) throw new Error('Invoice fully credited');
+   * for (const line of data.items) {
+   *   console.log(`${line.description}: ${line.remaining_quantity} @ ${line.tax_rate}%`);
+   * }
    * ```
+   *
+   * @since 2.32.0 — typed response ({@link RemainingCreditable}).
    */
   async remainingCreditable(
     invoiceId: string,
     requestOptions?: RequestOptions
-  ): Promise<SingleResponse<Record<string, unknown>>> {
-    return this.http.get<SingleResponse<Record<string, unknown>>>(
+  ): Promise<SingleResponse<RemainingCreditable>> {
+    return this.http.get<SingleResponse<RemainingCreditable>>(
       `/invoices/${invoiceId}/remaining-creditable`,
       undefined,
       requestOptions
