@@ -99,6 +99,42 @@ export interface QuoteAuditEntry {
 }
 
 /**
+ * Status of the OpenTimestamps Bitcoin anchoring for a sealed quote PDF.
+ *
+ * - `pending`   — proof submitted to OpenTimestamps calendars, awaiting Bitcoin confirmation
+ * - `confirmed` — anchored in a Bitcoin block (immutable timestamp proven)
+ * - `failed`    — anchoring could not be completed
+ */
+export type QuoteOtsStatus = 'pending' | 'confirmed' | 'failed';
+
+/**
+ * Sealing information for a signed quote.
+ *
+ * When a quote is accepted, its PDF is sealed with a PAdES electronic signature
+ * and the document hash is anchored to the Bitcoin blockchain via OpenTimestamps.
+ *
+ * Present on the authenticated tenant-facing {@link Quote} response.
+ */
+export interface QuoteSealing {
+  /** `true` if the quote PDF has been sealed with a PAdES signature. */
+  is_sealed: boolean;
+  /** ISO 8601 timestamp of when the PAdES seal was applied. */
+  pades_signed_at: DateTimeString | null;
+  /** SHA-256 (hex) of the sealed PDF — this is the hash anchored to Bitcoin. */
+  signed_pdf_sha256: string | null;
+  /** Status of the OpenTimestamps Bitcoin anchoring. */
+  ots_status: QuoteOtsStatus | null;
+  /** ISO 8601 timestamp of when the proof was submitted to OpenTimestamps. */
+  ots_submitted_at: DateTimeString | null;
+  /** ISO 8601 timestamp of when the timestamp was confirmed in a Bitcoin block. */
+  ots_bitcoin_confirmed_at: DateTimeString | null;
+  /** Height of the Bitcoin block that anchored the document hash. */
+  bitcoin_block_height: number | null;
+  /** OpenTimestamps receipt (`.ots`) encoded in base64. */
+  ots_proof_base64: string | null;
+}
+
+/**
  * Quote entity (full detail)
  */
 export interface Quote {
@@ -149,6 +185,14 @@ export interface Quote {
   // Signature
   signature_required: boolean;
   signature: QuoteSignature | null;
+
+  /**
+   * PAdES sealing + Bitcoin (OpenTimestamps) anchoring of the signed quote PDF.
+   *
+   * Populated once the quote has been accepted and its PDF sealed. May be
+   * absent (`undefined`) on quotes that have not yet reached the sealing stage.
+   */
+  sealing?: QuoteSealing;
 
   // Public link
   public_link: string | null;

@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.34.0] - 2026-06-05
+
+### Added (scellement PAdES + ancrage Bitcoin des devis)
+- **`Quote.sealing`** : nouvel objet optionnel exposant le scellement du devis
+  signé. Quand un devis est accepté, son PDF est scellé avec une signature
+  électronique **PAdES** et l'empreinte du document est ancrée à la blockchain
+  **Bitcoin** via **OpenTimestamps**.
+  - Nouveau type `QuoteSealing` : `is_sealed` (boolean), `pades_signed_at`,
+    `signed_pdf_sha256` (SHA-256 hex du PDF scellé = empreinte ancrée Bitcoin),
+    `ots_status`, `ots_submitted_at`, `ots_bitcoin_confirmed_at`,
+    `bitcoin_block_height`, `ots_proof_base64` (receipt OpenTimestamps `.ots`
+    en base64). Tous les sous-champs sont nullables sauf `is_sealed`.
+  - Nouvelle union `QuoteOtsStatus` (`'pending' | 'confirmed' | 'failed'`)
+    décrivant l'état de l'ancrage Bitcoin.
+  - Les deux types sont ré-exportés depuis l'entrée du package.
+
 ## [2.33.0] - 2026-06-04
 
 ### Added

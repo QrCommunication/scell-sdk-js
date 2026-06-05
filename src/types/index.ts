@@ -69,6 +69,8 @@ export type {
   QuoteLineInput,
   QuoteListParams,
   QuoteListResponse,
+  QuoteOtsStatus,
+  QuoteSealing,
   QuoteSignature,
   QuoteStatus,
   RefuseQuoteInput,
