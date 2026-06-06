@@ -128,8 +128,8 @@ export class ScellClient {
    *
    * @example
    * ```typescript
-   * const { upload_url, public_url } = await client.branding.tenant.uploadLogo('image/png');
-   * await fetch(upload_url, { method: 'PUT', body: logoBuffer });
+   * const { url, public_url } = await client.branding.tenant.uploadLogo('image/png');
+   * await fetch(url, { method: 'PUT', body: logoBuffer });
    * await client.branding.tenant.update({ brand_logo_url: public_url });
    * ```
    */

@@ -4,14 +4,18 @@
  * Wraps the branding endpoints for both tenant and sub-tenant scopes:
  *
  * Tenant:
- *   GET    /api/v1/tenant/branding
- *   PATCH  /api/v1/tenant/branding
- *   POST   /api/v1/tenant/branding/logo-upload-url
+ *   GET    /api/v1/branding/tenant
+ *   PUT    /api/v1/branding/tenant
+ *   PATCH  /api/v1/branding/tenant
+ *   POST   /api/v1/branding/tenant/logo-upload-url
+ *   GET    /api/v1/branding/tenant/preview
  *
  * Sub-tenant:
- *   GET    /api/v1/sub-tenants/{id}/branding
- *   PATCH  /api/v1/sub-tenants/{id}/branding
- *   POST   /api/v1/sub-tenants/{id}/branding/logo-upload-url
+ *   GET    /api/v1/branding/sub-tenants/{id}
+ *   PUT    /api/v1/branding/sub-tenants/{id}
+ *   PATCH  /api/v1/branding/sub-tenants/{id}
+ *   POST   /api/v1/branding/sub-tenants/{id}/logo-upload-url
+ *   GET    /api/v1/branding/sub-tenants/{id}/preview
  *
  * @packageDocumentation
  */
@@ -38,10 +42,10 @@ import type {
  * const client = new ScellApiClient('sk_live_xxx');
  *
  * // 1. Get pre-signed upload URL
- * const { upload_url, public_url } = await client.branding.tenant.uploadLogo('image/png');
+ * const { url, public_url } = await client.branding.tenant.uploadLogo('image/png');
  *
  * // 2. Upload the logo directly to S3 (browser or Node.js)
- * await fetch(upload_url, { method: 'PUT', body: logoFileOrBuffer });
+ * await fetch(url, { method: 'PUT', body: logoFileOrBuffer });
  *
  * // 3. Persist the public URL + other branding fields
  * const branding = await client.branding.tenant.update({
@@ -74,7 +78,7 @@ export class BrandingResource {
      * ```
      */
     get: (requestOptions?: RequestOptions): Promise<Branding> =>
-      this.http.get<Branding>('/tenant/branding', undefined, requestOptions),
+      this.http.get<Branding>('/branding/tenant', undefined, requestOptions),
 
     /**
      * Update the tenant branding profile (PATCH — partial update)
@@ -97,14 +101,14 @@ export class BrandingResource {
       data: UpdateBrandingInput,
       requestOptions?: RequestOptions
     ): Promise<Branding> =>
-      this.http.patch<Branding>('/tenant/branding', data, requestOptions),
+      this.http.patch<Branding>('/branding/tenant', data, requestOptions),
 
     /**
      * Get a pre-signed S3 URL for uploading the tenant brand logo
      *
      * The workflow is:
-     * 1. Call `uploadLogo(mimeType)` to get `upload_url` + `public_url`
-     * 2. PUT the binary file content to `upload_url`
+     * 1. Call `uploadLogo(mimeType)` to get `url` + `public_url`
+     * 2. PUT the binary file content to `url`
      * 3. Call `update({ brand_logo_url: public_url })` to persist
      *
      * @param mimeType - MIME type of the file, e.g. `'image/png'`
@@ -113,8 +117,8 @@ export class BrandingResource {
      *
      * @example
      * ```typescript
-     * const { upload_url, public_url } = await client.branding.tenant.uploadLogo('image/png');
-     * await fetch(upload_url, { method: 'PUT', body: logoBuffer, headers: { 'Content-Type': 'image/png' } });
+     * const { url, public_url } = await client.branding.tenant.uploadLogo('image/png');
+     * await fetch(url, { method: 'PUT', body: logoBuffer, headers: { 'Content-Type': 'image/png' } });
      * await client.branding.tenant.update({ brand_logo_url: public_url });
      * ```
      */
@@ -123,10 +127,30 @@ export class BrandingResource {
       requestOptions?: RequestOptions
     ): Promise<BrandingLogoUploadUrlResponse> =>
       this.http.post<BrandingLogoUploadUrlResponse>(
-        '/tenant/branding/logo-upload-url',
+        '/branding/tenant/logo-upload-url',
         { mime_type: mimeType } satisfies BrandingLogoUploadUrlInput,
         requestOptions
       ),
+
+    /**
+     * Render a live HTML preview of how a branded email will look with the
+     * current tenant branding profile.
+     *
+     * Returns the rendered HTML as a string. Pass `Accept: application/pdf`
+     * via `requestOptions.headers` to request a PDF rendition instead — the
+     * body is then returned as a (binary) string.
+     *
+     * @param requestOptions - Per-request options (use `headers.Accept` to negotiate format)
+     * @returns Rendered email preview as HTML (string)
+     *
+     * @example
+     * ```typescript
+     * const html = await client.branding.tenant.preview();
+     * // e.g. render `html` in an <iframe srcDoc={html} /> for a live preview
+     * ```
+     */
+    preview: (requestOptions?: RequestOptions): Promise<string> =>
+      this.http.getText('/branding/tenant/preview', undefined, requestOptions),
   };
 
   /** Sub-tenant-level branding operations */
@@ -149,7 +173,7 @@ export class BrandingResource {
       requestOptions?: RequestOptions
     ): Promise<Branding> =>
       this.http.get<Branding>(
-        `/sub-tenants/${subTenantId}/branding`,
+        `/branding/sub-tenants/${subTenantId}`,
         undefined,
         requestOptions
       ),
@@ -176,7 +200,7 @@ export class BrandingResource {
       requestOptions?: RequestOptions
     ): Promise<Branding> =>
       this.http.patch<Branding>(
-        `/sub-tenants/${subTenantId}/branding`,
+        `/branding/sub-tenants/${subTenantId}`,
         data,
         requestOptions
       ),
@@ -191,11 +215,11 @@ export class BrandingResource {
      *
      * @example
      * ```typescript
-     * const { upload_url, public_url } = await client.branding.subTenants.uploadLogo(
+     * const { url, public_url } = await client.branding.subTenants.uploadLogo(
      *   'sub-tenant-uuid',
      *   'image/svg+xml'
      * );
-     * await fetch(upload_url, { method: 'PUT', body: svgBuffer });
+     * await fetch(url, { method: 'PUT', body: svgBuffer });
      * await client.branding.subTenants.update('sub-tenant-uuid', { brand_logo_url: public_url });
      * ```
      */
@@ -205,8 +229,34 @@ export class BrandingResource {
       requestOptions?: RequestOptions
     ): Promise<BrandingLogoUploadUrlResponse> =>
       this.http.post<BrandingLogoUploadUrlResponse>(
-        `/sub-tenants/${subTenantId}/branding/logo-upload-url`,
+        `/branding/sub-tenants/${subTenantId}/logo-upload-url`,
         { mime_type: mimeType } satisfies BrandingLogoUploadUrlInput,
+        requestOptions
+      ),
+
+    /**
+     * Render a live HTML preview of how a branded email will look with a
+     * sub-tenant's branding profile.
+     *
+     * Returns the rendered HTML as a string. Pass `Accept: application/pdf`
+     * via `requestOptions.headers` to request a PDF rendition instead.
+     *
+     * @param subTenantId - Sub-tenant UUID
+     * @param requestOptions - Per-request options (use `headers.Accept` to negotiate format)
+     * @returns Rendered email preview as HTML (string)
+     *
+     * @example
+     * ```typescript
+     * const html = await client.branding.subTenants.preview('sub-tenant-uuid');
+     * ```
+     */
+    preview: (
+      subTenantId: string,
+      requestOptions?: RequestOptions
+    ): Promise<string> =>
+      this.http.getText(
+        `/branding/sub-tenants/${subTenantId}/preview`,
+        undefined,
         requestOptions
       ),
   };

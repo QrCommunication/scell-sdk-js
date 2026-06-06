@@ -5,9 +5,11 @@
  *  - branding.tenant.get()
  *  - branding.tenant.update()
  *  - branding.tenant.uploadLogo()
+ *  - branding.tenant.preview()
  *  - branding.subTenants.get()
  *  - branding.subTenants.update()
  *  - branding.subTenants.uploadLogo()
+ *  - branding.subTenants.preview()
  *
  * Also covers:
  *  - BuyerHasNoEmailError mapping (via invoices.sendByEmail())
@@ -35,6 +37,15 @@ function jsonResponse(status: number, body: unknown) {
     status,
     headers: new Headers({ 'Content-Type': 'application/json' }),
     json: () => Promise.resolve(body),
+  };
+}
+
+function htmlResponse(status: number, html: string) {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    headers: new Headers({ 'Content-Type': 'text/html; charset=UTF-8' }),
+    text: () => Promise.resolve(html),
   };
 }
 
@@ -66,13 +77,13 @@ describe('BrandingResource — tenant scope', () => {
   });
 
   describe('tenant.get()', () => {
-    it('fetches tenant branding via GET /tenant/branding', async () => {
+    it('fetches tenant branding via GET /branding/tenant', async () => {
       mockFetch.mockResolvedValueOnce(jsonResponse(200, SAMPLE_BRANDING));
 
       const branding = await client.branding.tenant.get();
 
       const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
-      expect(url).toBe(`${BASE_URL}/tenant/branding`);
+      expect(url).toBe(`${BASE_URL}/branding/tenant`);
       expect(init.method).toBe('GET');
       expect(branding.scope).toBe('tenant');
       expect(branding.is_complete).toBe(true);
@@ -91,7 +102,7 @@ describe('BrandingResource — tenant scope', () => {
   });
 
   describe('tenant.update()', () => {
-    it('updates tenant branding via PATCH /tenant/branding', async () => {
+    it('updates tenant branding via PATCH /branding/tenant', async () => {
       const updatedBranding = {
         ...SAMPLE_BRANDING,
         brand_primary_color: '#0D47A1',
@@ -105,7 +116,7 @@ describe('BrandingResource — tenant scope', () => {
       });
 
       const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
-      expect(url).toBe(`${BASE_URL}/tenant/branding`);
+      expect(url).toBe(`${BASE_URL}/branding/tenant`);
       expect(init.method).toBe('PATCH');
 
       const body = JSON.parse(init.body as string);
@@ -128,9 +139,9 @@ describe('BrandingResource — tenant scope', () => {
   });
 
   describe('tenant.uploadLogo()', () => {
-    it('requests a pre-signed upload URL via POST /tenant/branding/logo-upload-url', async () => {
+    it('requests a pre-signed upload URL via POST /branding/tenant/logo-upload-url', async () => {
       const mockResponse = {
-        upload_url: 'https://s3.example.com/upload?signed=abc123',
+        url: 'https://s3.example.com/upload?signed=abc123',
         public_url: 'https://cdn.example.com/logos/tenant-uuid-logo.png',
         expires_at: '2026-05-21T01:00:00Z',
       };
@@ -139,19 +150,19 @@ describe('BrandingResource — tenant scope', () => {
       const result = await client.branding.tenant.uploadLogo('image/png');
 
       const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
-      expect(url).toBe(`${BASE_URL}/tenant/branding/logo-upload-url`);
+      expect(url).toBe(`${BASE_URL}/branding/tenant/logo-upload-url`);
       expect(init.method).toBe('POST');
 
       const body = JSON.parse(init.body as string);
       expect(body.mime_type).toBe('image/png');
-      expect(result.upload_url).toContain('s3.example.com');
+      expect(result.url).toContain('s3.example.com');
       expect(result.public_url).toContain('cdn.example.com');
     });
 
     it('works with SVG mime type', async () => {
       mockFetch.mockResolvedValueOnce(
         jsonResponse(200, {
-          upload_url: 'https://s3.example.com/upload?signed=def456',
+          url: 'https://s3.example.com/upload?signed=def456',
           public_url: 'https://cdn.example.com/logos/logo.svg',
           expires_at: '2026-05-21T01:00:00Z',
         })
@@ -162,6 +173,33 @@ describe('BrandingResource — tenant scope', () => {
       const [, init] = mockFetch.mock.calls[0] as [string, RequestInit];
       const body = JSON.parse(init.body as string);
       expect(body.mime_type).toBe('image/svg+xml');
+    });
+  });
+
+  describe('tenant.preview()', () => {
+    it('fetches the rendered email preview via GET /branding/tenant/preview', async () => {
+      const html = '<html><body>Branded preview</body></html>';
+      mockFetch.mockResolvedValueOnce(htmlResponse(200, html));
+
+      const result = await client.branding.tenant.preview();
+
+      const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
+      expect(url).toBe(`${BASE_URL}/branding/tenant/preview`);
+      expect(init.method).toBe('GET');
+      // getText defaults Accept to text/html when caller doesn't override it
+      expect((init.headers as Record<string, string>)['Accept']).toBe('text/html');
+      expect(result).toBe(html);
+    });
+
+    it('honors a custom Accept header (e.g. application/pdf)', async () => {
+      mockFetch.mockResolvedValueOnce(htmlResponse(200, '%PDF-1.4'));
+
+      await client.branding.tenant.preview({
+        headers: { Accept: 'application/pdf' },
+      });
+
+      const [, init] = mockFetch.mock.calls[0] as [string, RequestInit];
+      expect((init.headers as Record<string, string>)['Accept']).toBe('application/pdf');
     });
   });
 });
@@ -175,21 +213,21 @@ describe('BrandingResource — subTenants scope', () => {
   });
 
   describe('subTenants.get()', () => {
-    it('fetches sub-tenant branding via GET /sub-tenants/{id}/branding', async () => {
+    it('fetches sub-tenant branding via GET /branding/sub-tenants/{id}', async () => {
       const subTenantBranding = { ...SAMPLE_BRANDING, scope: 'sub_tenant' as const };
       mockFetch.mockResolvedValueOnce(jsonResponse(200, subTenantBranding));
 
       const branding = await client.branding.subTenants.get(SUB_TENANT_ID);
 
       const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
-      expect(url).toBe(`${BASE_URL}/sub-tenants/${SUB_TENANT_ID}/branding`);
+      expect(url).toBe(`${BASE_URL}/branding/sub-tenants/${SUB_TENANT_ID}`);
       expect(init.method).toBe('GET');
       expect(branding.scope).toBe('sub_tenant');
     });
   });
 
   describe('subTenants.update()', () => {
-    it('updates sub-tenant branding via PATCH /sub-tenants/{id}/branding', async () => {
+    it('updates sub-tenant branding via PATCH /branding/sub-tenants/{id}', async () => {
       const updatedBranding = {
         ...SAMPLE_BRANDING,
         scope: 'sub_tenant' as const,
@@ -202,7 +240,7 @@ describe('BrandingResource — subTenants scope', () => {
       });
 
       const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
-      expect(url).toBe(`${BASE_URL}/sub-tenants/${SUB_TENANT_ID}/branding`);
+      expect(url).toBe(`${BASE_URL}/branding/sub-tenants/${SUB_TENANT_ID}`);
       expect(init.method).toBe('PATCH');
 
       const body = JSON.parse(init.body as string);
@@ -212,9 +250,9 @@ describe('BrandingResource — subTenants scope', () => {
   });
 
   describe('subTenants.uploadLogo()', () => {
-    it('requests upload URL via POST /sub-tenants/{id}/branding/logo-upload-url', async () => {
+    it('requests upload URL via POST /branding/sub-tenants/{id}/logo-upload-url', async () => {
       const mockResponse = {
-        upload_url: 'https://s3.example.com/upload?signed=xyz789',
+        url: 'https://s3.example.com/upload?signed=xyz789',
         public_url: 'https://cdn.example.com/logos/sub-tenant-logo.png',
         expires_at: '2026-05-21T01:00:00Z',
       };
@@ -224,13 +262,28 @@ describe('BrandingResource — subTenants scope', () => {
 
       const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
       expect(url).toBe(
-        `${BASE_URL}/sub-tenants/${SUB_TENANT_ID}/branding/logo-upload-url`
+        `${BASE_URL}/branding/sub-tenants/${SUB_TENANT_ID}/logo-upload-url`
       );
       expect(init.method).toBe('POST');
 
       const body = JSON.parse(init.body as string);
       expect(body.mime_type).toBe('image/png');
+      expect(result.url).toContain('s3.example.com');
       expect(result.public_url).toContain('cdn.example.com');
+    });
+  });
+
+  describe('subTenants.preview()', () => {
+    it('fetches the rendered preview via GET /branding/sub-tenants/{id}/preview', async () => {
+      const html = '<html><body>Sub-tenant preview</body></html>';
+      mockFetch.mockResolvedValueOnce(htmlResponse(200, html));
+
+      const result = await client.branding.subTenants.preview(SUB_TENANT_ID);
+
+      const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
+      expect(url).toBe(`${BASE_URL}/branding/sub-tenants/${SUB_TENANT_ID}/preview`);
+      expect(init.method).toBe('GET');
+      expect(result).toBe(html);
     });
   });
 });

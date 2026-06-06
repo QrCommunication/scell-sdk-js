@@ -443,4 +443,87 @@ export class HttpClient {
       throw error;
     }
   }
+
+  /**
+   * GET request that returns the raw response body as text (HTML, plain text).
+   *
+   * Use this for endpoints that return non-JSON textual content such as the
+   * branding email preview (`GET /branding/tenant/preview`), which returns
+   * rendered HTML (or a PDF, depending on the `Accept` header).
+   *
+   * Pass `Accept: application/pdf` via `options.headers` to request a PDF —
+   * note the body is still returned as a (binary-as-text) string; prefer
+   * {@link getRaw} when you need an `ArrayBuffer` for binary content.
+   *
+   * @param path - API endpoint path
+   * @param query - Query parameters
+   * @param options - Request options (use `headers.Accept` to negotiate format)
+   * @returns The response body as a string
+   */
+  async getText(
+    path: string,
+    query?: Record<string, string | number | boolean | undefined>,
+    options?: RequestOptions
+  ): Promise<string> {
+    const url = this.buildUrl(path, query);
+    const requestHeaders = this.buildHeaders(options?.headers);
+    const requestTimeout = options?.timeout ?? this.timeout;
+
+    // Remove JSON content-type; default to HTML unless caller overrides Accept
+    delete requestHeaders['Content-Type'];
+    if (!options?.headers?.['Accept']) {
+      requestHeaders['Accept'] = 'text/html';
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), requestTimeout);
+
+    if (options?.signal) {
+      options.signal.addEventListener('abort', () => controller.abort());
+    }
+
+    try {
+      const response = await this.fetchFn(url, {
+        method: 'GET',
+        headers: requestHeaders,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const contentType = response.headers.get('Content-Type') ?? '';
+        let responseBody: unknown;
+
+        if (contentType.includes('application/json')) {
+          responseBody = await response.json();
+        } else {
+          responseBody = await response.text();
+        }
+
+        parseApiError(response.status, responseBody, response.headers);
+      }
+
+      return response.text();
+    } catch (error) {
+      clearTimeout(timeoutId);
+
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          throw new ScellTimeoutError(
+            `Request timed out after ${requestTimeout}ms`
+          );
+        }
+
+        if (
+          error.name === 'TypeError' &&
+          error.message.includes('fetch')
+        ) {
+          throw new ScellNetworkError('Network request failed', error);
+        }
+      }
+
+      throw error;
+    }
+  }
 }

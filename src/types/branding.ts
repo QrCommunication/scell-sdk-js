@@ -96,7 +96,7 @@ export interface BrandingLogoUploadUrlInput {
 
 /**
  * Response containing the pre-signed S3 upload URL.
- * The client must issue a PUT request directly to `upload_url`
+ * The client must issue a PUT request directly to `url`
  * with the binary file content and the specified headers.
  *
  * After a successful upload, persist the resulting `public_url`
@@ -104,7 +104,7 @@ export interface BrandingLogoUploadUrlInput {
  */
 export interface BrandingLogoUploadUrlResponse {
   /** Pre-signed URL — issue a PUT request to this URL with the file body */
-  upload_url: string;
+  url: string;
   /** Public URL of the uploaded file once the PUT succeeds */
   public_url: string;
   /** ISO timestamp when the pre-signed URL expires (typically 5 minutes) */

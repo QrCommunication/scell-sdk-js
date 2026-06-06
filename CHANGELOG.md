@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.35.0] - 2026-06-06
+
+### Fixed (branding resource — chemins 404 en production)
+
+- **`branding.*` ciblait les mauvais chemins** : les routes étaient inversées
+  (`/tenant/branding` au lieu de `/branding/tenant`, `/sub-tenants/{id}/branding`
+  au lieu de `/branding/sub-tenants/{id}`), provoquant des **404** en production.
+  Tous les appels sont corrigés pour matcher le backend réel (préfixe `branding`) :
+  - `branding.tenant.get()` → `GET /branding/tenant`
+  - `branding.tenant.update()` → `PATCH /branding/tenant`
+  - `branding.tenant.uploadLogo()` → `POST /branding/tenant/logo-upload-url`
+  - `branding.subTenants.get(id)` → `GET /branding/sub-tenants/{id}`
+  - `branding.subTenants.update(id, ...)` → `PATCH /branding/sub-tenants/{id}`
+  - `branding.subTenants.uploadLogo(id, ...)` → `POST /branding/sub-tenants/{id}/logo-upload-url`
+- **`BrandingLogoUploadUrlResponse.upload_url` renommé en `url`** pour refléter
+  la réponse réelle du backend (`{ url, public_url, expires_at }`). Code de
+  migration : remplacer `result.upload_url` par `result.url`.
+
+### Added (branding — prévisualisation email)
+
+- **`branding.tenant.preview()`** → `GET /branding/tenant/preview` : renvoie le
+  rendu HTML (`Promise<string>`) de l'email avec le branding du tenant courant.
+- **`branding.subTenants.preview(subTenantId)`** → `GET /branding/sub-tenants/{id}/preview` :
+  idem pour un sous-tenant.
+- Passer `Accept: application/pdf` via `requestOptions.headers` négocie un rendu PDF.
+- Nouvelle méthode bas-niveau `HttpClient.getText()` (réponse textuelle/HTML brute,
+  pendant de `getRaw()` qui renvoie un `ArrayBuffer`).
+
 ## [2.34.0] - 2026-06-05
 
 ### Added (scellement PAdES + ancrage Bitcoin des devis)

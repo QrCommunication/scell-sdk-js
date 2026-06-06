@@ -721,6 +721,44 @@ const { data: logs } = await client.webhooks.logs(webhookId);
 await client.webhooks.delete(webhookId);
 ```
 
+### Branding
+
+White-label the **emails** Scell.io sends on your behalf (invoice delivery,
+reminders, signature requests). Exposed on `ScellClient` (Bearer) and
+`ScellApiClient` (`sk_*`). When `brand_logo_url`, `brand_primary_color` and
+`brand_email_footer` are all set, your branding replaces the Scell.io default.
+`brand_logo_url` is distinct from the Factur-X PDF logo (invoice templates).
+
+```typescript
+// --- Master tenant ---
+// Read the current branding profile (is_complete + missing_fields)
+const branding = await client.branding.tenant.get();
+
+// Update (partial — only the fields you pass; null clears a field)
+await client.branding.tenant.update({
+  brand_logo_url: 'https://cdn.scell.io/.../logo.png',
+  brand_primary_color: '#1A73E8',
+  brand_email_footer: 'Ma Societe SAS — SIRET 123 456 789 00010',
+  brand_email_signature: "L'equipe Ma Societe",
+});
+
+// Upload a logo via a pre-signed S3 URL
+const { url, public_url } = await client.branding.tenant.uploadLogo('image/png');
+// PUT the binary to `url`, then persist `public_url`:
+await client.branding.tenant.update({ brand_logo_url: public_url });
+
+// Preview the branded email BEFORE any send (HTML by default)
+const html = await client.branding.tenant.preview();
+// e.g. render it in <iframe srcDoc={html} /> for a live preview.
+// PDF rendition: pass an Accept header via requestOptions.
+const pdf = await client.branding.tenant.preview({ headers: { Accept: 'application/pdf' } });
+
+// --- Sub-tenant (anti-IDOR — must belong to you) ---
+await client.branding.subTenants.update('sub-tenant-uuid', { brand_primary_color: '#10B981' });
+const subSigned = await client.branding.subTenants.uploadLogo('sub-tenant-uuid', 'image/png');
+const subHtml = await client.branding.subTenants.preview('sub-tenant-uuid');
+```
+
 ### ScellTenantClient (Multi-Tenant Partner)
 
 For multi-tenant operations with X-Tenant-Key authentication.
