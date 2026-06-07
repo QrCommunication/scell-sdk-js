@@ -2,6 +2,128 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.0] - 2026-06-07
+
+### BREAKING CHANGES — Supplier registry contract
+
+The API has closed supplier creation and deletion. Suppliers are now **derived
+automatically from received invoices** — the invoice is the source of truth for
+all identity fields. The following changes are **breaking**:
+
+#### Removed
+
+- **`suppliers.create(input)`** — `POST /suppliers` now returns HTTP 405.
+  Remove any calls to this method. Suppliers are created implicitly when an
+  incoming invoice is received; they do not need to be pre-registered.
+- **`suppliers.delete(id)`** — `DELETE /suppliers/{id}` now returns HTTP 405.
+  Remove any calls to this method.
+- **`CreateSupplierInput`** type — removed from `src/types/suppliers.ts` and
+  from the barrel export in `src/types/index.ts`. Remove all imports of this
+  type.
+
+#### Changed
+
+- **`UpdateSupplierInput`** is now a dedicated interface restricted to
+  enrichment fields only:
+  ```typescript
+  interface UpdateSupplierInput {
+    email?: string | null;
+    phone?: string | null;
+    notes?: string | null;
+    metadata?: Record<string, unknown> | null;
+  }
+  ```
+  Previously it was `Partial<CreateSupplierInput>` which included identity
+  fields. The server ignores identity fields on `PATCH /suppliers/{id}`.
+
+#### Unchanged
+
+- `suppliers.list(params?)` — `GET /suppliers` is unchanged.
+- `suppliers.get(id)` — `GET /suppliers/{id}` is unchanged.
+- `suppliers.update(id, input)` — `PATCH /suppliers/{id}` is unchanged (but
+  `UpdateSupplierInput` is now restricted, see above).
+- The `Supplier` read-type is unchanged.
+
+#### Migration
+
+```diff
+- import type { CreateSupplierInput } from '@scell/sdk';
+
+- // Pre-registering suppliers is no longer needed
+- const supplier = await client.suppliers.create({
+-   name: 'Fournitures Express SARL',
+-   country: 'FR',
+-   siret: '98765432109876',
+-   billing_address: { ... },
+- });
+
+- // Deleting suppliers is no longer supported
+- await client.suppliers.delete(supplierId);
+
++ // Suppliers appear automatically when incoming invoices arrive.
++ // List/get them as before:
+  const { data } = await client.suppliers.list({ q: 'Express' });
+
++ // You can still enrich enrichment fields:
+  await client.suppliers.update(supplierId, {
+    email: 'contact@fournitures.fr',
+    notes: 'Preferred vendor',
+  });
+```
+
+---
+
+## [2.38.0] - 2026-06-07
+
+### Added — Product/service catalog (Products + ProductCategories)
+
+New reusable catalog scoped by `(tenant, sub_tenant)`, mirroring the buyer
+registry (`buyers`). Reuse a product to pre-fill an invoice/quote line via
+`product_id` without re-typing label, unit price and VAT rate.
+
+#### Resources
+
+- **`ProductsResource`** (`client.products`) — `list()`, `get()`, `create()`,
+  `update()` (PATCH), `replace()` (PUT), `delete()`.
+- **`ProductCategoriesResource`** (`client.productCategories`) — `list()`,
+  `get()`, `create()`, `update()` (PATCH), `replace()` (PUT), `delete()`.
+
+Exposed on both `ScellClient` (Bearer) and `ScellApiClient` (`sk_*`), next to
+`buyers`. Both classes are also re-exported from the package root.
+
+#### Types
+
+- `Product`, `CreateProductInput`, `UpdateProductInput`, `ListProductsParams`,
+  `ProductRevenueCategory` (from `./types/products.js`).
+- `ProductCategory`, `CreateProductCategoryInput`, `UpdateProductCategoryInput`,
+  `ListProductCategoriesParams` (from `./types/product-categories.js`).
+
+`Product` fields: `id`, `tenant_id`, `sub_tenant_id`, `product_category_id`,
+`name`, `description`, `sku`, `revenue_category` (`goods` | `service` |
+`accommodation` | null), `revenue_category_label`, `unit` (default `C62`),
+`unit_price_ht`, `default_tax_rate`, `default_discount_rate`, `currency`
+(default `EUR`), `is_active`, `product_category` (nested), `metadata`, `notes`,
+timestamps.
+
+#### Invoice/quote line — catalog fields
+
+`InvoiceLineInput` and `QuoteLineInput` gain three optional fields:
+`product_id` (pre-fills the line from a catalog product), `save_to_catalog`
+(server-side upsert of the line as a product), `product_category_id` (files the
+saved product under a category).
+
+```typescript
+await client.invoices.create({
+  // ...
+  lines: [
+    { product_id: product.id, quantity: 2, /* totals... */ },
+    { description: 'Ad-hoc audit', /* ... */ save_to_catalog: true, product_category_id: cat.id },
+  ],
+});
+```
+
+---
+
 ## [2.37.0] - 2026-06-07
 
 ### Changed (types — alignement structurel factures tenant ⚠️ breaking-types)

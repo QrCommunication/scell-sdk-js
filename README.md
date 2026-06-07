@@ -384,14 +384,18 @@ const client = new ScellClient(token, {
 });
 
 // Resources
-client.auth          // User authentication
-client.companies     // Company management
-client.apiKeys       // API key management
-client.balance       // Balance and transactions
-client.webhooks      // Webhook management
-client.invoices      // Invoice listing (read-only)
-client.signatures    // Signature listing (read-only)
-client.creditNotes   // Credit notes management
+client.auth              // User authentication
+client.companies         // Company management
+client.buyers            // Buyer registry (scoped tenant + sub_tenant)
+client.products          // Product/service catalog (scoped tenant + sub_tenant)
+client.productCategories // Product catalog categories
+client.suppliers         // Supplier registry (derived from invoices)
+client.apiKeys           // API key management
+client.balance           // Balance and transactions
+client.webhooks          // Webhook management
+client.invoices          // Invoice listing (read-only)
+client.signatures        // Signature listing (read-only)
+client.creditNotes       // Credit notes management
 ```
 
 ### ScellApiClient (External API)
@@ -408,6 +412,10 @@ const apiClient = new ScellApiClient(apiKey, {
 apiClient.invoices          // Create, download, convert invoices
 apiClient.signatures        // Create, download, remind, cancel signatures
 apiClient.creditNotes       // Create, send, download tenant credit notes
+apiClient.buyers            // Buyer registry (scoped tenant + sub_tenant)
+apiClient.products          // Product/service catalog (scoped tenant + sub_tenant)
+apiClient.productCategories // Product catalog categories
+apiClient.suppliers         // Supplier registry (derived from invoices)
 apiClient.subTenants        // Sub-tenant management
 apiClient.fiscal            // ISCA fiscal compliance
 apiClient.stats             // Platform statistics
@@ -431,6 +439,8 @@ apiClient.incomingInvoices  // Incoming invoice operations
 | `.tenantInvoices` | `create(params)`, `list(filters?)`, `get(id)`, `update(id, params)`, `delete(id)`, `validate(id)`, `send(id)`, `download(id)`, `downloadXml(id)`, `bulkCreate(invoices)`, `bulkSubmit(ids)`, `bulkStatus(ids)` |
 | `.tenantSignatures` | `list(options?)`, `get(id)`, `listForSubTenant(subTenantId, options?)`, `getForSubTenant(subTenantId, id)` (read-only, URL-nested under `/tenant/signatures` and `/tenant/sub-tenants/{id}/signatures`) |
 | `.incomingInvoices` | `create(subTenantId, params)`, `listForSubTenant(subTenantId)`, `get(id)`, `accept(id)`, `reject(id, reason)`, `markPaid(id)`, `download(id)` |
+| `.products` | `list(params?)`, `get(id)`, `create(input)`, `update(id, input)` (PATCH), `replace(id, input)` (PUT), `delete(id)` |
+| `.productCategories` | `list(params?)`, `get(id)`, `create(input)`, `update(id, input)` (PATCH), `replace(id, input)` (PUT), `delete(id)` |
 
 ### Onboarding
 

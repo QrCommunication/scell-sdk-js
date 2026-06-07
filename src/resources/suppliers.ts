@@ -1,9 +1,13 @@
 /**
- * Suppliers Resource — scoped supplier registry (tenant + sub_tenant).
+ * Suppliers Resource — read-mostly supplier registry (tenant + sub_tenant).
  *
- * Mirrors {@link BuyersResource} for vendors. Unlike buyers, suppliers carry no
- * shipping address, no dedicated billing email, and no VAT-context resolution
- * (those are buyer-only concepts).
+ * **v3 breaking change**: Suppliers are now derived automatically from received
+ * invoices (the invoice is the source of truth). `POST /suppliers` and
+ * `DELETE /suppliers/{id}` have been removed from the API (HTTP 405).
+ *
+ * Only contact/enrichment fields (`email`, `phone`, `notes`, `metadata`) are
+ * editable via `update()`. Identity fields (name, siret, country, address, …)
+ * come from the received invoices and are read-only.
  *
  * @packageDocumentation
  */
@@ -12,7 +16,6 @@ import type { HttpClient, RequestOptions } from '../client.js';
 import type { PaginatedResponse, SingleResponse } from '../types/common.js';
 import type {
   Supplier,
-  CreateSupplierInput,
   ListSuppliersInput,
   UpdateSupplierInput,
 } from '../types/suppliers.js';
@@ -22,17 +25,13 @@ import type {
  *
  * @example
  * ```typescript
- * // Register a supplier once, reuse it across incoming invoices
- * const supplier = await client.suppliers.create({
- *   name: 'Fournitures Express SARL',
- *   country: 'FR',
- *   siret: '98765432109876',
- *   billing_address: {
- *     line1: '5 Rue du Commerce',
- *     postal_code: '75015',
- *     city: 'Paris',
- *     country: 'FR',
- *   },
+ * // List suppliers derived from received invoices
+ * const { data: suppliers } = await client.suppliers.list({ q: 'Express' });
+ *
+ * // Enrich a supplier's contact info (only these fields are writable)
+ * const updated = await client.suppliers.update(supplier.id, {
+ *   email: 'contact@fournitures.fr',
+ *   notes: 'Preferred vendor',
  * });
  * ```
  */
@@ -59,18 +58,13 @@ export class SuppliersResource {
     return response.data;
   }
 
-  async create(
-    input: CreateSupplierInput,
-    requestOptions?: RequestOptions
-  ): Promise<Supplier> {
-    const response = await this.http.post<SingleResponse<Supplier>>(
-      '/suppliers',
-      input,
-      requestOptions
-    );
-    return response.data;
-  }
-
+  /**
+   * Update enrichment fields for a supplier.
+   *
+   * Only `email`, `phone`, `notes`, and `metadata` are accepted.
+   * Identity fields (name, siret, country, billing_address, etc.) are
+   * read-only and derived from received invoices — the server ignores them.
+   */
   async update(
     id: string,
     input: UpdateSupplierInput,
@@ -82,9 +76,5 @@ export class SuppliersResource {
       requestOptions
     );
     return response.data;
-  }
-
-  async delete(id: string, requestOptions?: RequestOptions): Promise<void> {
-    await this.http.delete(`/suppliers/${id}`, requestOptions);
   }
 }

@@ -86,10 +86,26 @@ export type {
   UpdateBuyerInput,
 } from './buyers.js';
 
-// Supplier types
+// Product catalog types (since v2.38.0)
+export type {
+  CreateProductInput,
+  ListProductsParams,
+  Product,
+  ProductRevenueCategory,
+  UpdateProductInput,
+} from './products.js';
+
+// Product category types (since v2.38.0)
+export type {
+  CreateProductCategoryInput,
+  ListProductCategoriesParams,
+  ProductCategory,
+  UpdateProductCategoryInput,
+} from './product-categories.js';
+
+// Supplier types (v3: CreateSupplierInput removed — suppliers are derived from invoices)
 export type {
   Supplier,
-  CreateSupplierInput,
   ListSuppliersInput,
   UpdateSupplierInput,
 } from './suppliers.js';

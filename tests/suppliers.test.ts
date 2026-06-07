@@ -1,11 +1,14 @@
 /**
- * Suppliers Resource Tests (v2.26.0 surface)
+ * Suppliers Resource Tests (v3.0.0 surface)
  *
- * Mirrors the Buyers CRUD surface for vendors. No shipping address,
- * no billing email, no VAT-context resolution (buyer-only concepts).
+ * **v3 breaking change**: Suppliers are derived from received invoices.
+ * `create()` and `delete()` have been removed from the API (HTTP 405).
  *
- * Covers list / get / create / update / delete on both ScellClient
- * (Bearer) and ScellApiClient (X-API-Key).
+ * This suite covers:
+ * - list() / get() (unchanged)
+ * - update() — enrichment-only (email, phone, notes, metadata); identity
+ *   fields must NOT be forwarded to the server
+ * - Both ScellClient (Bearer) and ScellApiClient (X-API-Key) exposure
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -92,34 +95,6 @@ describe('SuppliersResource', () => {
     expect(init.method).toBe('GET');
   });
 
-  it('creates a supplier and unwraps data', async () => {
-    mockFetch.mockResolvedValueOnce(jsonResponse(201, { data: sampleSupplier }));
-
-    const client = new ScellApiClient('sk_test_xxx');
-    const supplier = await client.suppliers.create({
-      name: 'Fournitures Express SARL',
-      country: 'FR',
-      siret: '98765432109876',
-      billing_address: {
-        line1: '5 Rue du Commerce',
-        postal_code: '75015',
-        city: 'Paris',
-        country: 'FR',
-      },
-    });
-
-    expect(supplier.id).toBe(SUPPLIER_ID);
-
-    const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe(`${BASE}/suppliers`);
-    expect(init.method).toBe('POST');
-    const sent = JSON.parse(init.body as string);
-    expect(sent.name).toBe('Fournitures Express SARL');
-    // Buyer-only fields must NOT be part of the supplier surface.
-    expect(sent).not.toHaveProperty('shipping_address');
-    expect(sent).not.toHaveProperty('billing_email');
-  });
-
   it('updates a supplier via PATCH and unwraps data', async () => {
     mockFetch.mockResolvedValueOnce(
       jsonResponse(200, { data: { ...sampleSupplier, notes: 'Preferred vendor' } })
@@ -135,15 +110,59 @@ describe('SuppliersResource', () => {
     expect(init.method).toBe('PATCH');
   });
 
-  it('deletes a supplier', async () => {
-    mockFetch.mockResolvedValueOnce(jsonResponse(204, {}));
+  it('update() only sends enrichment fields — not identity fields', async () => {
+    mockFetch.mockResolvedValueOnce(
+      jsonResponse(200, {
+        data: {
+          ...sampleSupplier,
+          email: 'newemail@fournitures.fr',
+          phone: '+33987654321',
+          notes: 'Updated note',
+          metadata: { crm_id: 'C-001' },
+        },
+      })
+    );
 
     const client = new ScellApiClient('sk_test_xxx');
-    await client.suppliers.delete(SUPPLIER_ID);
+    const supplier = await client.suppliers.update(SUPPLIER_ID, {
+      email: 'newemail@fournitures.fr',
+      phone: '+33987654321',
+      notes: 'Updated note',
+      metadata: { crm_id: 'C-001' },
+    });
+
+    expect(supplier.email).toBe('newemail@fournitures.fr');
+    expect(supplier.notes).toBe('Updated note');
 
     const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
     expect(url).toBe(`${BASE}/suppliers/${SUPPLIER_ID}`);
-    expect(init.method).toBe('DELETE');
+    expect(init.method).toBe('PATCH');
+
+    const sent = JSON.parse(init.body as string);
+    // Only enrichment fields are accepted
+    expect(sent).toHaveProperty('email', 'newemail@fournitures.fr');
+    expect(sent).toHaveProperty('phone', '+33987654321');
+    expect(sent).toHaveProperty('notes', 'Updated note');
+    expect(sent).toHaveProperty('metadata');
+    // Identity fields must never be sent (they are read-only / derived from invoices)
+    expect(sent).not.toHaveProperty('name');
+    expect(sent).not.toHaveProperty('siret');
+    expect(sent).not.toHaveProperty('vat_number');
+    expect(sent).not.toHaveProperty('country');
+    expect(sent).not.toHaveProperty('billing_address');
+    expect(sent).not.toHaveProperty('is_individual');
+  });
+
+  it('does not expose create() on the suppliers resource', () => {
+    const client = new ScellApiClient('sk_test_xxx');
+    // @ts-expect-error — create() was removed in v3.0.0 (API returns 405)
+    expect(typeof client.suppliers.create).toBe('undefined');
+  });
+
+  it('does not expose delete() on the suppliers resource', () => {
+    const client = new ScellApiClient('sk_test_xxx');
+    // @ts-expect-error — delete() was removed in v3.0.0 (API returns 405)
+    expect(typeof client.suppliers.delete).toBe('undefined');
   });
 
   it('is exposed on ScellClient (Bearer) as well', async () => {

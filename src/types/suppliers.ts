@@ -1,10 +1,13 @@
 /**
  * Supplier registry types (scoped tenant + sub_tenant).
  *
- * The Supplier registry holds the *current* state of a vendor's identity and
- * billing address. It mirrors the Buyer registry, minus the buyer-only
- * concepts (shipping address, dedicated billing email, VAT-context resolution),
- * which do not apply to suppliers.
+ * Suppliers are **derived automatically** from received invoices — the invoice
+ * is the source of truth for identity fields (name, siret, vat_number,
+ * legal_id, legal_id_scheme, country, billing_address, is_individual).
+ * Only contact and enrichment fields (email, phone, notes, metadata) are
+ * writable via `PATCH /suppliers/{id}`.
+ *
+ * POST /suppliers and DELETE /suppliers/{id} are removed from the API (405).
  */
 
 import type { Address, DateTimeString, UUID } from './common.js';
@@ -30,22 +33,19 @@ export interface Supplier {
   updated_at: DateTimeString;
 }
 
-export interface CreateSupplierInput {
-  name: string;
-  country: string;
-  billing_address: Address;
-  is_individual?: boolean;
-  siret?: string;
-  vat_number?: string;
-  legal_id?: string;
-  legal_id_scheme?: string;
-  email?: string;
-  phone?: string;
-  metadata?: Record<string, unknown>;
-  notes?: string;
+/**
+ * Enrichment-only fields accepted by `PATCH /suppliers/{id}`.
+ *
+ * Identity fields (name, siret, vat_number, legal_id, legal_id_scheme,
+ * country, billing_address, is_individual) are read-only — they are derived
+ * from the received invoices and ignored by the server if sent.
+ */
+export interface UpdateSupplierInput {
+  email?: string | null;
+  phone?: string | null;
+  notes?: string | null;
+  metadata?: Record<string, unknown> | null;
 }
-
-export type UpdateSupplierInput = Partial<CreateSupplierInput>;
 
 export interface ListSuppliersInput {
   q?: string;

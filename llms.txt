@@ -1,5 +1,67 @@
 # @scell/sdk — JavaScript/TypeScript SDK for Scell.io
-> Version: 2.33.0 | License: MIT | Node.js >= 18.0.0 | TypeScript >= 5.0.0
+> Version: 2.38.0 | License: MIT | Node.js >= 18.0.0 | TypeScript >= 5.0.0
+
+## v2.38.0 (2026-06-07) — Product/service catalog (Products + ProductCategories)
+
+Reusable catalog scoped by `(tenant, sub_tenant)`, mirroring the buyer registry
+(`client.buyers`). Reuse a product to pre-fill an invoice/quote line via
+`product_id` without re-typing label, unit price and VAT rate. Like a buyer, the
+catalog carries the *current* state of the article — mutating a product does not
+affect already-issued invoices (snapshot, ISCA). Resources exposed on **both**
+`ScellClient` (Bearer) and `ScellApiClient` (`sk_*`), next to `buyers`.
+
+Endpoints:
+
+| Endpoint | SDK method |
+|----------|------------|
+| `GET /products` | `client.products.list(params?)` |
+| `POST /products` | `client.products.create(input)` |
+| `GET /products/{id}` | `client.products.get(id)` |
+| `PATCH /products/{id}` | `client.products.update(id, input)` |
+| `PUT /products/{id}` | `client.products.replace(id, input)` |
+| `DELETE /products/{id}` | `client.products.delete(id)` |
+| `GET /product-categories` | `client.productCategories.list(params?)` |
+| `POST /product-categories` | `client.productCategories.create(input)` |
+| `GET /product-categories/{id}` | `client.productCategories.get(id)` |
+| `PATCH /product-categories/{id}` | `client.productCategories.update(id, input)` |
+| `PUT /product-categories/{id}` | `client.productCategories.replace(id, input)` |
+| `DELETE /product-categories/{id}` | `client.productCategories.delete(id)` |
+
+List filters — products: `q`, `revenue_category`, `product_category_id`,
+`is_active`, `per_page`, `page`. Categories: `q`, `per_page`, `page`.
+
+```typescript
+const api = new ScellApiClient('sk_live_...');
+
+// Create a category + a product filed under it
+const cat = await api.productCategories.create({ name: 'Consulting', color: '#0066FF' });
+const product = await api.products.create({
+  name: 'Consulting',
+  unit_price_ht: 800,
+  default_tax_rate: 20,
+  unit: 'HUR',
+  product_category_id: cat.id,
+});
+
+// Reuse the product to pre-fill an invoice line
+await api.invoices.create({
+  // ...
+  lines: [{ product_id: product.id, quantity: 2, /* totals... */ }],
+});
+```
+
+Invoice/quote line catalog fields (optional, on `InvoiceLineInput` and
+`QuoteLineInput`): `product_id` (pre-fills the line), `save_to_catalog`
+(server-side upsert of the line as a product), `product_category_id` (files the
+saved product under a category).
+
+`Product` type: `id`, `tenant_id`, `sub_tenant_id`, `product_category_id`,
+`name`, `description`, `sku`, `revenue_category` (`goods`|`service`|`accommodation`|null),
+`revenue_category_label`, `unit` (default `C62`), `unit_price_ht`,
+`default_tax_rate`, `default_discount_rate`, `currency` (default `EUR`),
+`is_active`, `product_category` (nested), `metadata`, `notes`, timestamps.
+`ProductCategory` type: `id`, `tenant_id`, `sub_tenant_id`, `name`, `color`,
+`description`, `position`, `products_count?`, `metadata`, timestamps.
 
 ## v2.33.0 (2026-06-04) — Recurring invoices (subscriptions / retainers)
 
