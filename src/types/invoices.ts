@@ -399,6 +399,20 @@ export interface InvoiceLineInput {
    * Max 500 chars.
    */
   vat_override_reason?: string | undefined;
+  /**
+   * Pre-fill this line from a catalog product (server copies label, unit price
+   * and default VAT rate; values provided here override them). @since 2.38.0
+   */
+  product_id?: string | undefined;
+  /**
+   * Save this line as a catalog product (server-side upsert). @since 2.38.0
+   */
+  save_to_catalog?: boolean | undefined;
+  /**
+   * File the saved product under this catalog category (used together with
+   * `save_to_catalog`). @since 2.38.0
+   */
+  product_category_id?: string | undefined;
   /** Arbitrary application-specific metadata forwarded as-is. */
   metadata?: Record<string, unknown> | undefined;
 }

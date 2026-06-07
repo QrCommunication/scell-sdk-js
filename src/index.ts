@@ -46,6 +46,8 @@ import { CreditPacksResource } from './resources/credit-packs.js';
 import { FiscalResource } from './resources/fiscal.js';
 import { InvoiceTemplatesResource } from './resources/invoice-templates.js';
 import { InvoicesResource } from './resources/invoices.js';
+import { ProductCategoriesResource } from './resources/product-categories.js';
+import { ProductsResource } from './resources/products.js';
 import { RecurringInvoicesResource } from './resources/recurring-invoices.js';
 import { ReferenceResource } from './resources/reference.js';
 import { SignaturesResource } from './resources/signatures.js';
@@ -97,6 +99,10 @@ export class ScellClient {
   public readonly companies: CompaniesResource;
   /** Buyer registry (scoped tenant + sub_tenant) */
   public readonly buyers: BuyersResource;
+  /** Product/service catalog (scoped tenant + sub_tenant). @since 2.38.0 */
+  public readonly products: ProductsResource;
+  /** Product catalog categories (scoped tenant + sub_tenant). @since 2.38.0 */
+  public readonly productCategories: ProductCategoriesResource;
   /** Supplier registry (scoped tenant + sub_tenant) */
   public readonly suppliers: SuppliersResource;
   /** API key management */
@@ -177,6 +183,8 @@ export class ScellClient {
     this.auth = new AuthResource(this.http);
     this.companies = new CompaniesResource(this.http);
     this.buyers = new BuyersResource(this.http);
+    this.products = new ProductsResource(this.http);
+    this.productCategories = new ProductCategoriesResource(this.http);
     this.suppliers = new SuppliersResource(this.http);
     this.apiKeys = new ApiKeysResource(this.http);
     this.balance = new BalanceResource(this.http);
@@ -279,6 +287,10 @@ export class ScellApiClient {
   public readonly onboarding: OnboardingResource;
   /** Buyer registry (scoped tenant + sub_tenant) */
   public readonly buyers: BuyersResource;
+  /** Product/service catalog (scoped tenant + sub_tenant). @since 2.38.0 */
+  public readonly products: ProductsResource;
+  /** Product catalog categories (scoped tenant + sub_tenant). @since 2.38.0 */
+  public readonly productCategories: ProductCategoriesResource;
   /** Supplier registry (scoped tenant + sub_tenant) */
   public readonly suppliers: SuppliersResource;
   /** Quote management (create, send, accept, convert to deposit / balance) */
@@ -355,6 +367,8 @@ export class ScellApiClient {
     this.incomingInvoices = new TenantIncomingInvoicesResource(this.http);
     this.onboarding = new OnboardingResource(this.http);
     this.buyers = new BuyersResource(this.http);
+    this.products = new ProductsResource(this.http);
+    this.productCategories = new ProductCategoriesResource(this.http);
     this.suppliers = new SuppliersResource(this.http);
     this.quotes = new QuotesResource(this.http);
     this.branding = new BrandingResource(this.http);
@@ -412,6 +426,10 @@ export { CreditPacksResource } from './resources/credit-packs.js';
 
 // Re-export recurring invoices resource (since v2.33.0)
 export { RecurringInvoicesResource } from './resources/recurring-invoices.js';
+
+// Re-export product catalog resources (since v2.38.0)
+export { ProductsResource } from './resources/products.js';
+export { ProductCategoriesResource } from './resources/product-categories.js';
 
 // Re-export country reference (since v2.29.0)
 export { ReferenceResource } from './resources/reference.js';
