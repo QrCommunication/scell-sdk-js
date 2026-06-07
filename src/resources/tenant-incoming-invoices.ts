@@ -95,17 +95,17 @@ export interface MarkPaidIncomingInvoiceInput {
  *   'sub-tenant-uuid',
  *   {
  *     invoice_number: 'SUPP-2026-001',
- *     company_id: 'company-uuid',
+ *     issue_date: '2026-01-20',
  *     seller: {
- *       company_name: 'Supplier Corp',
- *       siren: '123456789',
- *       address: {
- *         line1: '789 Rue Fournisseur',
- *         postal_code: '33000',
- *         city: 'Bordeaux',
- *         country: 'FR'
- *       },
+ *       name: 'Supplier Corp',
+ *       siret: '12345678901234',
+ *       address: { line1: '789 Rue Fournisseur', postal_code: '33000', city: 'Bordeaux', country: 'FR' },
  *       email: 'invoices@supplier.com'
+ *     },
+ *     buyer: {
+ *       name: 'Ma Société (récepteur)',
+ *       siret: '98765432109876',
+ *       address: { line1: '1 Rue du Client', postal_code: '75001', city: 'Paris', country: 'FR' }
  *     },
  *     lines: [{
  *       description: 'Raw materials',
@@ -116,8 +116,8 @@ export interface MarkPaidIncomingInvoiceInput {
  *       total_tax: 200,
  *       total_ttc: 1200
  *     }],
- *     issue_date: '2026-01-20',
  *     total_ht: 1000,
+ *     total_tax: 200,
  *     total_ttc: 1200
  *   }
  * );
@@ -141,7 +141,7 @@ export class TenantIncomingInvoicesResource {
    * Create a new incoming invoice for a sub-tenant
    *
    * Creates a purchase invoice received by a sub-tenant from an external supplier.
-   * The seller's SIREN is validated using the Luhn algorithm.
+   * For FR sellers/buyers the SIRET is required and validated server-side.
    *
    * @param subTenantId - Sub-tenant UUID
    * @param params - Invoice creation parameters
@@ -154,19 +154,19 @@ export class TenantIncomingInvoicesResource {
    *   'sub-tenant-uuid',
    *   {
    *     invoice_number: 'SUPP-2026-001',
-   *     company_id: 'company-uuid',
+   *     issue_date: '2026-01-15',
+   *     due_date: '2026-02-15',
    *     seller: {
-   *       company_name: 'Acme Supplies',
-   *       siren: '123456789',
+   *       name: 'Acme Supplies',
    *       siret: '12345678901234',
    *       vat_number: 'FR12123456789',
-   *       address: {
-   *         line1: '123 Industrial Park',
-   *         postal_code: '31000',
-   *         city: 'Toulouse',
-   *         country: 'FR'
-   *       },
+   *       address: { line1: '123 Industrial Park', postal_code: '31000', city: 'Toulouse', country: 'FR' },
    *       email: 'billing@acme-supplies.com'
+   *     },
+   *     buyer: {
+   *       name: 'Ma Société (récepteur)',
+   *       siret: '98765432109876',
+   *       address: { line1: '1 Rue du Client', postal_code: '75001', city: 'Paris', country: 'FR' }
    *     },
    *     lines: [
    *       {
@@ -179,9 +179,8 @@ export class TenantIncomingInvoicesResource {
    *         total_ttc: 1500
    *       }
    *     ],
-   *     issue_date: '2026-01-15',
-   *     due_date: '2026-02-15',
    *     total_ht: 1250,
+   *     total_tax: 250,
    *     total_ttc: 1500
    *   }
    * );

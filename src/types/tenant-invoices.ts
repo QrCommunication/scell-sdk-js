@@ -25,25 +25,31 @@ import type { InvoiceFormat, InvoiceLine, InvoiceLineInput, InvoiceStatus } from
 export type TenantInvoiceDirection = 'outgoing' | 'incoming';
 
 /**
- * Buyer information for direct invoice creation.
+ * Buyer information for invoice creation (nested `buyer` object).
  *
- * For B2C (private individual buyer), set `is_individual: true`.
- * In that case `siren`, `siret`, `vat_number` are NOT required and
- * the generated Factur-X / UBL / CII omits BT-46/BT-47/BT-48 (BR-CO-26).
+ * Mirrors the server contract: the API field is `name` (NOT `company_name`).
+ * For French buyers (`address.country === 'FR'`) `siret` is required unless
+ * `is_individual` is true.
+ *
+ * For B2C (private individual buyer), set `is_individual: true`. In that case
+ * `siret` / `vat_number` are NOT required and the generated Factur-X / UBL /
+ * CII omits BT-46/BT-47/BT-48 (BR-CO-26).
  */
 export interface TenantInvoiceBuyer {
-  /** Buyer company name (or full name for B2C) */
-  company_name: string;
-  /** SIREN number (9 digits) - optional */
-  siren?: Siren | undefined;
-  /** SIRET number (14 digits) - optional, ignored if is_individual=true */
+  /** Buyer legal/company name (or full name for B2C). API field: `name`. */
+  name: string;
+  /** SIRET number (14 digits). Required for FR buyers unless `is_individual`. */
   siret?: Siret | undefined;
   /** VAT number - optional, ignored if is_individual=true */
   vat_number?: string | undefined;
-  /** Buyer address */
+  /** Legal identifier (BT-29) - optional */
+  legal_id?: string | undefined;
+  /** Legal identifier scheme (e.g. ISO 6523) - optional */
+  legal_id_scheme?: string | undefined;
+  /** Buyer postal address (line1, postal_code, city, country required) */
   address: Address;
-  /** Buyer email for notifications */
-  email: string;
+  /** Buyer email for notifications - optional */
+  email?: string | undefined;
   /**
    * B2C flag : true if buyer is a private individual.
    * Default: false (B2B).
@@ -52,43 +58,54 @@ export interface TenantInvoiceBuyer {
 }
 
 /**
- * Seller information for incoming invoice creation
+ * Seller information for invoice creation (nested `seller` object).
+ *
+ * Mirrors the server contract: the API field is `name` (NOT `company_name`).
+ * For French sellers (`address.country === 'FR'`) `siret` is required.
  */
 export interface TenantInvoiceSeller {
-  /** Seller company name */
-  company_name: string;
-  /** SIREN number (9 digits) - required, validated with Luhn algorithm */
-  siren: Siren;
-  /** SIRET number (14 digits) - optional */
+  /** Seller legal/company name. API field: `name`. */
+  name: string;
+  /** SIRET number (14 digits). Required for FR sellers. */
   siret?: Siret | undefined;
   /** VAT number - optional */
   vat_number?: string | undefined;
-  /** Seller address */
+  /** Legal identifier (BT-29) - optional */
+  legal_id?: string | undefined;
+  /** Legal identifier scheme (e.g. ISO 6523) - optional */
+  legal_id_scheme?: string | undefined;
+  /** Seller postal address (line1, postal_code, city, country required) */
   address: Address;
-  /** Seller email */
-  email: string;
+  /** Seller email - optional */
+  email?: string | undefined;
 }
 
 /**
- * Input for creating a tenant direct invoice
+ * Input for creating a tenant direct invoice (`POST /tenant/invoices`).
  *
- * Direct invoices are outgoing invoices created by a tenant
- * that are billed directly to an external buyer (not a sub-tenant).
+ * Direct invoices are billed directly between a `seller` and a `buyer`
+ * (both provided as nested objects, mirroring the server contract — there
+ * is no `company_id` shortcut). `direction`, `output_format`, `seller`,
+ * `buyer`, `lines`, `issue_date` and the three invoice-level totals
+ * (`total_ht` / `total_tax` / `total_ttc`) are all REQUIRED server-side.
  *
  * @example
  * ```typescript
  * const params: CreateTenantDirectInvoiceParams = {
- *   company_id: 'company-uuid',
- *   buyer: {
- *     company_name: 'Client SARL',
+ *   direction: 'outgoing',
+ *   output_format: 'facturx',
+ *   issue_date: '2026-01-26',
+ *   seller: {
+ *     name: 'Ma Société SARL',
  *     siret: '12345678901234',
- *     address: {
- *       line1: '123 Rue Example',
- *       postal_code: '75001',
- *       city: 'Paris',
- *       country: 'FR'
- *     },
- *     email: 'contact@client.com'
+ *     vat_number: 'FR12345678901',
+ *     address: { line1: '1 Rue du Vendeur', postal_code: '75002', city: 'Paris', country: 'FR' },
+ *   },
+ *   buyer: {
+ *     name: 'Client SARL',
+ *     siret: '98765432109876',
+ *     address: { line1: '123 Rue Example', postal_code: '75001', city: 'Paris', country: 'FR' },
+ *     email: 'contact@client.com',
  *   },
  *   lines: [{
  *     description: 'Consulting services',
@@ -97,18 +114,24 @@ export interface TenantInvoiceSeller {
  *     tax_rate: 20,
  *     total_ht: 1000,
  *     total_tax: 200,
- *     total_ttc: 1200
+ *     total_ttc: 1200,
  *   }],
- *   issue_date: '2026-01-26'
+ *   total_ht: 1000,
+ *   total_tax: 200,
+ *   total_ttc: 1200,
  * };
  * ```
  */
 export interface CreateTenantDirectInvoiceParams {
-  /** Company UUID issuing the invoice */
-  company_id: UUID;
-  /** Buyer information */
+  /** Invoice direction (`outgoing` | `incoming`). REQUIRED. */
+  direction: TenantInvoiceDirection;
+  /** Output format (`facturx` | `ubl` | `cii`). REQUIRED server-side. */
+  output_format: InvoiceFormat;
+  /** Seller (issuer) information. REQUIRED. */
+  seller: TenantInvoiceSeller;
+  /** Buyer information. REQUIRED. */
   buyer: TenantInvoiceBuyer;
-  /** Invoice line items */
+  /** Invoice line items. REQUIRED (min 1). */
   lines: InvoiceLineInput[];
   /** Invoice-level total excluding tax (sum of line `total_ht`). REQUIRED server-side. */
   total_ht: number;
@@ -120,8 +143,8 @@ export interface CreateTenantDirectInvoiceParams {
   total_tax: number;
   /** Invoice-level total including tax (`total_ht` + `total_tax`). REQUIRED server-side. */
   total_ttc: number;
-  /** Issue date (YYYY-MM-DD) - defaults to today */
-  issue_date?: DateString | undefined;
+  /** Issue date (YYYY-MM-DD). REQUIRED, must be today or earlier. */
+  issue_date: DateString;
   /** Due date (YYYY-MM-DD) */
   due_date?: DateString | undefined;
   /** Currency code (ISO 4217) - defaults to EUR */
@@ -130,16 +153,14 @@ export interface CreateTenantDirectInvoiceParams {
   notes?: string | undefined;
   /** Custom metadata */
   metadata?: Record<string, unknown> | undefined;
-  /** Output format for the invoice */
-  output_format?: InvoiceFormat | undefined;
   /** External reference ID */
   external_id?: string | undefined;
   /**
    * B2C flag : true if buyer is a private individual.
    *
    * Equivalent to setting `buyer.is_individual = true`. When true,
-   * buyer SIRET / SIREN / VAT are NOT required server-side. The
-   * generated Factur-X / UBL / CII omits BT-46/BT-47/BT-48 (BR-CO-26).
+   * buyer SIRET / VAT are NOT required server-side. The generated
+   * Factur-X / UBL / CII omits BT-46/BT-47/BT-48 (BR-CO-26).
    *
    * Default: false (B2B).
    */
@@ -191,21 +212,25 @@ export interface TenantCreditNoteItemInput {
  * Incoming invoices represent invoices received by a sub-tenant
  * from an external supplier.
  *
+ * The target sub-tenant is passed as the first argument of
+ * `incomingInvoices.create(subTenantId, params)`, not inside the payload.
+ * `seller`, `buyer`, `lines`, `issue_date` and the three totals
+ * (`total_ht` / `total_tax` / `total_ttc`) are REQUIRED server-side.
+ *
  * @example
  * ```typescript
  * const params: CreateIncomingInvoiceParams = {
  *   invoice_number: 'SUPP-2026-001',
- *   company_id: 'company-uuid',
+ *   issue_date: '2026-01-20',
  *   seller: {
- *     company_name: 'Supplier Corp',
- *     siren: '123456789',
- *     address: {
- *       line1: '456 Avenue Fournisseur',
- *       postal_code: '69001',
- *       city: 'Lyon',
- *       country: 'FR'
- *     },
- *     email: 'invoices@supplier.com'
+ *     name: 'Supplier Corp',
+ *     siret: '12345678901234',
+ *     address: { line1: '456 Avenue Fournisseur', postal_code: '69001', city: 'Lyon', country: 'FR' },
+ *   },
+ *   buyer: {
+ *     name: 'Ma Société (récepteur)',
+ *     siret: '98765432109876',
+ *     address: { line1: '1 Rue du Client', postal_code: '75001', city: 'Paris', country: 'FR' },
  *   },
  *   lines: [{
  *     description: 'Raw materials',
@@ -214,30 +239,32 @@ export interface TenantCreditNoteItemInput {
  *     tax_rate: 20,
  *     total_ht: 500,
  *     total_tax: 100,
- *     total_ttc: 600
+ *     total_ttc: 600,
  *   }],
- *   issue_date: '2026-01-20',
  *   total_ht: 500,
- *   total_ttc: 600
+ *   total_tax: 100,
+ *   total_ttc: 600,
  * };
  * ```
  */
 export interface CreateIncomingInvoiceParams {
   /** Supplier's invoice number */
   invoice_number: string;
-  /** Company UUID receiving the invoice */
-  company_id: UUID;
-  /** Seller (supplier) information */
+  /** Seller (supplier) information. REQUIRED. */
   seller: TenantInvoiceSeller;
-  /** Invoice line items */
+  /** Buyer (the receiving company). REQUIRED. */
+  buyer: TenantInvoiceBuyer;
+  /** Invoice line items. REQUIRED (min 1). */
   lines: InvoiceLineInput[];
-  /** Issue date (YYYY-MM-DD) */
+  /** Issue date (YYYY-MM-DD). REQUIRED. */
   issue_date: DateString;
   /** Due date (YYYY-MM-DD) */
   due_date?: DateString | undefined;
-  /** Total excluding tax */
+  /** Total excluding tax. REQUIRED. */
   total_ht: number;
-  /** Total including tax */
+  /** Total VAT amount. REQUIRED (API field: `total_tax`, NOT `total_tva`). */
+  total_tax: number;
+  /** Total including tax. REQUIRED. */
   total_ttc: number;
   /** Currency code (ISO 4217) - defaults to EUR */
   currency?: CurrencyCode | undefined;

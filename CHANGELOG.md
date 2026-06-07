@@ -2,6 +2,56 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.37.0] - 2026-06-07
+
+### Changed (types — alignement structurel factures tenant ⚠️ breaking-types)
+
+Aligne les types d'entrée de création de factures tenant sur le contrat réel du
+serveur (et sur le SDK PHP 2.36.0). Ces types étaient structurellement
+incorrects et produisaient des **422** côté serveur ; aucune intégration
+fonctionnelle ne pouvait s'appuyer dessus. Changement **breaking au niveau des
+types** uniquement (le runtime — `POST` direct sans mapper — était déjà
+permissif). Lève la « Known limitation » notée en 2.36.0.
+
+- **`CreateTenantDirectInvoiceParams`** (`POST /tenant/invoices`) :
+  - Suppression de `company_id`. L'émetteur est désormais l'objet **`seller`**
+    (requis) : `{ name, siret?, vat_number?, legal_id?, legal_id_scheme?, address }`.
+  - Ajout de **`direction`** (`outgoing` | `incoming`, requis) et passage de
+    **`output_format`** en **requis** (`facturx` | `ubl` | `cii`).
+  - **`issue_date`** devient **requis** (exigé serveur, ≤ aujourd'hui).
+  - `buyer`, `lines`, `total_ht` / `total_tax` / `total_ttc` restent requis.
+- **`CreateIncomingInvoiceParams`** (`POST /tenant/sub-tenants/{id}/incoming-invoices`) :
+  - Ajout de **`buyer`** (objet, requis) et de **`total_tax`** (requis) — tous
+    deux exigés par le serveur et auparavant absents du type.
+  - Suppression de `company_id` (le sous-tenant est passé en 1er argument de
+    `incomingInvoices.create(subTenantId, params)`, pas dans le payload).
+- **`TenantInvoiceSeller`** / **`TenantInvoiceBuyer`** : le champ s'appelle
+  désormais **`name`** (et non `company_name`), conformément à l'API ; ajout de
+  `legal_id` / `legal_id_scheme` ; `email` devient optionnel ; suppression du
+  champ `siren` (non lu par ces endpoints — le SIRET fait foi). Pour les
+  acheteurs/vendeurs FR, le **SIRET est requis** sauf B2C
+  (`buyer.is_individual = true` ou `buyer_is_individual: true`).
+
+#### Migration
+
+```diff
+- await client.directInvoices.create({
+-   company_id: 'company-uuid',
+-   buyer: { company_name: 'Client', siret: '…', address: {…}, email: '…' },
+-   lines: [...],
+-   total_ht: 1000, total_tax: 200, total_ttc: 1200,
+- });
++ await client.directInvoices.create({
++   direction: 'outgoing',
++   output_format: 'facturx',
++   issue_date: '2026-01-26',
++   seller: { name: 'Ma Société', siret: '…', address: {…} },
++   buyer:  { name: 'Client', siret: '…', address: {…}, email: '…' },
++   lines: [...],
++   total_ht: 1000, total_tax: 200, total_ttc: 1200,
++ });
+```
+
 ## [2.36.0] - 2026-06-07
 
 ### Fixed (types — totaux niveau facture)

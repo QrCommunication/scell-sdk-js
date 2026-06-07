@@ -35,16 +35,18 @@ import type {
  *
  * // Create a direct invoice
  * const { data: invoice } = await client.directInvoices.create({
- *   company_id: 'company-uuid',
- *   buyer: {
- *     company_name: 'Client Corp',
+ *   direction: 'outgoing',
+ *   output_format: 'facturx',
+ *   issue_date: '2026-01-26',
+ *   seller: {
+ *     name: 'Ma Société SARL',
  *     siret: '12345678901234',
- *     address: {
- *       line1: '123 Rue Client',
- *       postal_code: '75001',
- *       city: 'Paris',
- *       country: 'FR'
- *     },
+ *     address: { line1: '1 Rue du Vendeur', postal_code: '75002', city: 'Paris', country: 'FR' }
+ *   },
+ *   buyer: {
+ *     name: 'Client Corp',
+ *     siret: '98765432109876',
+ *     address: { line1: '123 Rue Client', postal_code: '75001', city: 'Paris', country: 'FR' },
  *     email: 'billing@client.com'
  *   },
  *   lines: [{
@@ -55,7 +57,10 @@ import type {
  *     total_ht: 1500,
  *     total_tax: 300,
  *     total_ttc: 1800
- *   }]
+ *   }],
+ *   total_ht: 1500,
+ *   total_tax: 300,
+ *   total_ttc: 1800
  * });
  *
  * // List all direct invoices
@@ -81,16 +86,19 @@ export class TenantDirectInvoicesResource {
    * @example
    * ```typescript
    * const { data: invoice } = await client.directInvoices.create({
-   *   company_id: 'company-uuid',
+   *   direction: 'outgoing',
+   *   output_format: 'facturx',
+   *   issue_date: '2026-01-26',
+   *   due_date: '2026-02-26',
+   *   seller: {
+   *     name: 'Ma Société SARL',
+   *     siret: '12345678901234',
+   *     address: { line1: '1 Rue du Vendeur', postal_code: '75002', city: 'Paris', country: 'FR' }
+   *   },
    *   buyer: {
-   *     company_name: 'Acme Corporation',
+   *     name: 'Acme Corporation',
    *     siret: '98765432109876',
-   *     address: {
-   *       line1: '456 Avenue Business',
-   *       postal_code: '69001',
-   *       city: 'Lyon',
-   *       country: 'FR'
-   *     },
+   *     address: { line1: '456 Avenue Business', postal_code: '69001', city: 'Lyon', country: 'FR' },
    *     email: 'accounts@acme.com'
    *   },
    *   lines: [{
@@ -102,8 +110,9 @@ export class TenantDirectInvoicesResource {
    *     total_tax: 59.80,
    *     total_ttc: 358.80
    *   }],
-   *   issue_date: '2026-01-26',
-   *   due_date: '2026-02-26',
+   *   total_ht: 299,
+   *   total_tax: 59.80,
+   *   total_ttc: 358.80,
    *   notes: 'Thank you for your business!'
    * });
    *
