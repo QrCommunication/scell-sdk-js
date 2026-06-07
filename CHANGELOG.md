@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.36.0] - 2026-06-07
+
+### Fixed (types — totaux niveau facture)
+- **`CreateTenantDirectInvoiceParams`** : ajout des totaux niveau facture
+  `total_ht`, `total_tax`, `total_ttc` (requis serveur). Le type ne permettait
+  pas de les renseigner ; le runtime les transmettait déjà (POST direct, sans
+  mapper). **La clé TVA est `total_tax`, NON `total_tva`.** Aligne le SDK JS sur
+  le SDK PHP 2.36.0 et sur l'API.
+
+### Known limitation
+- ⚠️ `CreateTenantDirectInvoiceParams` expose encore `company_id` alors que
+  l'endpoint `POST /tenant/invoices` attend désormais `direction` + `seller`
+  (objet) côté serveur. Un alignement structurel dédié (breaking) reste à
+  planifier — distinct de ce correctif sur les totaux.
+
 ## [2.35.0] - 2026-06-06
 
 ### Fixed (branding resource — chemins 404 en production)

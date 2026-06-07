@@ -110,6 +110,16 @@ export interface CreateTenantDirectInvoiceParams {
   buyer: TenantInvoiceBuyer;
   /** Invoice line items */
   lines: InvoiceLineInput[];
+  /** Invoice-level total excluding tax (sum of line `total_ht`). REQUIRED server-side. */
+  total_ht: number;
+  /**
+   * Invoice-level VAT amount. REQUIRED server-side.
+   *
+   * Note: the API field is `total_tax` (NOT `total_tva`).
+   */
+  total_tax: number;
+  /** Invoice-level total including tax (`total_ht` + `total_tax`). REQUIRED server-side. */
+  total_ttc: number;
   /** Issue date (YYYY-MM-DD) - defaults to today */
   issue_date?: DateString | undefined;
   /** Due date (YYYY-MM-DD) */
