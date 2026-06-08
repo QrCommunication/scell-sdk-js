@@ -16,6 +16,9 @@ import type {
   SubTenantResumeUrlResponse,
   SubTenantStatusResponse,
   SubTenantSuperPDPAuthorizeResponse,
+  SubTenantSuperPDPReconnectResponse,
+  SubTenantWidgetTokenOptions,
+  SubTenantWidgetTokenResponse,
   ThresholdSimulationResponse,
   ThresholdsResponse,
   UpdateFiscalStatusInput,
@@ -207,6 +210,83 @@ export class SubTenantsResource {
     return this.http.post<SubTenantSuperPDPAuthorizeResponse>(
       `/tenant/sub-tenants/${id}/superpdp-authorize`,
       undefined,
+      requestOptions
+    );
+  }
+
+  /**
+   * Disconnect SuperPDP for a sub-tenant: revoke the tokens server-side and
+   * reset `onboarding_status` to `pending_superpdp` (since v3.1.0).
+   *
+   * Already-issued invoices are untouched (immutable, ISCA); future B2B invoices
+   * fall back to paper mode until SuperPDP is reconnected. To re-open the flow
+   * in a single call, use {@link superpdpReconnect}.
+   *
+   * @example
+   * ```typescript
+   * await client.subTenants.superpdpDisconnect(subTenantId);
+   * ```
+   */
+  async superpdpDisconnect(
+    id: string,
+    requestOptions?: RequestOptions
+  ): Promise<SubTenantStatusResponse> {
+    return this.http.post<SubTenantStatusResponse>(
+      `/tenant/sub-tenants/${id}/superpdp-disconnect`,
+      undefined,
+      requestOptions
+    );
+  }
+
+  /**
+   * Force a SuperPDP reconnect: disconnect (revoke + reset) then generate a
+   * fresh authorize URL in one call (since v3.1.0). Open `authorize_url` in a
+   * new tab so the end user re-runs the SuperPDP KYB.
+   *
+   * @example
+   * ```typescript
+   * const { authorize_url, state } =
+   *   await client.subTenants.superpdpReconnect(subTenantId);
+   * storeState(subTenantId, state);
+   * window.open(authorize_url, '_blank');
+   * ```
+   */
+  async superpdpReconnect(
+    id: string,
+    requestOptions?: RequestOptions
+  ): Promise<SubTenantSuperPDPReconnectResponse> {
+    return this.http.post<SubTenantSuperPDPReconnectResponse>(
+      `/tenant/sub-tenants/${id}/superpdp-reconnect`,
+      undefined,
+      requestOptions
+    );
+  }
+
+  /**
+   * Mint a signed token (signed URL scoped to ONE sub-tenant, 24h TTL) to feed
+   * the `<scell-onboarding mode="superpdp" resume-token="...">` web component
+   * (since v3.1.0). The widget then opens ONLY the SuperPDP step without
+   * exposing the sub-tenant id (the HMAC signature prevents IDOR).
+   *
+   * Pass `{ reset: true }` to disconnect (revoke + reset) before minting — the
+   * "force reconnect via widget" path. The destructive action stays server-side
+   * (this sk_ or Sanctum call), never triggered by the public widget itself.
+   *
+   * @example
+   * ```typescript
+   * const { resume_token } =
+   *   await client.subTenants.superpdpWidgetToken(subTenantId, { reset: true });
+   * // Pass resume_token to <scell-onboarding mode="superpdp" resume-token={resume_token}>
+   * ```
+   */
+  async superpdpWidgetToken(
+    id: string,
+    options?: SubTenantWidgetTokenOptions,
+    requestOptions?: RequestOptions
+  ): Promise<SubTenantWidgetTokenResponse> {
+    return this.http.post<SubTenantWidgetTokenResponse>(
+      `/tenant/sub-tenants/${id}/superpdp-widget-token`,
+      options?.reset ? { reset: true } : undefined,
       requestOptions
     );
   }

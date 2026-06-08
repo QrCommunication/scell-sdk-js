@@ -181,6 +181,36 @@ export interface SubTenantSuperPDPAuthorizeResponse {
 }
 
 /**
+ * Response from `POST /tenant/sub-tenants/{id}/superpdp-reconnect` (since v3.1.0).
+ * Disconnects (revoke + reset) then returns a fresh authorize URL plus the reset
+ * sub-tenant.
+ */
+export interface SubTenantSuperPDPReconnectResponse {
+  authorize_url: string;
+  state: string;
+  data: SubTenant;
+}
+
+/**
+ * Response from `POST /tenant/sub-tenants/{id}/superpdp-widget-token` (since
+ * v3.1.0). Signed token (signed URL, scoped to ONE sub-tenant, 24h TTL) to feed
+ * the `<scell-onboarding mode="superpdp" resume-token="...">` web component.
+ */
+export interface SubTenantWidgetTokenResponse {
+  resume_token: string;
+  expires_at: string;
+}
+
+/** Options for `SubTenantsResource.superpdpWidgetToken()` (since v3.1.0). */
+export interface SubTenantWidgetTokenOptions {
+  /**
+   * If true, disconnect (revoke + reset) the sub-tenant before minting the
+   * token — the "force reconnect via widget" path.
+   */
+  reset?: boolean;
+}
+
+/**
  * Options accepted by `SubTenantsResource.delete()` (since v2.9.0).
  *
  * Pass `cascade: true` to delete dependent Companies alongside the

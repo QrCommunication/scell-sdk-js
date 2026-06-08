@@ -495,6 +495,16 @@ try {
 
 // Regenerate signed resume URL (valid 7 days)
 const { resume_url, expires_at } = await client.subTenants.getResumeUrl(subTenantId);
+
+// Disconnect SuperPDP (revoke tokens + reset onboarding_status to pending) — v3.1.0
+await client.subTenants.superpdpDisconnect(subTenantId);
+
+// Force a reconnect (disconnect + fresh authorize URL in one call) — v3.1.0
+const { authorize_url, state } = await client.subTenants.superpdpReconnect(subTenantId);
+
+// Mint a signed token for the <scell-onboarding mode="superpdp"> web component — v3.1.0
+// { reset: true } disconnects before minting (force reconnect via the embedded widget).
+const { resume_token } = await client.subTenants.superpdpWidgetToken(subTenantId, { reset: true });
 ```
 
 ## RecommendedAction (i18n FR/EN)
