@@ -396,6 +396,7 @@ client.webhooks          // Webhook management
 client.invoices          // Invoice listing (read-only)
 client.signatures        // Signature listing (read-only)
 client.creditNotes       // Credit notes management
+client.documents         // Document live preview (non-persisted HTML render)
 ```
 
 ### ScellApiClient (External API)
@@ -423,6 +424,7 @@ apiClient.billing           // Usage, top-up, transactions
 apiClient.tenantInvoices    // Tenant invoice operations
 apiClient.tenantSignatures  // Tenant signature operations (read-only, URL-nested)
 apiClient.incomingInvoices  // Incoming invoice operations
+apiClient.documents         // Document live preview (non-persisted HTML render)
 ```
 
 #### ScellApiClient API Reference
@@ -441,6 +443,9 @@ apiClient.incomingInvoices  // Incoming invoice operations
 | `.incomingInvoices` | `create(subTenantId, params)`, `listForSubTenant(subTenantId)`, `get(id)`, `accept(id)`, `reject(id, reason)`, `markPaid(id)`, `download(id)` |
 | `.products` | `list(params?)`, `get(id)`, `create(input)`, `update(id, input)` (PATCH), `replace(id, input)` (PUT), `delete(id)` |
 | `.productCategories` | `list(params?)`, `get(id)`, `create(input)`, `update(id, input)` (PATCH), `replace(id, input)` (PUT), `delete(id)` |
+| `.documents` | `preview(input)` (v3.2.0 — non-persisted HTML preview of a draft invoice / credit note / quote) |
+| `.branding` | `tenant.get()`, `tenant.update(input)`, `tenant.uploadLogo(mimeType)`, `tenant.uploadLogoFile(logo, filename?)` (v3.2.0), `tenant.preview(overrides?)`, `subTenants.get(id)`, `subTenants.update(id, input)`, `subTenants.uploadLogo(id, mimeType)`, `subTenants.uploadLogoFile(id, logo, filename?)` (v3.2.0), `subTenants.preview(id, overrides?)` |
+| `.invoiceTemplates` | `list(options?)`, `get(id)`, `create(input)`, `update(id, input)`, `delete(id)`, `markDefault(id)`, `uploadLogo(id, logo, filename?)`, `deriveColorsFromEmailLogo()` (v3.2.0) |
 
 ### Onboarding
 
@@ -757,16 +762,62 @@ const { url, public_url } = await client.branding.tenant.uploadLogo('image/png')
 // PUT the binary to `url`, then persist `public_url`:
 await client.branding.tenant.update({ brand_logo_url: public_url });
 
+// Or upload DIRECTLY in one multipart call (v3.2.0 — jpeg/png/webp/svg, max 2 MB)
+const updated = await client.branding.tenant.uploadLogoFile(file); // Blob | File | Uint8Array
+console.log(updated.brand_logo_url);
+
+// Master switch (v3.2.0): disable custom branding without clearing the fields
+await client.branding.tenant.update({ brand_email_enabled: false });
+
 // Preview the branded email BEFORE any send (HTML by default)
 const html = await client.branding.tenant.preview();
 // e.g. render it in <iframe srcDoc={html} /> for a live preview.
-// PDF rendition: pass an Accept header via requestOptions.
-const pdf = await client.branding.tenant.preview({ headers: { Accept: 'application/pdf' } });
+// Live editor preview (v3.2.0) — overrides are NOT persisted:
+const draft = await client.branding.tenant.preview({
+  brand_primary_color: '#FF5722',
+  brand_email_signature: "L'equipe Nouvelle Marque",
+});
+// PDF rendition: pass an Accept header via requestOptions (2nd argument).
+const pdf = await client.branding.tenant.preview(undefined, { headers: { Accept: 'application/pdf' } });
 
 // --- Sub-tenant (anti-IDOR — must belong to you) ---
 await client.branding.subTenants.update('sub-tenant-uuid', { brand_primary_color: '#10B981' });
 const subSigned = await client.branding.subTenants.uploadLogo('sub-tenant-uuid', 'image/png');
+const subDirect = await client.branding.subTenants.uploadLogoFile('sub-tenant-uuid', file); // v3.2.0
 const subHtml = await client.branding.subTenants.preview('sub-tenant-uuid');
+const subDraft = await client.branding.subTenants.preview('sub-tenant-uuid', { brand_primary_color: '#2E7D32' });
+```
+
+### Document Live Preview (since v3.2.0)
+
+Render a **non-persisted** HTML preview of a document being drafted (invoice,
+credit note or quote) through the real rendering pipeline — invoice template +
+branding + legal mentions of the issuing Company. Nothing is saved, no number
+is consumed. Only `type` is required.
+
+```typescript
+const html = await client.documents.preview({
+  type: 'invoice', // 'invoice' | 'credit_note' | 'quote'
+  document_number: 'FAC-2026-0001',
+  buyer: {
+    name: 'ACME SAS',
+    siret: '12345678900012',
+    address: { line1: '1 rue de la Paix', postal_code: '75001', city: 'Paris', country: 'FR' },
+  },
+  lines: [{ description: 'Consulting', quantity: 2, unit_price: 800, tax_rate: 20 }],
+  issue_date: '2026-06-11',
+  due_date: '2026-07-11',
+  currency: 'EUR',
+});
+// Render in <iframe srcDoc={html} /> for a live preview while typing.
+```
+
+Bonus (v3.2.0): derive the default invoice template colors from your email logo —
+
+```typescript
+const template = await client.invoiceTemplates.deriveColorsFromEmailLogo();
+console.log(template.primary_color, template.accent_color);
+// 404 when no email logo is set; 422 when the logo colors are too neutral.
 ```
 
 ### ScellTenantClient (Multi-Tenant Partner)

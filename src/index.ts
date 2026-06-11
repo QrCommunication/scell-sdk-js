@@ -62,6 +62,7 @@ import { WebhooksResource } from './resources/webhooks.js';
 import { OnboardingResource } from './resources/onboarding.js';
 import { QuotesResource } from './resources/quotes.js';
 import { BrandingResource } from './resources/branding.js';
+import { DocumentsResource } from './resources/documents.js';
 
 // Utilities
 import { ScellWebhooks } from './utils/webhook-verify.js';
@@ -141,6 +142,19 @@ export class ScellClient {
    */
   public readonly branding: BrandingResource;
   /**
+   * Document live preview — render a NON-PERSISTED HTML preview of an
+   * invoice / credit note / quote being drafted (real template + branding +
+   * legal mentions pipeline).
+   *
+   * @since 3.2.0
+   *
+   * @example
+   * ```typescript
+   * const html = await client.documents.preview({ type: 'invoice', lines: [...] });
+   * ```
+   */
+  public readonly documents: DocumentsResource;
+  /**
    * Invoice template management (CRUD + logo upload + default selection).
    *
    * Templates personnalisent l'apparence des factures (logo, couleurs,
@@ -195,6 +209,7 @@ export class ScellClient {
     this.creditNotes = new CreditNotesResource(this.http);
     this.quotes = new QuotesResource(this.http);
     this.branding = new BrandingResource(this.http);
+    this.documents = new DocumentsResource(this.http);
     this.invoiceTemplates = new InvoiceTemplatesResource(this.http);
     this.creditPacks = new CreditPacksResource(this.http);
     this.reference = new ReferenceResource(this.http);
@@ -313,6 +328,23 @@ export class ScellApiClient {
    */
   public readonly branding: BrandingResource;
   /**
+   * Document live preview — render a NON-PERSISTED HTML preview of an
+   * invoice / credit note / quote being drafted (real template + branding +
+   * legal mentions pipeline).
+   *
+   * @since 3.2.0
+   *
+   * @example
+   * ```typescript
+   * const html = await client.documents.preview({
+   *   type: 'invoice',
+   *   buyer: { name: 'ACME SAS' },
+   *   lines: [{ description: 'Consulting', quantity: 2, unit_price: 800, tax_rate: 20 }],
+   * });
+   * ```
+   */
+  public readonly documents: DocumentsResource;
+  /**
    * Invoice template management (CRUD + logo upload + default selection).
    *
    * Templates personnalisent l'apparence des factures (logo, couleurs,
@@ -372,6 +404,7 @@ export class ScellApiClient {
     this.suppliers = new SuppliersResource(this.http);
     this.quotes = new QuotesResource(this.http);
     this.branding = new BrandingResource(this.http);
+    this.documents = new DocumentsResource(this.http);
     this.invoiceTemplates = new InvoiceTemplatesResource(this.http);
     this.creditPacks = new CreditPacksResource(this.http);
     this.reference = new ReferenceResource(this.http);
@@ -430,6 +463,9 @@ export { RecurringInvoicesResource } from './resources/recurring-invoices.js';
 // Re-export product catalog resources (since v2.38.0)
 export { ProductsResource } from './resources/products.js';
 export { ProductCategoriesResource } from './resources/product-categories.js';
+
+// Re-export documents resource (since v3.2.0)
+export { DocumentsResource } from './resources/documents.js';
 
 // Re-export country reference (since v2.29.0)
 export { ReferenceResource } from './resources/reference.js';

@@ -1,5 +1,100 @@
 # @scell/sdk — JavaScript/TypeScript SDK for Scell.io
-> Version: 2.38.0 | License: MIT | Node.js >= 18.0.0 | TypeScript >= 5.0.0
+> Version: 3.2.0 | License: MIT | Node.js >= 18.0.0 | TypeScript >= 5.0.0
+
+## v3.2.0 (2026-06-11) — Document live preview + branding direct upload / overrides + template colors
+
+New endpoints from the branding/previews batch (api.flexible group: `sk_*`/`pk_*`
++ Sanctum). Everything exposed on **both** `ScellClient` (Bearer) and
+`ScellApiClient` (`sk_*`).
+
+### Document live preview — `client.documents`
+
+`POST /documents/preview` renders a NON-PERSISTED HTML preview of a document
+being drafted (invoice / credit note / quote), through the REAL pipeline:
+invoice template + branding + legal mentions of the issuing Company. Nothing
+is saved; no number is consumed. Only `type` is required.
+
+| Endpoint | SDK method |
+|----------|------------|
+| `POST /documents/preview` | `client.documents.preview(input)` → `Promise<string>` (raw HTML) |
+
+```typescript
+const html = await client.documents.preview({
+  type: 'invoice', // 'invoice' | 'credit_note' | 'quote' (required)
+  document_number: 'FAC-2026-0001',          // ≤ 100 chars
+  buyer: {
+    name: 'ACME SAS', siret: '12345678900012', vat_number: 'FR32123456789',
+    email: 'compta@acme.fr', phone: '+33100000000', is_individual: false,
+    address: { line1: '1 rue de la Paix', line2: 'Bât. B', postal_code: '75001', city: 'Paris', country: 'FR' },
+  },
+  lines: [ // max 200
+    { description: 'Consulting', quantity: 2, unit_price: 800, tax_rate: 20 },
+  ],
+  issue_date: '2026-06-11', due_date: '2026-07-11', // YYYY-MM-DD
+  currency: 'EUR',            // 3 chars
+  notes: '...',               // ≤ 2000 chars
+  payment_terms: '...',       // ≤ 2000 chars
+});
+// render in <iframe srcDoc={html} /> for a live preview. 422 on invalid payload.
+```
+
+Types: `DocumentPreviewInput`, `DocumentPreviewType`, `DocumentPreviewBuyer`,
+`DocumentPreviewBuyerAddress`, `DocumentPreviewLine`.
+
+### Branding — direct logo upload (multipart) + preview overrides
+
+| Endpoint | SDK method |
+|----------|------------|
+| `POST /branding/tenant/logo` | `client.branding.tenant.uploadLogoFile(logo, filename?)` |
+| `POST /branding/sub-tenants/{id}/logo` | `client.branding.subTenants.uploadLogoFile(id, logo, filename?)` |
+| `GET /branding/tenant/preview?...overrides` | `client.branding.tenant.preview(overrides?)` |
+| `GET /branding/sub-tenants/{id}/preview?...overrides` | `client.branding.subTenants.preview(id, overrides?)` |
+
+`uploadLogoFile` uploads the email logo DIRECTLY in one multipart call (field
+`logo`, jpeg/png/webp/svg/svgz, max 2 MB) — alternative to the pre-signed flow
+(`uploadLogo`). Returns the updated **flat** branding object (same shape as
+`tenant.get()`, NOT wrapped in `{ data }`). Sub-tenant variant: 404 anti-IDOR.
+
+```typescript
+const branding = await client.branding.tenant.uploadLogoFile(file); // Blob | File | Uint8Array
+console.log(branding.brand_logo_url);
+```
+
+`preview` accepts optional NON-PERSISTED overrides (`BrandingPreviewOverrides`,
+query string — only defined keys are sent): `brand_primary_color` (#RRGGBB),
+`brand_email_footer` (≤2000), `brand_email_signature` (≤1000),
+`brand_logo_url` (≤2048). Render a draft without saving each keystroke:
+
+```typescript
+const draft = await client.branding.tenant.preview({ brand_primary_color: '#FF5722' });
+// signature change: requestOptions is now the 2nd (tenant) / 3rd (sub-tenant) arg
+const pdf = await client.branding.tenant.preview(undefined, { headers: { Accept: 'application/pdf' } });
+```
+
+New `Branding` fields: `brand_email_enabled` (boolean — master switch; `false`
+= platform default branding even if custom fields are filled; also writable on
+`UpdateBrandingInput`) and `computed_email_footer` (string | null, read-only —
+footer computed from the issuing company, used when `brand_email_footer` is empty).
+
+### Invoice templates — colors from email logo + `is_enabled`
+
+| Endpoint | SDK method |
+|----------|------------|
+| `POST /invoice-templates/derive-colors-from-email-logo` | `client.invoiceTemplates.deriveColorsFromEmailLogo()` |
+
+Derives primary/accent colors from the tenant email logo and applies them to
+the default invoice template (created on the fly if absent). No body; returns
+the updated `InvoiceTemplate` (unwrapped from `{ data }`). Errors: 404 when no
+email logo exists; 422 when the logo is unreachable or its colors are too neutral.
+
+New `InvoiceTemplate.is_enabled` (boolean, default `true`): when `false`, the
+template is skipped by the resolution cascade (fallback to the system
+template). Also accepted on `CreateInvoiceTemplateInput` / `UpdateInvoiceTemplateInput`:
+
+```typescript
+await client.invoiceTemplates.update(templateId, { is_enabled: false });
+const template = await client.invoiceTemplates.deriveColorsFromEmailLogo();
+```
 
 ## v2.38.0 (2026-06-07) — Product/service catalog (Products + ProductCategories)
 

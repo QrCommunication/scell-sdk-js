@@ -23,6 +23,14 @@ export interface InvoiceTemplate {
   name: string;
   description: string | null;
   is_default: boolean;
+  /**
+   * Whether the template is active. When `false`, the template is skipped by
+   * the resolution cascade and rendering falls back to the system template.
+   * Defaults to `true`.
+   *
+   * @since 3.2.0
+   */
+  is_enabled: boolean;
   is_available_to_subtenants: boolean;
   logo_url: string | null;
   logo_position: InvoiceTemplateLogoPosition;
@@ -48,6 +56,13 @@ export interface CreateInvoiceTemplateInput {
   name: string;
   description?: string | undefined;
   is_default?: boolean | undefined;
+  /**
+   * Whether the template is active (default `true`). A disabled template is
+   * ignored by the resolution cascade (fallback to the system template).
+   *
+   * @since 3.2.0
+   */
+  is_enabled?: boolean | undefined;
   is_available_to_subtenants?: boolean | undefined;
   logo_url?: string | undefined;
   logo_position?: InvoiceTemplateLogoPosition | undefined;

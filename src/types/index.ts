@@ -382,13 +382,23 @@ export type {
   SchedulePreset,
 } from './payment-schedule.js';
 
-// Branding types (since v2.13.0)
+// Branding types (since v2.13.0; BrandingPreviewOverrides since v3.2.0)
 export type {
   Branding,
   BrandingLogoUploadUrlInput,
   BrandingLogoUploadUrlResponse,
+  BrandingPreviewOverrides,
   UpdateBrandingInput,
 } from './branding.js';
+
+// Document live-preview types (since v3.2.0)
+export type {
+  DocumentPreviewBuyer,
+  DocumentPreviewBuyerAddress,
+  DocumentPreviewInput,
+  DocumentPreviewLine,
+  DocumentPreviewType,
+} from './documents.js';
 
 // Invoice template types (resource wired in clients since v2.24.0)
 export type {

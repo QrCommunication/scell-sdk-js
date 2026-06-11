@@ -53,6 +53,22 @@ export interface Branding {
    */
   brand_email_signature: string | null;
   /**
+   * Master switch for custom email branding.
+   * When `false`, email sends use the platform default branding even if
+   * the custom fields are filled.
+   *
+   * @since 3.2.0
+   */
+  brand_email_enabled: boolean;
+  /**
+   * Read-only computed footer derived from the issuing company profile
+   * (legal name, SIRET, VAT number, address). Used at render time when
+   * `brand_email_footer` is empty.
+   *
+   * @since 3.2.0
+   */
+  computed_email_footer: string | null;
+  /**
    * `true` when all four mandatory branding fields are non-null.
    * When `false`, email sends fall back to Scell.io default branding.
    */
@@ -78,6 +94,38 @@ export interface UpdateBrandingInput {
   brand_primary_color?: string | null | undefined;
   brand_email_footer?: string | null | undefined;
   brand_email_signature?: string | null | undefined;
+  /**
+   * Master switch for custom email branding. When `false`, email sends use
+   * the platform default branding even if the custom fields are filled.
+   *
+   * @since 3.2.0
+   */
+  brand_email_enabled?: boolean | undefined;
+}
+
+// ---------------------------------------------------------------------------
+// Preview overrides
+// ---------------------------------------------------------------------------
+
+/**
+ * Non-persisted overrides for the branding email preview endpoints
+ * (`GET /branding/tenant/preview` and `GET /branding/sub-tenants/{id}/preview`).
+ *
+ * Each provided value replaces the stored branding field FOR THE PREVIEW
+ * RENDER ONLY — nothing is saved. Use this to implement a live "what you
+ * see is what you get" editor without persisting each keystroke.
+ *
+ * @since 3.2.0
+ */
+export interface BrandingPreviewOverrides {
+  /** Primary brand color override in 6-digit hex format, e.g. `"#1A73E8"` */
+  brand_primary_color?: string | undefined;
+  /** Email footer text override (max 2000 chars) */
+  brand_email_footer?: string | undefined;
+  /** Email signature block override (max 1000 chars) */
+  brand_email_signature?: string | undefined;
+  /** Logo URL override (max 2048 chars) */
+  brand_logo_url?: string | undefined;
 }
 
 // ---------------------------------------------------------------------------

@@ -38,6 +38,7 @@ const SAMPLE_TEMPLATE = {
   name: 'Template par defaut',
   description: 'Mon template tenant',
   is_default: true,
+  is_enabled: true,
   is_available_to_subtenants: false,
   logo_url: null,
   logo_position: 'top-left' as const,
@@ -134,5 +135,45 @@ describe('InvoiceTemplatesResource — operations', () => {
     const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
     expect(url).toBe(`${BASE_URL}/invoice-templates/${TEMPLATE_ID}`);
     expect(init.method).toBe('DELETE');
+  });
+
+  it('toggles is_enabled via PATCH /invoice-templates/{id} (v3.2.0)', async () => {
+    mockFetch.mockResolvedValueOnce(
+      jsonResponse(200, { data: { ...SAMPLE_TEMPLATE, is_enabled: false } }),
+    );
+
+    const updated = await client.invoiceTemplates.update(TEMPLATE_ID, {
+      is_enabled: false,
+    });
+
+    const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`${BASE_URL}/invoice-templates/${TEMPLATE_ID}`);
+    expect(init.method).toBe('PATCH');
+    const body = JSON.parse(init.body as string);
+    expect(body.is_enabled).toBe(false);
+    expect(updated.is_enabled).toBe(false);
+  });
+
+  it('derives colors from the email logo via POST /invoice-templates/derive-colors-from-email-logo (v3.2.0)', async () => {
+    mockFetch.mockResolvedValueOnce(
+      jsonResponse(200, {
+        data: {
+          ...SAMPLE_TEMPLATE,
+          primary_color: '#0066FF',
+          accent_color: '#FF8800',
+        },
+      }),
+    );
+
+    const template = await client.invoiceTemplates.deriveColorsFromEmailLogo();
+
+    const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(`${BASE_URL}/invoice-templates/derive-colors-from-email-logo`);
+    expect(init.method).toBe('POST');
+    expect(init.body).toBeUndefined();
+
+    // Response is unwrapped from { data }
+    expect(template.primary_color).toBe('#0066FF');
+    expect(template.accent_color).toBe('#FF8800');
   });
 });

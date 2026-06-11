@@ -445,6 +445,90 @@ export class HttpClient {
   }
 
   /**
+   * POST request that returns the raw response body as text (HTML, plain text).
+   *
+   * Use this for endpoints that take a JSON payload but return non-JSON
+   * textual content, such as the document live preview
+   * (`POST /documents/preview`) which returns rendered HTML.
+   *
+   * @param path - API endpoint path
+   * @param body - JSON-serializable request body
+   * @param options - Request options (use `headers.Accept` to negotiate format)
+   * @returns The response body as a string
+   */
+  async postText(
+    path: string,
+    body?: unknown,
+    options?: RequestOptions
+  ): Promise<string> {
+    const url = this.buildUrl(path);
+    const requestHeaders = this.buildHeaders(options?.headers);
+    const requestTimeout = options?.timeout ?? this.timeout;
+
+    // Body is JSON; default to HTML response unless caller overrides Accept
+    if (!options?.headers?.['Accept']) {
+      requestHeaders['Accept'] = 'text/html';
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), requestTimeout);
+
+    if (options?.signal) {
+      options.signal.addEventListener('abort', () => controller.abort());
+    }
+
+    try {
+      const fetchOptions: RequestInit = {
+        method: 'POST',
+        headers: requestHeaders,
+        signal: controller.signal,
+      };
+
+      if (body !== undefined) {
+        fetchOptions.body = JSON.stringify(body);
+      }
+
+      const response = await this.fetchFn(url, fetchOptions);
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const contentType = response.headers.get('Content-Type') ?? '';
+        let responseBody: unknown;
+
+        if (contentType.includes('application/json')) {
+          responseBody = await response.json();
+        } else {
+          responseBody = await response.text();
+        }
+
+        parseApiError(response.status, responseBody, response.headers);
+      }
+
+      return response.text();
+    } catch (error) {
+      clearTimeout(timeoutId);
+
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          throw new ScellTimeoutError(
+            `Request timed out after ${requestTimeout}ms`
+          );
+        }
+
+        if (
+          error.name === 'TypeError' &&
+          error.message.includes('fetch')
+        ) {
+          throw new ScellNetworkError('Network request failed', error);
+        }
+      }
+
+      throw error;
+    }
+  }
+
+  /**
    * GET request that returns the raw response body as text (HTML, plain text).
    *
    * Use this for endpoints that return non-JSON textual content such as the

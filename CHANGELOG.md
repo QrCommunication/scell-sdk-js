@@ -2,6 +2,71 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.2.0] - 2026-06-11
+
+### Added — Document live preview
+
+- New `DocumentsResource` exposed as `client.documents` on both `ScellClient`
+  (Bearer) and `ScellApiClient` (`sk_*`).
+- `documents.preview(input)` — render a NON-PERSISTED HTML preview of a
+  document being drafted (invoice / credit note / quote). Uses the real
+  rendering pipeline (invoice template + branding + legal mentions of the
+  issuing Company). `POST /documents/preview`, returns the raw HTML string.
+  Only `input.type` is required; every other field (`document_number`,
+  `buyer`, `lines` (max 200), `issue_date`, `due_date`, `currency`, `notes`,
+  `payment_terms`) is optional — suitable for live keystroke previews.
+- Types `DocumentPreviewInput`, `DocumentPreviewType`, `DocumentPreviewBuyer`,
+  `DocumentPreviewBuyerAddress`, `DocumentPreviewLine`.
+
+### Added — Branding direct logo upload + preview overrides
+
+- `branding.tenant.uploadLogoFile(logo, filename?)` — upload the tenant email
+  logo DIRECTLY via multipart (`POST /branding/tenant/logo`, field `logo`,
+  jpeg/png/webp/svg/svgz, max 2 MB). Single-call alternative to the pre-signed
+  flow (`uploadLogo`). Returns the updated branding profile (flat object).
+- `branding.subTenants.uploadLogoFile(subTenantId, logo, filename?)` — same for
+  a sub-tenant (`POST /branding/sub-tenants/{id}/logo`, 404 anti-IDOR).
+- `branding.tenant.preview(overrides?)` and
+  `branding.subTenants.preview(id, overrides?)` now accept non-persisted
+  overrides serialized as query string (`brand_primary_color`,
+  `brand_email_footer`, `brand_email_signature`, `brand_logo_url`) — render
+  the preview with draft values without saving anything.
+- Type `BrandingPreviewOverrides`.
+
+### Added — Invoice template colors from email logo + enable switch
+
+- `invoiceTemplates.deriveColorsFromEmailLogo()` — derive primary/accent
+  colors from the tenant email logo and apply them to the default invoice
+  template (created on the fly if absent).
+  `POST /invoice-templates/derive-colors-from-email-logo` (no body), returns
+  the updated template. Throws `ScellNotFoundError` (404) when no email logo
+  exists, `ScellValidationError` (422) when the logo is unreachable or its
+  colors are too neutral.
+- `InvoiceTemplate.is_enabled` (boolean, default `true`) — when `false`, the
+  template is ignored by the resolution cascade (fallback to the system
+  template). Also accepted on `CreateInvoiceTemplateInput` /
+  `UpdateInvoiceTemplateInput`.
+
+### Added — Branding fields
+
+- `Branding.brand_email_enabled` (boolean) — master switch for custom email
+  branding; when `false`, sends use the platform default branding. Also
+  accepted on `UpdateBrandingInput`.
+- `Branding.computed_email_footer` (string | null, read-only) — footer
+  computed from the issuing company profile, used at render time when
+  `brand_email_footer` is empty.
+
+### Changed
+
+- `branding.tenant.preview(...)` / `branding.subTenants.preview(...)`: the
+  first (resp. second) parameter is now the optional `overrides` object;
+  `requestOptions` moved one position right. Callers that passed
+  `requestOptions` as first argument (e.g. a custom `Accept` header) must now
+  call `preview(undefined, requestOptions)` — flagged at compile time.
+- New low-level `HttpClient.postText(path, body?, options?)` — POST with a
+  JSON body returning the raw response body as text (used by
+  `documents.preview`).
+
 ## [3.1.0] - 2026-06-08
 
 ### Added — SuperPDP disconnect / reconnect (sub-tenants)

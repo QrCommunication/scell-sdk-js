@@ -8,6 +8,7 @@
  *   PUT    /api/v1/branding/tenant
  *   PATCH  /api/v1/branding/tenant
  *   POST   /api/v1/branding/tenant/logo-upload-url
+ *   POST   /api/v1/branding/tenant/logo
  *   GET    /api/v1/branding/tenant/preview
  *
  * Sub-tenant:
@@ -15,6 +16,7 @@
  *   PUT    /api/v1/branding/sub-tenants/{id}
  *   PATCH  /api/v1/branding/sub-tenants/{id}
  *   POST   /api/v1/branding/sub-tenants/{id}/logo-upload-url
+ *   POST   /api/v1/branding/sub-tenants/{id}/logo
  *   GET    /api/v1/branding/sub-tenants/{id}/preview
  *
  * @packageDocumentation
@@ -25,8 +27,58 @@ import type {
   Branding,
   BrandingLogoUploadUrlInput,
   BrandingLogoUploadUrlResponse,
+  BrandingPreviewOverrides,
   UpdateBrandingInput,
 } from '../types/branding.js';
+
+/**
+ * Build a multipart FormData with the logo file under the `logo` field.
+ *
+ * @internal
+ */
+function buildLogoFormData(
+  logo: Blob | File | Uint8Array,
+  filename: string
+): FormData {
+  const formData = new FormData();
+  if (logo instanceof Uint8Array) {
+    // Node : wrap Uint8Array into Blob (Node 18+ supports Blob globally)
+    formData.append('logo', new Blob([logo]), filename);
+  } else if (logo instanceof File) {
+    formData.append('logo', logo);
+  } else {
+    formData.append('logo', logo, filename);
+  }
+  return formData;
+}
+
+/**
+ * Serialize preview overrides into a query record, skipping undefined keys.
+ *
+ * @internal
+ */
+function buildPreviewQuery(
+  overrides?: BrandingPreviewOverrides
+): Record<string, string> | undefined {
+  if (!overrides) {
+    return undefined;
+  }
+  const params = new URLSearchParams();
+  if (overrides.brand_primary_color !== undefined) {
+    params.set('brand_primary_color', overrides.brand_primary_color);
+  }
+  if (overrides.brand_email_footer !== undefined) {
+    params.set('brand_email_footer', overrides.brand_email_footer);
+  }
+  if (overrides.brand_email_signature !== undefined) {
+    params.set('brand_email_signature', overrides.brand_email_signature);
+  }
+  if (overrides.brand_logo_url !== undefined) {
+    params.set('brand_logo_url', overrides.brand_logo_url);
+  }
+  const query = Object.fromEntries(params.entries());
+  return Object.keys(query).length > 0 ? query : undefined;
+}
 
 /**
  * Branding API resource
@@ -133,6 +185,37 @@ export class BrandingResource {
       ),
 
     /**
+     * Upload the tenant email logo DIRECTLY (multipart) — single-call
+     * alternative to the pre-signed flow ({@link BrandingResource.tenant.uploadLogo}).
+     *
+     * Accepted formats: jpeg, png, webp, svg/svgz. Max 2 MB.
+     * The logo is stored and persisted on the branding profile in one call.
+     *
+     * @param logo - File / Blob / Uint8Array to upload
+     * @param filename - Optional filename (defaults to `"logo"`)
+     * @param requestOptions - Per-request options
+     * @returns The updated branding profile (flat object, same shape as `tenant.get()`)
+     *
+     * @since 3.2.0
+     *
+     * @example
+     * ```typescript
+     * const branding = await client.branding.tenant.uploadLogoFile(file);
+     * console.log('New logo URL:', branding.brand_logo_url);
+     * ```
+     */
+    uploadLogoFile: (
+      logo: Blob | File | Uint8Array,
+      filename = 'logo',
+      requestOptions?: RequestOptions
+    ): Promise<Branding> =>
+      this.http.postFormData<Branding>(
+        '/branding/tenant/logo',
+        buildLogoFormData(logo, filename),
+        requestOptions
+      ),
+
+    /**
      * Render a live HTML preview of how a branded email will look with the
      * current tenant branding profile.
      *
@@ -140,6 +223,10 @@ export class BrandingResource {
      * via `requestOptions.headers` to request a PDF rendition instead — the
      * body is then returned as a (binary) string.
      *
+     * Optionally pass `overrides` to replace stored branding values FOR THE
+     * RENDER ONLY (nothing is persisted) — useful for live editor previews.
+     *
+     * @param overrides - Non-persisted branding overrides (query string). @since 3.2.0
      * @param requestOptions - Per-request options (use `headers.Accept` to negotiate format)
      * @returns Rendered email preview as HTML (string)
      *
@@ -147,10 +234,23 @@ export class BrandingResource {
      * ```typescript
      * const html = await client.branding.tenant.preview();
      * // e.g. render `html` in an <iframe srcDoc={html} /> for a live preview
+     *
+     * // Live preview while editing — nothing is saved:
+     * const draft = await client.branding.tenant.preview({
+     *   brand_primary_color: '#FF5722',
+     *   brand_email_signature: "L'équipe Nouvelle Marque",
+     * });
      * ```
      */
-    preview: (requestOptions?: RequestOptions): Promise<string> =>
-      this.http.getText('/branding/tenant/preview', undefined, requestOptions),
+    preview: (
+      overrides?: BrandingPreviewOverrides,
+      requestOptions?: RequestOptions
+    ): Promise<string> =>
+      this.http.getText(
+        '/branding/tenant/preview',
+        buildPreviewQuery(overrides),
+        requestOptions
+      ),
   };
 
   /** Sub-tenant-level branding operations */
@@ -235,28 +335,73 @@ export class BrandingResource {
       ),
 
     /**
+     * Upload a sub-tenant email logo DIRECTLY (multipart) — single-call
+     * alternative to the pre-signed flow. The sub-tenant must belong to the
+     * current tenant (404 otherwise, anti-IDOR).
+     *
+     * Accepted formats: jpeg, png, webp, svg/svgz. Max 2 MB.
+     *
+     * @param subTenantId - Sub-tenant UUID
+     * @param logo - File / Blob / Uint8Array to upload
+     * @param filename - Optional filename (defaults to `"logo"`)
+     * @param requestOptions - Per-request options
+     * @returns The updated branding profile (flat object, same shape as `subTenants.get()`)
+     *
+     * @since 3.2.0
+     *
+     * @example
+     * ```typescript
+     * const branding = await client.branding.subTenants.uploadLogoFile(
+     *   'sub-tenant-uuid',
+     *   logoBlob
+     * );
+     * ```
+     */
+    uploadLogoFile: (
+      subTenantId: string,
+      logo: Blob | File | Uint8Array,
+      filename = 'logo',
+      requestOptions?: RequestOptions
+    ): Promise<Branding> =>
+      this.http.postFormData<Branding>(
+        `/branding/sub-tenants/${subTenantId}/logo`,
+        buildLogoFormData(logo, filename),
+        requestOptions
+      ),
+
+    /**
      * Render a live HTML preview of how a branded email will look with a
      * sub-tenant's branding profile.
      *
      * Returns the rendered HTML as a string. Pass `Accept: application/pdf`
      * via `requestOptions.headers` to request a PDF rendition instead.
      *
+     * Optionally pass `overrides` to replace stored branding values FOR THE
+     * RENDER ONLY (nothing is persisted) — useful for live editor previews.
+     *
      * @param subTenantId - Sub-tenant UUID
+     * @param overrides - Non-persisted branding overrides (query string). @since 3.2.0
      * @param requestOptions - Per-request options (use `headers.Accept` to negotiate format)
      * @returns Rendered email preview as HTML (string)
      *
      * @example
      * ```typescript
      * const html = await client.branding.subTenants.preview('sub-tenant-uuid');
+     *
+     * // Live preview while editing — nothing is saved:
+     * const draft = await client.branding.subTenants.preview('sub-tenant-uuid', {
+     *   brand_primary_color: '#2E7D32',
+     * });
      * ```
      */
     preview: (
       subTenantId: string,
+      overrides?: BrandingPreviewOverrides,
       requestOptions?: RequestOptions
     ): Promise<string> =>
       this.http.getText(
         `/branding/sub-tenants/${subTenantId}/preview`,
-        undefined,
+        buildPreviewQuery(overrides),
         requestOptions
       ),
   };

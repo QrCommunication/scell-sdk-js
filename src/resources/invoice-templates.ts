@@ -83,4 +83,30 @@ export class InvoiceTemplatesResource {
     );
     return res.data;
   }
+
+  /**
+   * Derive primary/accent colors from the tenant email logo and apply them
+   * to the default invoice template.
+   *
+   * `POST /invoice-templates/derive-colors-from-email-logo` (no body).
+   * The default tenant template is created on the fly if it doesn't exist.
+   *
+   * @returns The updated (or freshly created) default template
+   * @throws {ScellNotFoundError} 404 when the tenant has no email logo
+   * @throws {ScellValidationError} 422 when the logo is unreachable or its colors are too neutral
+   *
+   * @since 3.2.0
+   *
+   * @example
+   * ```typescript
+   * const template = await client.invoiceTemplates.deriveColorsFromEmailLogo();
+   * console.log(template.primary_color, template.accent_color);
+   * ```
+   */
+  async deriveColorsFromEmailLogo(): Promise<InvoiceTemplate> {
+    const res = await this.client.post<{ data: InvoiceTemplate }>(
+      'invoice-templates/derive-colors-from-email-logo'
+    );
+    return res.data;
+  }
 }

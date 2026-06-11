@@ -55,6 +55,8 @@ const SAMPLE_BRANDING = {
   brand_primary_color: '#1A73E8',
   brand_email_footer: 'Société XYZ — SIRET 123 456 789 00012',
   brand_email_signature: "L'équipe Société XYZ",
+  brand_email_enabled: true,
+  computed_email_footer: 'Société XYZ — 12 rue de la République, 75001 Paris — SIRET 123 456 789 00012',
   is_complete: true,
   missing_fields: [],
   created_at: '2026-05-01T00:00:00Z',
@@ -136,6 +138,21 @@ describe('BrandingResource — tenant scope', () => {
       const body = JSON.parse(init.body as string);
       expect(body.brand_email_signature).toBeNull();
     });
+
+    it('toggles brand_email_enabled (v3.2.0)', async () => {
+      mockFetch.mockResolvedValueOnce(
+        jsonResponse(200, { ...SAMPLE_BRANDING, brand_email_enabled: false })
+      );
+
+      const result = await client.branding.tenant.update({
+        brand_email_enabled: false,
+      });
+
+      const [, init] = mockFetch.mock.calls[0] as [string, RequestInit];
+      const body = JSON.parse(init.body as string);
+      expect(body.brand_email_enabled).toBe(false);
+      expect(result.brand_email_enabled).toBe(false);
+    });
   });
 
   describe('tenant.uploadLogo()', () => {
@@ -194,12 +211,87 @@ describe('BrandingResource — tenant scope', () => {
     it('honors a custom Accept header (e.g. application/pdf)', async () => {
       mockFetch.mockResolvedValueOnce(htmlResponse(200, '%PDF-1.4'));
 
-      await client.branding.tenant.preview({
+      await client.branding.tenant.preview(undefined, {
         headers: { Accept: 'application/pdf' },
       });
 
       const [, init] = mockFetch.mock.calls[0] as [string, RequestInit];
       expect((init.headers as Record<string, string>)['Accept']).toBe('application/pdf');
+    });
+
+    it('serializes non-persisted overrides as query string (v3.2.0)', async () => {
+      mockFetch.mockResolvedValueOnce(htmlResponse(200, '<html>draft</html>'));
+
+      await client.branding.tenant.preview({
+        brand_primary_color: '#FF5722',
+        brand_email_signature: "L'équipe Nouvelle Marque",
+      });
+
+      const [url] = mockFetch.mock.calls[0] as [string, RequestInit];
+      const parsed = new URL(url);
+      expect(parsed.pathname).toBe('/api/v1/branding/tenant/preview');
+      expect(parsed.searchParams.get('brand_primary_color')).toBe('#FF5722');
+      expect(parsed.searchParams.get('brand_email_signature')).toBe(
+        "L'équipe Nouvelle Marque"
+      );
+      // Undefined keys must NOT be serialized
+      expect(parsed.searchParams.has('brand_email_footer')).toBe(false);
+      expect(parsed.searchParams.has('brand_logo_url')).toBe(false);
+    });
+
+    it('omits the query string entirely when no overrides are given', async () => {
+      mockFetch.mockResolvedValueOnce(htmlResponse(200, '<html></html>'));
+
+      await client.branding.tenant.preview();
+
+      const [url] = mockFetch.mock.calls[0] as [string, RequestInit];
+      expect(url).toBe(`${BASE_URL}/branding/tenant/preview`);
+    });
+  });
+
+  describe('tenant.uploadLogoFile() (v3.2.0)', () => {
+    it('uploads the logo directly via POST /branding/tenant/logo (multipart, flat response)', async () => {
+      const uploadedBranding = {
+        ...SAMPLE_BRANDING,
+        brand_logo_url: 'https://cdn.example.com/logos/direct-upload.png',
+      };
+      mockFetch.mockResolvedValueOnce(jsonResponse(200, uploadedBranding));
+
+      const blob = new Blob(['fake-png-bytes'], { type: 'image/png' });
+      const result = await client.branding.tenant.uploadLogoFile(blob, 'logo.png');
+
+      const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
+      expect(url).toBe(`${BASE_URL}/branding/tenant/logo`);
+      expect(init.method).toBe('POST');
+
+      // Body must be FormData with the file under the `logo` field
+      expect(init.body).toBeInstanceOf(FormData);
+      const formData = init.body as FormData;
+      expect(formData.get('logo')).toBeInstanceOf(Blob);
+
+      // Content-Type must NOT be forced (fetch sets the multipart boundary)
+      const headers = init.headers as Record<string, string>;
+      expect(headers['Content-Type']).toBeUndefined();
+      expect(headers['X-API-Key']).toBe('sk_test_xxx');
+
+      // Response is the FLAT branding object (no { data } unwrap)
+      expect(result.brand_logo_url).toBe(
+        'https://cdn.example.com/logos/direct-upload.png'
+      );
+      expect(result.is_complete).toBe(true);
+    });
+
+    it('accepts a Uint8Array (Node.js)', async () => {
+      mockFetch.mockResolvedValueOnce(jsonResponse(200, SAMPLE_BRANDING));
+
+      await client.branding.tenant.uploadLogoFile(
+        new Uint8Array([0x89, 0x50, 0x4e, 0x47]),
+        'logo.png'
+      );
+
+      const [, init] = mockFetch.mock.calls[0] as [string, RequestInit];
+      const formData = init.body as FormData;
+      expect(formData.get('logo')).toBeInstanceOf(Blob);
     });
   });
 });
@@ -284,6 +376,55 @@ describe('BrandingResource — subTenants scope', () => {
       expect(url).toBe(`${BASE_URL}/branding/sub-tenants/${SUB_TENANT_ID}/preview`);
       expect(init.method).toBe('GET');
       expect(result).toBe(html);
+    });
+
+    it('serializes non-persisted overrides as query string (v3.2.0)', async () => {
+      mockFetch.mockResolvedValueOnce(htmlResponse(200, '<html>draft</html>'));
+
+      await client.branding.subTenants.preview(SUB_TENANT_ID, {
+        brand_primary_color: '#2E7D32',
+        brand_logo_url: 'https://cdn.example.com/draft-logo.png',
+      });
+
+      const [url] = mockFetch.mock.calls[0] as [string, RequestInit];
+      const parsed = new URL(url);
+      expect(parsed.pathname).toBe(
+        `/api/v1/branding/sub-tenants/${SUB_TENANT_ID}/preview`
+      );
+      expect(parsed.searchParams.get('brand_primary_color')).toBe('#2E7D32');
+      expect(parsed.searchParams.get('brand_logo_url')).toBe(
+        'https://cdn.example.com/draft-logo.png'
+      );
+      expect(parsed.searchParams.has('brand_email_footer')).toBe(false);
+    });
+  });
+
+  describe('subTenants.uploadLogoFile() (v3.2.0)', () => {
+    it('uploads via POST /branding/sub-tenants/{id}/logo and returns the flat branding object', async () => {
+      const uploadedBranding = {
+        ...SAMPLE_BRANDING,
+        scope: 'sub_tenant' as const,
+        brand_logo_url: 'https://cdn.example.com/logos/sub-direct.png',
+      };
+      mockFetch.mockResolvedValueOnce(jsonResponse(200, uploadedBranding));
+
+      const blob = new Blob(['fake-png-bytes'], { type: 'image/png' });
+      const result = await client.branding.subTenants.uploadLogoFile(
+        SUB_TENANT_ID,
+        blob,
+        'logo.png'
+      );
+
+      const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
+      expect(url).toBe(`${BASE_URL}/branding/sub-tenants/${SUB_TENANT_ID}/logo`);
+      expect(init.method).toBe('POST');
+      expect(init.body).toBeInstanceOf(FormData);
+      expect((init.body as FormData).get('logo')).toBeInstanceOf(Blob);
+
+      expect(result.scope).toBe('sub_tenant');
+      expect(result.brand_logo_url).toBe(
+        'https://cdn.example.com/logos/sub-direct.png'
+      );
     });
   });
 });
