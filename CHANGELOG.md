@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.5.1] - 2026-06-15
+
+### Fixed — Synchronisation du type `WebhookEvent` sur les 33 événements backend
+
+- `WebhookEvent` couvre désormais les **33 événements** exposés par le backend
+  (`Webhook::EVENTS`). Ajout des 12 valeurs manquantes :
+  - `onboarding.started`, `onboarding.step_completed`, `onboarding.completed`,
+    `onboarding.failed`
+  - `recurring_invoice.upcoming`, `recurring_invoice.emitted`,
+    `recurring_invoice.completed`, `recurring_invoice.failed`
+  - `subtenant.threshold.warning`, `subtenant.threshold.vat_base_exceeded`,
+    `subtenant.threshold.vat_majored_exceeded`, `subtenant.threshold.micro_exceeded`
+  - (`invoice.incoming.validated` était déjà présent.)
+
 ## [3.5.0] - 2026-06-15
 
 ### Fixed — Quotes public-link & preview

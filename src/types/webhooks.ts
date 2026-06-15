@@ -28,7 +28,22 @@ export type WebhookEvent =
   | 'signature.error'
   // Balance events
   | 'balance.low'
-  | 'balance.critical';
+  | 'balance.critical'
+  // Onboarding events
+  | 'onboarding.started'
+  | 'onboarding.step_completed'
+  | 'onboarding.completed'
+  | 'onboarding.failed'
+  // Recurring invoice events
+  | 'recurring_invoice.upcoming'
+  | 'recurring_invoice.emitted'
+  | 'recurring_invoice.completed'
+  | 'recurring_invoice.failed'
+  // Sub-tenant threshold events
+  | 'subtenant.threshold.warning'
+  | 'subtenant.threshold.vat_base_exceeded'
+  | 'subtenant.threshold.vat_majored_exceeded'
+  | 'subtenant.threshold.micro_exceeded';
 
 /**
  * Webhook entity
