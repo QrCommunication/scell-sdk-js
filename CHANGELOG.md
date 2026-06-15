@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.5.3] - 2026-06-15
+
+### Security — Correctifs Dependabot (dev transitives)
+
+- **vite** (GHSA-fx2h-pf6j-xcff, HIGH) : override `vite >=8.0.16` (8.0.8 →
+  8.0.16) — bypass `server.fs.deny` sur chemins alternatifs Windows.
+- **js-yaml** (GHSA-h67p-54hq-rp68, MODERATE) : override `js-yaml >=4.2.0`
+  (4.1.1 → 4.2.0) — DoS quadratique via merge keys/alias répétés.
+- Dépendances transitives de dev (vitest/eslint). `npm audit` : 0 vulnérabilité.
+  Aucun impact runtime.
+
 ## [3.5.2] - 2026-06-15
 
 ### Security — Correctifs de vulnérabilités dev
