@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.5.2] - 2026-06-15
+
+### Security — Correctifs de vulnérabilités dev
+
+- **esbuild** (GHSA-gv7w-rqvm-qjhr, HIGH) : override `esbuild >=0.28.1`
+  (0.27.2 → 0.28.1) — corrige l'absence de vérification d'intégrité du binaire
+  (RCE via `NPM_CONFIG_REGISTRY`). Dépendance transitive de dev (tsup/vitest).
+- **brace-expansion** (GHSA-jxxr-4gwj-5jf2, MODERATE) : patché (DoS via large
+  plage numérique). Dépendance transitive de dev (@typescript-eslint).
+- `npm audit` : **0 vulnérabilité**. Aucun impact runtime (devDependencies).
+
 ## [3.5.1] - 2026-06-15
 
 ### Fixed — Synchronisation du type `WebhookEvent` sur les 33 événements backend
