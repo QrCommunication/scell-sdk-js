@@ -93,3 +93,43 @@ export interface InvoiceTemplateListOptions {
   per_page?: number | undefined;
   page?: number | undefined;
 }
+
+/**
+ * Color palette derived (non-persisted) from a logo.
+ *
+ * Returned by `deriveColorsFromInvoiceLogo()`.
+ *
+ * @since 3.5.0
+ */
+export interface DerivedColorPalette {
+  /** Primary brand color (hex, e.g. `'#0F4C81'`) */
+  primary_color: string;
+  /** Accent brand color (hex, e.g. `'#E8B647'`) */
+  accent_color: string;
+}
+
+/**
+ * Non-persisted branding overrides for the invoice template preview endpoint.
+ *
+ * Any field left out falls back to the tenant's resolved default template.
+ *
+ * @since 3.5.0
+ */
+export interface InvoiceTemplatePreviewParams {
+  /** Primary color override (hex) */
+  primary_color?: string | undefined;
+  /** Accent color override (hex) */
+  accent_color?: string | undefined;
+  /** Text color override (hex) */
+  text_color?: string | undefined;
+  /** Background color override (hex) */
+  background_color?: string | undefined;
+  /** Logo URL override */
+  logo_url?: string | undefined;
+  /** Header text override */
+  header_text?: string | undefined;
+  /** Footer text override */
+  footer_text?: string | undefined;
+  /** Output format: `'html'` (default) or `'pdf'`. */
+  format?: 'html' | 'pdf' | undefined;
+}

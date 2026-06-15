@@ -44,6 +44,7 @@ import { CompaniesResource } from './resources/companies.js';
 import { CreditNotesResource } from './resources/credit-notes.js';
 import { CreditPacksResource } from './resources/credit-packs.js';
 import { FiscalResource } from './resources/fiscal.js';
+import { InvoiceMentionsResource } from './resources/invoice-mentions.js';
 import { InvoiceTemplatesResource } from './resources/invoice-templates.js';
 import { InvoicesResource } from './resources/invoices.js';
 import { ProductCategoriesResource } from './resources/product-categories.js';
@@ -165,6 +166,14 @@ export class ScellClient {
    */
   public readonly invoiceTemplates: InvoiceTemplatesResource;
   /**
+   * Invoice legal-mentions assistant — suggest per-field mentions
+   * (`assistant`) and live-preview the composed mentions (`preview`).
+   * Stateless, scope tenant.
+   *
+   * @since 3.5.0
+   */
+  public readonly invoiceMentions: InvoiceMentionsResource;
+  /**
    * Credit packs catalogue (public read-only).
    *
    * Exposes the prepaid credit packs available for purchase by tenants.
@@ -211,6 +220,7 @@ export class ScellClient {
     this.branding = new BrandingResource(this.http);
     this.documents = new DocumentsResource(this.http);
     this.invoiceTemplates = new InvoiceTemplatesResource(this.http);
+    this.invoiceMentions = new InvoiceMentionsResource(this.http);
     this.creditPacks = new CreditPacksResource(this.http);
     this.reference = new ReferenceResource(this.http);
   }
@@ -355,6 +365,14 @@ export class ScellApiClient {
    */
   public readonly invoiceTemplates: InvoiceTemplatesResource;
   /**
+   * Invoice legal-mentions assistant — suggest per-field mentions
+   * (`assistant`) and live-preview the composed mentions (`preview`).
+   * Stateless, scope tenant.
+   *
+   * @since 3.5.0
+   */
+  public readonly invoiceMentions: InvoiceMentionsResource;
+  /**
    * Credit packs catalogue (public read-only).
    *
    * Exposes the prepaid credit packs available for purchase by tenants.
@@ -406,6 +424,7 @@ export class ScellApiClient {
     this.branding = new BrandingResource(this.http);
     this.documents = new DocumentsResource(this.http);
     this.invoiceTemplates = new InvoiceTemplatesResource(this.http);
+    this.invoiceMentions = new InvoiceMentionsResource(this.http);
     this.creditPacks = new CreditPacksResource(this.http);
     this.reference = new ReferenceResource(this.http);
   }
@@ -444,7 +463,6 @@ export { QuotesResource } from './resources/quotes.js';
 export type {
   QuoteAuditLogResponse,
   QuotePdfResponse,
-  QuotePreviewResponse,
   RegeneratePublicLinkResponse,
   SendQuoteResponse,
 } from './resources/quotes.js';
@@ -466,6 +484,9 @@ export { ProductCategoriesResource } from './resources/product-categories.js';
 
 // Re-export documents resource (since v3.2.0)
 export { DocumentsResource } from './resources/documents.js';
+
+// Re-export invoice mentions resource (since v3.5.0)
+export { InvoiceMentionsResource } from './resources/invoice-mentions.js';
 
 // Re-export country reference (since v2.29.0)
 export { ReferenceResource } from './resources/reference.js';

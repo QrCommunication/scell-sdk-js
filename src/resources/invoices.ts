@@ -16,6 +16,9 @@ import type {
   AuditTrailResponse,
   ConvertInvoiceInput,
   CreateInvoiceInput,
+  DepositGroupDetail,
+  DepositGroupListOptions,
+  DepositGroupSummary,
   DisputeInvoiceInput,
   IncomingInvoiceParams,
   Invoice,
@@ -615,5 +618,77 @@ export class InvoicesResource {
       options,
       requestOptions
     );
+  }
+
+  /**
+   * List deposit groups (multi-invoice commercial deals)
+   *
+   * Each group aggregates the deposit / balance invoices sharing the same
+   * `deposit_group_id`: total deal amount, sum of deposits already issued,
+   * remaining amount to invoice, invoice count, and whether a balance invoice
+   * exists.
+   *
+   * @param filters - Optional filters (`has_no_balance` to keep only open deals)
+   * @param requestOptions - Per-request options
+   * @returns List of deposit group summaries
+   *
+   * @since 3.5.0
+   *
+   * @example
+   * ```typescript
+   * // All deals still open (no balance invoice yet)
+   * const groups = await client.invoices.depositGroups({ has_no_balance: true });
+   * for (const g of groups) {
+   *   console.log(g.deposit_group_id, 'remaining:', g.remaining_ht);
+   * }
+   * ```
+   */
+  async depositGroups(
+    filters: DepositGroupListOptions = {},
+    requestOptions?: RequestOptions
+  ): Promise<DepositGroupSummary[]> {
+    const query: Record<string, string> = {};
+    if (filters.has_no_balance !== undefined) {
+      query.has_no_balance = filters.has_no_balance ? '1' : '0';
+    }
+    const res = await this.http.get<{ data: DepositGroupSummary[] }>(
+      '/invoices/deposit-groups',
+      query,
+      requestOptions
+    );
+    return res.data;
+  }
+
+  /**
+   * Get the progress detail of a deposit group
+   *
+   * Returns the deal progress: total amount, deposits already issued, remaining
+   * amount to invoice, and the list of invoices in the group. Strictly scoped
+   * per tenant (anti-IDOR): 404 if the group does not belong to the current
+   * tenant.
+   *
+   * @param groupId - Deposit group UUID
+   * @param requestOptions - Per-request options
+   * @returns Progress detail of the group
+   * @throws {ScellNotFoundError} 404 when the group is unknown or out of scope
+   *
+   * @since 3.5.0
+   *
+   * @example
+   * ```typescript
+   * const detail = await client.invoices.depositGroup('group-uuid');
+   * console.log('Invoices in deal:', detail.invoices?.length);
+   * ```
+   */
+  async depositGroup(
+    groupId: string,
+    requestOptions?: RequestOptions
+  ): Promise<DepositGroupDetail> {
+    const res = await this.http.get<{ data: DepositGroupDetail }>(
+      `/invoices/deposit-groups/${groupId}`,
+      undefined,
+      requestOptions
+    );
+    return res.data;
   }
 }

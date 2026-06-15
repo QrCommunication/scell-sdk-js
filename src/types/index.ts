@@ -54,6 +54,10 @@ export type {
   // Invoice email delivery (since v2.13.0)
   SendInvoiceByEmailInput,
   SendInvoiceByEmailResponse,
+  // Deposit groups (since v3.5.0)
+  DepositGroupDetail,
+  DepositGroupListOptions,
+  DepositGroupSummary,
 } from './invoices.js';
 
 // Quote types
@@ -408,7 +412,21 @@ export type {
   InvoiceTemplateLogoPosition,
   InvoiceTemplateScope,
   UpdateInvoiceTemplateInput,
+  // Branding palette + preview params (since v3.5.0)
+  DerivedColorPalette,
+  InvoiceTemplatePreviewParams,
 } from './invoice-templates.js';
+
+// Invoice legal-mentions assistant types (since v3.5.0)
+export type {
+  InvoiceMentionsAssistantInput,
+  InvoiceMentionsAssistantResult,
+  InvoiceMentionsClientele,
+  InvoiceMentionsPenaltyMode,
+  InvoiceMentionsPreviewInput,
+  InvoiceMentionsPreviewResult,
+  InvoiceMentionsVatProfile,
+} from './invoice-mentions.js';
 
 // Credit pack types (since v2.24.0)
 export type { CreditPack } from './credit-packs.js';

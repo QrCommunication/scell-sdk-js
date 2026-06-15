@@ -721,3 +721,56 @@ export interface MarkPaidInput {
  * Invoice file download format
  */
 export type InvoiceFileFormat = 'pdf' | 'xml';
+
+/**
+ * Filters for the deposit-groups listing endpoint.
+ *
+ * @since 3.5.0
+ */
+export interface DepositGroupListOptions {
+  /**
+   * When `true`, only return groups without a balance invoice yet (still-open
+   * commercial deals).
+   */
+  has_no_balance?: boolean | undefined;
+}
+
+/**
+ * Aggregated summary of a deposit group (a commercial deal spanning several
+ * deposit / balance invoices sharing the same `deposit_group_id`).
+ *
+ * @since 3.5.0
+ */
+export interface DepositGroupSummary {
+  /** Deposit group UUID. */
+  deposit_group_id: string;
+  /** Invoice number of the first invoice of the group (or `null`). */
+  first_invoice_number: string | null;
+  /** Free-text reference label of the deal (or `null`). */
+  deposit_reference_text: string | null;
+  /** Total amount of the deal, excl. tax (or `null`). */
+  deposit_total_ht: number | string | null;
+  /** Sum of deposits already issued, excl. tax (or `null`). */
+  sum_deposits_ht: number | string | null;
+  /** Remaining amount left to invoice, excl. tax (or `null`). */
+  remaining_ht: number | string | null;
+  /** Number of invoices in the group. */
+  invoices_count: number;
+  /** Whether the group already has a balance invoice. */
+  has_balance: boolean;
+}
+
+/**
+ * Detailed progress of a deposit group, including the list of its invoices.
+ *
+ * The exact shape is resolved server-side; it extends {@link DepositGroupSummary}
+ * with an `invoices` collection and any additional progress fields.
+ *
+ * @since 3.5.0
+ */
+export interface DepositGroupDetail extends DepositGroupSummary {
+  /** Invoices belonging to the group. */
+  invoices?: Invoice[];
+  /** Additional server-resolved progress fields. */
+  [key: string]: unknown;
+}

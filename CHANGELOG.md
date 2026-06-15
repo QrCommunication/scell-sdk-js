@@ -2,6 +2,58 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.5.0] - 2026-06-15
+
+### Fixed — Quotes public-link & preview
+
+- `quotes.regeneratePublicLink(id)` now targets the correct route
+  `POST /quotes/{id}/regenerate-public-link` (was a 404).
+- `quotes.revokePublicLink(id)` now targets `POST /quotes/{id}/revoke-public-link`
+  (was a 404).
+- `quotes.preview(data)` now maps to `POST /quotes/preview` (raw PDF body).
+
+### Added — Quote payment schedule wiring
+
+- `PaymentScheduleResource` is now wired as `client.quotes.paymentSchedule` on
+  both `ScellClient` (Bearer) and `ScellApiClient` (`sk_*`), and exported from
+  the package root.
+- Confirmed coverage of the full surface: `get`, `set`, `patch`, `delete`,
+  `summary` (`GET /quotes/{id}/payment-summary`), `convertLine`, and `presets`
+  (`GET /payment-schedule/presets`).
+
+### Added — Invoice templates branding helpers
+
+- `invoiceTemplates.deriveColorsFromInvoiceLogo()` — derive `{ primary_color,
+  accent_color }` from the tenant **invoice** logo WITHOUT persisting it
+  (`POST /invoice-templates/derive-colors-from-invoice-logo`). Twin of
+  `deriveColorsFromEmailLogo()` (which persists to the default template).
+- `invoiceTemplates.preview(params?)` — render a sample invoice with non-persisted
+  branding overrides (`GET /invoice-templates/preview`). Returns an HTML `string`
+  by default, or a PDF `ArrayBuffer` when `params.format === 'pdf'`.
+- Types `DerivedColorPalette`, `InvoiceTemplatePreviewParams`.
+
+### Added — Invoice deposit groups
+
+- `invoices.depositGroups(filters?)` — list multi-invoice commercial deals
+  (`GET /invoices/deposit-groups`, optional `has_no_balance` filter).
+- `invoices.depositGroup(groupId)` — progress detail of a deposit group
+  (`GET /invoices/deposit-groups/{groupId}`, 404 anti-IDOR).
+- Types `DepositGroupSummary`, `DepositGroupDetail`, `DepositGroupListOptions`.
+
+### Added — Invoice legal-mentions assistant
+
+- New `InvoiceMentionsResource` exposed as `client.invoiceMentions` on both
+  `ScellClient` (Bearer) and `ScellApiClient` (`sk_*`).
+- `invoiceMentions.assistant(params)` — suggest per-field invoice mention texts
+  (`POST /invoice-mentions/assistant`).
+- `invoiceMentions.preview(params)` — live-preview the automatic mentions by
+  overriding (non-persisted) the issuing Company
+  (`POST /invoice-mentions/preview`).
+- Types `InvoiceMentionsAssistantInput`, `InvoiceMentionsAssistantResult`,
+  `InvoiceMentionsPreviewInput`, `InvoiceMentionsPreviewResult`,
+  `InvoiceMentionsVatProfile`, `InvoiceMentionsClientele`,
+  `InvoiceMentionsPenaltyMode`.
+
 ## [3.2.0] - 2026-06-11
 
 ### Added — Document live preview

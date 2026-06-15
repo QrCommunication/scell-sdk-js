@@ -55,15 +55,6 @@ export interface QuotePdfResponse {
 }
 
 /**
- * Response returned for the preview endpoint
- */
-export interface QuotePreviewResponse {
-  /** Temporary HTML preview URL */
-  url: string;
-  expires_at: string;
-}
-
-/**
  * Audit log response with integrity validation
  */
 export interface QuoteAuditLogResponse {
@@ -471,7 +462,7 @@ export class QuotesResource {
     requestOptions?: RequestOptions
   ): Promise<RegeneratePublicLinkResponse> {
     return this.http.post<RegeneratePublicLinkResponse>(
-      `/quotes/${id}/public-link/regenerate`,
+      `/quotes/${id}/regenerate-public-link`,
       undefined,
       requestOptions
     );
@@ -497,7 +488,7 @@ export class QuotesResource {
     requestOptions?: RequestOptions
   ): Promise<MessageResponse> {
     return this.http.post<MessageResponse>(
-      `/quotes/${id}/public-link/revoke`,
+      `/quotes/${id}/revoke-public-link`,
       undefined,
       requestOptions
     );
@@ -528,29 +519,44 @@ export class QuotesResource {
   }
 
   /**
-   * Get an HTML preview URL for a quote
+   * Render a non-persisted PDF preview from raw quote data
    *
-   * Returns a temporary URL to a rendered HTML preview, useful for
-   * embedding in iframes or verifying the layout before sending.
+   * `POST /quotes/preview` — generates a PDF preview from the supplied quote
+   * payload (same shape as {@link create}) WITHOUT saving anything. Useful for
+   * verifying the layout before actually creating/sending the quote.
    *
-   * @param id - Quote UUID
+   * The endpoint returns the raw `application/pdf` body; the string is the
+   * binary content. Wrap it in a `Blob`/`Buffer` to download or display.
+   *
+   * @param data - Quote data (same shape as `create()`)
    * @param requestOptions - Per-request options
-   * @returns Temporary preview URL (5 minutes)
+   * @returns The raw PDF content as a (binary-as-text) string
    *
    * @example
    * ```typescript
-   * const { url } = await client.quotes.preview('quote-uuid');
-   * iframe.src = url;
+   * const pdf = await client.quotes.preview({
+   *   issue_date: '2026-06-15',
+   *   valid_until: '2026-07-15',
+   *   buyer_name: 'Acme Corp',
+   *   buyer_country: 'FR',
+   *   buyer_address: { line1: '1 Rue Test', postal_code: '75001', city: 'Paris', country: 'FR' },
+   *   total_ht: 1000, total_tax: 200, total_ttc: 1200,
+   *   lines: [{ description: 'Dev', quantity: 10, unit_price: 100, total_ht: 1000, total_tax: 200, total_ttc: 1200 }],
+   * });
+   * // Browser: const blob = new Blob([Uint8Array.from(pdf, c => c.charCodeAt(0))], { type: 'application/pdf' });
    * ```
    */
   async preview(
-    id: string,
+    data: CreateQuoteInput,
     requestOptions?: RequestOptions
-  ): Promise<QuotePreviewResponse> {
-    return this.http.get<QuotePreviewResponse>(
-      `/quotes/${id}/preview`,
-      undefined,
-      requestOptions
+  ): Promise<string> {
+    return this.http.postText(
+      '/quotes/preview',
+      data,
+      {
+        ...requestOptions,
+        headers: { Accept: 'application/pdf', ...requestOptions?.headers },
+      }
     );
   }
 }

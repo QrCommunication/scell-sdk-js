@@ -431,7 +431,7 @@ apiClient.documents         // Document live preview (non-persisted HTML render)
 
 | Resource | Methods |
 |----------|---------|
-| `.invoices` | `create(params)`, `list(filters?)`, `get(id)`, `download(id, format?)`, `auditTrail(id)`, `convert(params)`, `incoming(filters?)`, `accept(id, input)`, `reject(id, input)`, `dispute(id, input)`, `markPaid(id, input)`, `downloadFile(id, format?)` |
+| `.invoices` | `create(params)`, `list(filters?)`, `get(id)`, `download(id, format?)`, `auditTrail(id)`, `convert(params)`, `incoming(filters?)`, `accept(id, input)`, `reject(id, input)`, `dispute(id, input)`, `markPaid(id, input)`, `downloadFile(id, format?)`, `depositGroups(filters?)` (v3.5.0), `depositGroup(groupId)` (v3.5.0) |
 | `.signatures` | `create(params)`, `list(filters?)`, `get(id)`, `download(id, type)`, `remind(id)`, `cancel(id)` |
 | `.creditNotes` | `list(subTenantId, options?)`, `create(subTenantId, input)`, `get(id)`, `send(id)`, `download(id)`, `delete(id)`, `remainingCreditable(invoiceId)` |
 | `.subTenants` | `list()`, `create(input)`, `get(id)`, `update(id, input)`, `delete(id)`, `findByExternalId(externalId)`, `getSuperPDPStatus(id)` (v2), `refreshSuperPDPStatus(id)` (v2, rate-limited 1/min), `getResumeUrl(id)` (v2), `superpdpDisconnect(id)` (v3.1.0), `superpdpReconnect(id)` (v3.1.0), `superpdpWidgetToken(id, { reset })` (v3.1.0) |
@@ -445,7 +445,9 @@ apiClient.documents         // Document live preview (non-persisted HTML render)
 | `.productCategories` | `list(params?)`, `get(id)`, `create(input)`, `update(id, input)` (PATCH), `replace(id, input)` (PUT), `delete(id)` |
 | `.documents` | `preview(input)` (v3.2.0 — non-persisted HTML preview of a draft invoice / credit note / quote) |
 | `.branding` | `tenant.get()`, `tenant.update(input)`, `tenant.uploadLogo(mimeType)`, `tenant.uploadLogoFile(logo, filename?)` (v3.2.0), `tenant.preview(overrides?)`, `subTenants.get(id)`, `subTenants.update(id, input)`, `subTenants.uploadLogo(id, mimeType)`, `subTenants.uploadLogoFile(id, logo, filename?)` (v3.2.0), `subTenants.preview(id, overrides?)` |
-| `.invoiceTemplates` | `list(options?)`, `get(id)`, `create(input)`, `update(id, input)`, `delete(id)`, `markDefault(id)`, `uploadLogo(id, logo, filename?)`, `deriveColorsFromEmailLogo()` (v3.2.0) |
+| `.invoiceTemplates` | `list(options?)`, `get(id)`, `create(input)`, `update(id, input)`, `delete(id)`, `markDefault(id)`, `uploadLogo(id, logo, filename?)`, `deriveColorsFromEmailLogo()` (v3.2.0), `deriveColorsFromInvoiceLogo()` (v3.5.0 — returns palette, no persist), `preview(params?)` (v3.5.0 — HTML or PDF sample) |
+| `.invoiceMentions` | `assistant(params)`, `preview(params)` (v3.5.0 — invoice legal-mentions assistant + live preview) |
+| `.quotes.paymentSchedule` | `get(id)`, `set(id, input)`, `patch(id, input)`, `delete(id)`, `summary(id)`, `convertLine(id, lineId, input?)`, `presets()` (wired on both clients, v3.5.0) |
 
 ### Onboarding
 
@@ -819,6 +821,32 @@ const template = await client.invoiceTemplates.deriveColorsFromEmailLogo();
 console.log(template.primary_color, template.accent_color);
 // 404 when no email logo is set; 422 when the logo colors are too neutral.
 ```
+
+New in v3.5.0 — deposit groups, invoice template helpers, legal-mentions assistant:
+
+```typescript
+// Derive a palette from the INVOICE logo WITHOUT persisting (twin of deriveColorsFromEmailLogo)
+const palette = await client.invoiceTemplates.deriveColorsFromInvoiceLogo();
+
+// Preview a sample invoice with non-persisted branding overrides (HTML string, or PDF ArrayBuffer)
+const html = await client.invoiceTemplates.preview({ primary_color: '#0066FF' });
+
+// Multi-invoice commercial deals (deposit groups)
+const groups = await client.invoices.depositGroups({ has_no_balance: true });
+const detail = await client.invoices.depositGroup(groups[0].id); // 404 anti-IDOR if out of scope
+
+// Invoice legal-mentions assistant + live preview
+const suggested = await client.invoiceMentions.assistant({ vat_profile: 'franchise_base' });
+const previewMentions = await client.invoiceMentions.preview({ company: { name: 'ACME' } });
+
+// Quote payment schedule (now wired on both ScellClient and ScellApiClient)
+const schedule = await client.quotes.paymentSchedule.get(quoteId);
+const presets = await client.quotes.paymentSchedule.presets();
+```
+
+> Quote public-link fixes (v3.5.0): `client.quotes.regeneratePublicLink(id)`,
+> `client.quotes.revokePublicLink(id)` and `client.quotes.preview(data)` now hit
+> the correct routes (previously 404).
 
 ### ScellTenantClient (Multi-Tenant Partner)
 
