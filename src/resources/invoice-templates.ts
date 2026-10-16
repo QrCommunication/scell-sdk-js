@@ -72,8 +72,9 @@ export class InvoiceTemplatesResource {
   ): Promise<InvoiceTemplate> {
     const formData = new FormData();
     if (logo instanceof Uint8Array) {
-      // Node : wrap Uint8Array into Blob (Node 18+ supports Blob globally)
-      formData.append('logo', new Blob([logo]), filename);
+      // Node : wrap Uint8Array into Blob (Node 18+ supports Blob globally).
+      // La copie garantit un buffer de type ArrayBuffer (et non SharedArrayBuffer), requis par BlobPart.
+      formData.append('logo', new Blob([new Uint8Array(logo)]), filename);
     } else if (logo instanceof File) {
       formData.append('logo', logo);
     } else {

@@ -82,7 +82,7 @@ export class FiscalResource {
   }
 
   async fecDownload(options: FiscalFecExportOptions, requestOptions?: RequestOptions): Promise<ArrayBuffer> {
-    return this.http.getRaw('/tenant/fiscal/fec', { ...options, download: true } as unknown as Record<string, string | number | boolean | undefined>, requestOptions);
+    return this.http.getRaw('/tenant/fiscal/fec', { ...options, download: true }, requestOptions);
   }
 
   async attestation(year: number, requestOptions?: RequestOptions): Promise<SingleResponse<FiscalAttestation>> {
