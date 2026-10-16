@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.5.4] - 2026-10-16
+
+### Changed
+
+- Actualisation des dépendances de développement, avec ESLint 10, Vitest 5,
+  tsup 9 et TypeScript 6, ainsi que migration de la configuration ESLint.
+- Copie explicite des tableaux d'octets avant leur conversion en Blob pour
+  respecter les types ArrayBuffer utilisés par les nouvelles déclarations.
+- Suppression d'un cast devenu inutile pour le téléchargement FEC.
+
+Les exports publics et l'absence de dépendances d'exécution sont conservés.
+TypeScript 7 reste incompatible avec l'API de génération des déclarations
+utilisée par tsup et avec les peers TypeScript-ESLint actuels.
+
 ## [3.5.3] - 2026-06-15
 
 ### Security — Correctifs Dependabot (dev transitives)
