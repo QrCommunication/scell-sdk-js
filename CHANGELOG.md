@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.5.5] - 2026-10-29
+
+### Changed
+
+- Actualisation des dépendances de développement : ESLint 10.13,
+  TypeScript-ESLint 8.72 et dépendances transitives. Aucune dépendance
+  d'exécution, exports publics inchangés. TypeScript reste en 6.0 (voir 3.5.4).
+
 ## [3.5.4] - 2026-10-16
 
 ### Changed
